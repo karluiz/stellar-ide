@@ -1,0 +1,16 @@
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+.agents/
+.claude/
+.impeccable/
+.stellar/
+previews/
+
+.env
+.env.*
+!.env.example

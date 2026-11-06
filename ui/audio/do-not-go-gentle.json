@@ -1,0 +1,12 @@
+{
+  "title": "Do Not Go Gentle",
+  "kind": "Original AI-generated instrumental score",
+  "generator": "facebook/musicgen-stereo-small",
+  "model_weights_license": "CC-BY-NC-4.0",
+  "seed": 1951,
+  "sample_rate": 32000,
+  "channels": 2,
+  "duration_seconds": 29.94,
+  "prompt": "Original instrumental cinematic score for a contemplative science-fiction poem. A solitary voyage through space, time, memory, love, and defiance. Near-silent opening with sparse felt piano, warm low pipe-organ pedals, and expansive atmospheric pads. A slow patient organ chorale emerges with subtle orchestral strings and a deep restrained pulse, rising toward a quiet luminous emotional lift and resolving into a spacious sustained ending. Very slow rubato tempo, long reverb, intimate dynamics, no trailer percussion. Completely original harmony and melody, instrumental only, no voices, no choir, no lyrics, no samples, no recognizable existing themes. Background music for poetry, restrained and contemplative rather than epic.",
+  "note": "Generated from an original descriptive prompt without naming an artist, song, lyrics, or samples. No copyright clearance or commercial-use guarantee is implied."
+}

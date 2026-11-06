@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Stellar
+Comment=Agentic IDE for multi-repository workspaces
+Exec=raven-ide %F
+Icon=raven-ide
+StartupWMClass=raven
+Terminal=false
+Categories=Development;IDE;
+Keywords=agent;AI;Claude;Kimi;development;wiki;
+StartupNotify=true

@@ -1,0 +1,31 @@
+<Theme Name="LedgerHighContrast" Base="Dark" Accent="#FFFF00" AccentText="#000000" CornerRadius="8">
+    <Colors
+        Window="#000000" Panel="#090909" Input="#000000"
+        Text="#FFFFFF" TextDisabled="#CFCFCF" TextPlaceholder="#D8D8D8" AccentText="#000000"
+        Border="#FFFFFF" Control="#111111" ControlHovered="#333333" ControlPressed="#555555" ControlBorder="#FFFFFF"
+        Selection="#5B5B00" RowHovered="#333333" Track="#333333" Handle="#FFFFFF"
+        Separator="#FFFFFF" Header="#000000" HeaderHovered="#333333" TabActive="#4A4A00"
+        Popup="#000000" PopupBorder="#FFFFFF" Focus="#FFFF00"
+        Success="#7CFF7C" Warning="#FFFF00" Danger="#FF7A7A" Link="#75E6FF" Code="#111111"/>
+    <Metrics FontSize="13" ControlHeight="34" RowHeight="36" SplitterSize="3" PaddingX="11" PaddingY="7" Spacing="8"/>
+    <Syntax Comment="#CFCFCF" String="#7CFF7C" Number="#FFFF00" Keyword="#FFFF00" Type="#75E6FF" Function="#FFFFFF" Heading="#FFFF00" Strong="#FFFFFF" Link="#75E6FF"/>
+    <Style Widget="Button" CornerRadius="8"/>
+    <Style Widget="Button" Class="header-action" Control="#00000000" ControlHovered="#333333" ControlPressed="#555555" Text="#FFFFFF"/>
+    <Style Widget="Button" Class="send-button" Control="#111111" ControlHovered="#333333" ControlPressed="#555555" Text="#FFFFFF" CornerRadius="17"/>
+    <Style Widget="HeaderBar" Header="#000000" Text="#FFFFFF"/>
+    <Style Widget="TextEditor" Class="composer-input" Input="#00000000" Border="#00000000" ControlBorder="#00000000"/>
+    <Style Widget="Label" Class="section" Text="#FFFFFF" FontSize="11"/>
+    <Style Widget="Label" Class="muted" Text="#E0E0E0"/>
+    <Style Widget="Label" Class="data" Text="#75E6FF" FontSize="11"/>
+    <Style Widget="Label" Class="proposal-title" Text="#FFFF00"/>
+    <Style Class="surface" Panel="#090909" CornerRadius="0"/>
+    <Style Class="workspace" Window="#000000" Panel="#000000" CornerRadius="0"/>
+    <Style Class="tabs" Panel="#000000" CornerRadius="0"/>
+    <Style Class="run-header" Panel="#090909" Border="#FFFFFF" CornerRadius="0"/>
+    <Style Class="section-header" Panel="#090909" Border="#FFFFFF" CornerRadius="0"/>
+    <Style Class="tool-header" Panel="#090909" Border="#FFFFFF" CornerRadius="10"/>
+    <Style Class="composer" Panel="#000000" Border="#FFFFFF" CornerRadius="14"/>
+    <Style Class="activity" Panel="#090909" Border="#FFFFFF" CornerRadius="14"/>
+    <Style Class="statusbar" Panel="#000000" Border="#FFFFFF" CornerRadius="0"/>
+    <Style Class="proposal" Panel="#242400" Border="#FFFF00" CornerRadius="10"/>
+</Theme>

@@ -1,0 +1,8 @@
+[submodule "landing"]
+	path = landing
+	url = https://github.com/karluiz/stellar-ide.git
+	branch = main
+[submodule "third_party/Raven"]
+	path = third_party/Raven
+	url = https://github.com/karluiz/raven-engine.git
+	branch = stellar-ide

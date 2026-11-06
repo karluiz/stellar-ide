@@ -1,0 +1,31 @@
+<Theme Name="EdmundsPlanetDark" Base="Dark" Accent="#E0A06B" AccentText="#24150C" CornerRadius="10">
+    <Colors
+        Window="#17110D" Panel="#241B14" Input="#302218"
+        Text="#F4E9DA" TextDisabled="#B8A18B" TextPlaceholder="#C2AC94" AccentText="#24150C"
+        Border="#60452F" Control="#3A2A1D" ControlHovered="#4D3725" ControlPressed="#64472E" ControlBorder="#87613E"
+        Selection="#5B3E25" RowHovered="#4D3725" Track="#463224" Handle="#C08D5E"
+        Separator="#60452F" Header="#241B14" HeaderHovered="#4D3725" TabActive="#4A331F"
+        Popup="#2B1F16" PopupBorder="#87613E" Focus="#E0A06B"
+        Success="#B8D788" Warning="#E5B567" Danger="#FF8E72" Link="#E5B47F" Code="#241B14"/>
+    <Metrics FontSize="13" ControlHeight="34" RowHeight="36" SplitterSize="3" PaddingX="11" PaddingY="7" Spacing="8"/>
+    <Syntax Comment="#B8A18B" String="#B8D788" Number="#E5B567" Keyword="#E0A06B" Type="#E5B47F" Function="#D8C3A8" Heading="#F4E9DA" Strong="#FFF7E9" Link="#E5B47F"/>
+    <Style Widget="Button" CornerRadius="8"/>
+    <Style Widget="Button" Class="header-action" Control="#00000000" ControlHovered="#3A2A1D" ControlPressed="#4D3725" Text="#F4E9DA"/>
+    <Style Widget="Button" Class="send-button" Control="#3A2A1D" ControlHovered="#4D3725" ControlPressed="#64472E" Text="#F4E9DA" CornerRadius="17"/>
+    <Style Widget="HeaderBar" Header="#1D150F" Text="#F4E9DA"/>
+    <Style Widget="TextEditor" Class="composer-input" Input="#00000000" Border="#00000000" ControlBorder="#00000000"/>
+    <Style Widget="Label" Class="section" Text="#B8A18B" FontSize="11"/>
+    <Style Widget="Label" Class="muted" Text="#B8A18B"/>
+    <Style Widget="Label" Class="data" Text="#E5B47F" FontSize="11"/>
+    <Style Widget="Label" Class="proposal-title" Text="#E0A06B"/>
+    <Style Class="surface" Panel="#241B14" CornerRadius="0"/>
+    <Style Class="workspace" Window="#17110D" Panel="#17110D" CornerRadius="0"/>
+    <Style Class="tabs" Panel="#1D150F" CornerRadius="0"/>
+    <Style Class="run-header" Panel="#241B14" Border="#60452F" CornerRadius="0"/>
+    <Style Class="section-header" Panel="#2B1F16" Border="#60452F" CornerRadius="0"/>
+    <Style Class="tool-header" Panel="#2B1F16" Border="#A87649" CornerRadius="10"/>
+    <Style Class="composer" Panel="#302218" Border="#A87649" CornerRadius="14"/>
+    <Style Class="activity" Panel="#2B1F16" Border="#A87649" CornerRadius="14"/>
+    <Style Class="statusbar" Panel="#120D09" Border="#60452F" CornerRadius="0"/>
+    <Style Class="proposal" Panel="#45301B" Border="#A87649" CornerRadius="10"/>
+</Theme>

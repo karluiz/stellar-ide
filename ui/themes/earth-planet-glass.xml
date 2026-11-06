@@ -1,0 +1,24 @@
+<Theme Name="EarthPlanetGlass" Base="EarthPlanet" Material="Solid" Wallpaper="#03110D,#12382D,#0E252B,#1B4035">
+    <Glass Frost="0.92" Refraction="0.28" Saturation="0.65" Rim="0.42" Shadow="0.45"/>
+    <Colors TextDisabled="#B9D0C3" TextPlaceholder="#C4D8CD"/>
+    <Style Widget="VBox" Material="Solid" Panel="#00000000"/>
+    <Style Widget="HBox" Material="Solid" Panel="#00000000"/>
+    <Style Widget="Overlay" Material="Solid" Panel="#00000000"/>
+    <Style Widget="Splitter" Material="Solid" Panel="#00000000"/>
+    <Style Widget="ScrollBox" Material="Solid" Panel="#00000000"/>
+    <Style Widget="TextEditor" Material="Solid" Input="#00000000" Border="#00000000" ControlBorder="#00000000"/>
+    <Style Widget="ListView" Material="Solid" Input="#00000000" Border="#00000000"/>
+    <Style Widget="TreeView" Material="Solid" Input="#00000000" Border="#00000000"/>
+    <Style Widget="FileBrowser" Material="Solid" Input="#00000000" Border="#00000000"/>
+    <Style Class="surface" Material="Solid" Panel="#071411D9" CornerRadius="0"/>
+    <Style Class="workspace" Material="Solid" Window="#00000000" Panel="#00000000" CornerRadius="0"/>
+    <Style Class="gallery-backdrop" Material="Solid" Window="#03110D" Panel="#03110D" CornerRadius="0"/>
+    <Style Class="wiki-chrome" Material="Solid" Panel="#00000000" Border="#00000000" CornerRadius="0"/>
+    <Style Class="tabs" Material="Solid" Header="#00000000" TabActive="#00000000" HeaderHovered="#70D6B014" CornerRadius="0"/>
+    <Style Class="composer" Material="FrostedGlass" Panel="#0C1E19"/>
+    <Style Class="activity" Material="FrostedGlass" Panel="#0B1E19"/>
+    <Style Class="proposal" Material="TintedGlass" Panel="#153328"/>
+    <Style Widget="TextEditor" Class="composer-input" Material="Solid" Focus="#00000000"/>
+    <Style Widget="Label" Class="section" Text="#C0D4C8"/>
+    <Style Widget="Label" Class="muted" Text="#C0D4C8"/>
+</Theme>

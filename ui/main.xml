@@ -1,0 +1,767 @@
+<Window Title="Stellar" Width="1600" Height="960" MinWidth="1100" MinHeight="680" CustomHeader="true" Theme="EarthPlanet">
+    <Shortcut Keys="Ctrl+Enter" Action="run.send"/>
+    <Shortcut Keys="Ctrl+S" Action="file.save"/>
+    <Shortcut Keys="Ctrl+N" Action="thread.new"/>
+    <Shortcut Keys="Ctrl+Alt+A" Action="agent.new"/>
+    <Shortcut Keys="Ctrl+Shift+N" Action="wiki.new"/>
+    <Shortcut Keys="Ctrl+Shift+R" Action="proposal.open"/>
+    <Shortcut Keys="Ctrl+Shift+D" Action="checkpoint.review"/>
+    <Shortcut Keys="Ctrl+Shift+Enter" Action="proposal.accept"/>
+    <Shortcut Keys="Ctrl+P" Action="wiki.preview"/>
+    <Shortcut Keys="Ctrl+Shift+P" Action="palette.commands"/>
+    <Shortcut Keys="Ctrl+Shift+O" Action="palette.files"/>
+    <Shortcut Keys="Ctrl+Shift+F" Action="palette.search"/>
+    <Shortcut Keys="Ctrl+L" Action="composer.focus"/>
+    <Shortcut Keys="Ctrl+R" Action="recall.open"/>
+    <Shortcut Keys="Ctrl+Shift+E" Action="run.setup.toggle"/>
+    <Shortcut Keys="Ctrl+K" Action="knowledge.open_tab"/>
+    <Shortcut Keys="Ctrl+M" Action="memory.open"/>
+    <Shortcut Keys="Ctrl+Shift+T" Action="theme.browser"/>
+    <Shortcut Keys="Ctrl+B" Action="sidebar.left"/>
+    <Shortcut Keys="Ctrl+Shift+B" Action="sidebar.right"/>
+    <Shortcut Keys="Ctrl+," Action="settings.toggle"/>
+    <Overlay>
+    <VBox>
+        <HeaderBar Title="" Height="60" Buttons="All">
+            <Overlay Width="36" Height="34">
+                <Button Name="sidebar.left" Text="" Width="36" Height="34" Style="Flat" Class="header-action" OnClicked="sidebar.left" Tooltip="Show or fold Files (Ctrl+B)" AccessibleName="Files" AccessibleDescription="Show or fold the left file, agent, and wiki sidebar"/>
+                <Image Source="icons/files.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+            </Overlay>
+            <Label Text="STELLAR" TextSize="14" Slot.Padding="3,0,22,0"/>
+            <Button Text="Open" Style="Flat" Class="header-action" OnClicked="workspace.open" Tooltip="Open a workspace"/>
+            <Button Text="New chat" Style="Flat" Class="header-action" OnClicked="thread.new" Tooltip="Start a new conversation (Ctrl+N)"/>
+            <Separator Orientation="Vertical" Slot.Padding="8,7"/>
+            <Label Name="workspace.name" Text="Workspace" Class="muted" Slot.VAlign="Center"/>
+            <Label Name="workspace.separator" Text="/" Class="muted" Slot.Padding="10,0" Slot.VAlign="Center"/>
+            <Label Name="run.title" Text="New agent run" TextSize="14" Slot.VAlign="Center"/>
+            <Overlay Width="36" Height="34" Slot.HAlign="Right">
+                <Button Name="appearance.toggle" Text="" Width="36" Height="34" Style="Flat" Class="header-action" OnClicked="appearance.toggle" Tooltip="Switch to light theme" AccessibleName="Switch to light theme"/>
+                <Image Name="appearance.sun" Source="icons/sun.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                <Image Name="appearance.moon" Source="icons/moon.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center" Visibility="Collapsed"/>
+            </Overlay>
+            <Overlay Width="36" Height="34" Slot.HAlign="Right">
+                <Button Name="sidebar.right" Text="" Width="36" Height="34" Style="Flat" Class="header-action" OnClicked="sidebar.right" Tooltip="Show or fold Panels (Ctrl+Shift+B)" AccessibleName="Panels" AccessibleDescription="Show or fold the right activity, wiki, knowledge, and alerts sidebar"/>
+                <Image Source="icons/panels.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+            </Overlay>
+            <Button Name="run.retry" Text="Retry" Style="Flat" Class="header-action" OnClicked="run.retry" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
+            <Button Name="run.stop" Text="Stop" Style="Flat" Class="header-action" OnClicked="run.stop" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
+            <Label Name="run.timing" Text="00:00" Font="monospace" TextSize="10" MinWidth="48" TextAlign="Right" Slot.HAlign="Right" Slot.VAlign="Center" Visibility="Collapsed"/>
+            <Label Name="run.state" Text="READY" Font="monospace" TextSize="10" MinWidth="60" TextAlign="Right" Slot.HAlign="Right" Slot.VAlign="Center" Slot.Padding="6,0"/>
+        </HeaderBar>
+
+        <Splitter Name="workspace.splitter" Slot.Fill="1" MinPaneSize="300">
+            <VBox Name="left.sidebar" Class="surface" Slot.Fill="0.21" MinWidth="260" MaxWidth="330" Appear="SlideRight">
+                <HBox Spacing="8" Slot.Padding="14,12,14,8">
+                    <Image Source="icons/search.png" Width="16" Height="16" TintText="true" AccessibleHidden="true" Slot.VAlign="Center"/>
+                    <TextInput Name="navigation.search" Placeholder="Search…" OnChanged="navigation.search" Tooltip="Filter conversations, agent definitions, and wiki notes" Slot.Fill="1"/>
+                </HBox>
+                <TabView Name="left.tabs" Class="tabs" Slot.Fill="1">
+                    <VBox Slot.Title="Chats">
+                        <HBox Slot.Padding="16,10,12,4" Spacing="4">
+                            <Label Name="threads.section" Text="Conversations" Class="section" Slot.Fill="1" Slot.VAlign="Center"/>
+                            <Button Name="threads.view" Text="Archived" Style="Flat" OnClicked="thread.view" Tooltip="Show archived conversations"/>
+                            <Overlay Width="36" Height="34">
+                                <Button Name="threads.archive" Text="" Width="36" Height="34" Style="Flat" OnClicked="thread.archive" Tooltip="Archive selected conversation" AccessibleName="Archive selected conversation"/>
+                                <Image Source="icons/archive.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                            </Overlay>
+                        </HBox>
+                        <ListView Name="threads" Slot.Fill="1" OnActivated="thread.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="0"/>
+                    </VBox>
+                    <VBox Slot.Title="Files">
+                        <FileBrowser Name="workspace.files" Slot.Fill="1" Slot.Padding="10,8,10,12" Controls="false" Places="false" ShowHidden="false"/>
+                    </VBox>
+                    <VBox Slot.Title="Agents">
+                        <HBox Slot.Padding="16,10,12,4">
+                            <Label Text="Agent definitions" Class="section" Slot.Fill="1"/>
+                            <Button Text="New" Style="Flat" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)"/>
+                        </HBox>
+                        <ListView Name="agents" Slot.Fill="1" OnActivated="agent.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="0"/>
+                    </VBox>
+                    <VBox Slot.Title="Wiki">
+                        <HBox Slot.Padding="16,10,12,4">
+                            <Label Text="Workspace notes" Class="section" Slot.Fill="1"/>
+                            <Button Text="New" Style="Flat" OnClicked="wiki.new" Tooltip="Create a Markdown note (Ctrl+Shift+N)"/>
+                        </HBox>
+                        <ListView Name="wiki" Slot.Fill="1" OnActivated="wiki.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="0"/>
+                    </VBox>
+                </TabView>
+            </VBox>
+
+            <VBox Name="center.workspace" Class="workspace" Slot.Fill="0.58" MinWidth="420">
+                <Label Name="run.subtitle" Text="Orchestrator · Claude Code" Visibility="Collapsed"/>
+                <TabView Name="center.tabs" Class="tabs" Slot.Fill="1">
+                    <VBox Class="workspace" Slot.Title="Agent">
+                        <ScrollBox Name="transcript.scroll" Slot.Fill="1">
+                            <HBox Slot.Padding="26,30">
+                                <VBox Name="transcript" MaxWidth="860" Slot.Fill="1" Spacing="18"/>
+                            </HBox>
+                        </ScrollBox>
+                        <HBox Slot.Padding="24,0,24,6">
+                            <Border Name="queue.bar" Class="activity" Padding="10,12" CornerRadius="10" MaxWidth="860" Slot.Fill="1" Visibility="Collapsed" Appear="Fade">
+                                <HBox Spacing="10">
+                                    <VBox Slot.Fill="1" Spacing="4" Slot.VAlign="Center">
+                                        <Label Name="queue.state" Text="Follow-up queued" Class="section" Wrap="true"/>
+                                        <Label Name="queue.prompt" Class="muted" TextSize="11" Wrap="true"/>
+                                    </VBox>
+                                    <Button Name="queue.review" Text="Review Wiki" Style="Flat" OnClicked="proposal.open" Visibility="Collapsed" Slot.VAlign="Center"/>
+                                    <Button Text="Cancel" Style="Flat" OnClicked="queue.cancel" Tooltip="Remove the queued follow-up" Slot.VAlign="Center"/>
+                                </HBox>
+                            </Border>
+                        </HBox>
+                        <HBox Slot.Padding="24,6,24,22">
+                            <Border Name="composer.shell" Class="composer" Padding="14" MaxWidth="860" Slot.Fill="1">
+                                <VBox Spacing="10">
+                                    <TextEditor Name="composer" Class="composer-input" Height="88" Wrap="true" Completion="true" AutoPairs="false" Placeholder="Describe a task · / skills · @ workspace files…"/>
+                                    <HBox Name="context.bar" Spacing="8" Visibility="Collapsed" Appear="Fade">
+                                        <Image Source="icons/files.png" Width="15" Height="15" TintText="true" AccessibleHidden="true" Slot.VAlign="Center"/>
+                                        <ComboBox Name="context.files" Width="290" Tooltip="Attachment token estimate" AccessibleName="Attached files"/>
+                                        <Label Name="context.summary" Class="muted" TextSize="11" Slot.Fill="1" Slot.VAlign="Center"/>
+                                        <Button Text="Remove" Style="Flat" OnClicked="context.remove" Tooltip="Remove the selected attachment" Slot.VAlign="Center"/>
+                                        <Button Text="Clear" Style="Flat" OnClicked="context.clear" Tooltip="Remove workspace file attachments from this prompt" Slot.VAlign="Center"/>
+                                    </HBox>
+                                    <HBox Spacing="8">
+                                        <Overlay Width="36" Height="34">
+                                            <Button Name="run.setup.toggle" Text="" Width="36" Height="34" Style="Flat" OnClicked="run.setup.toggle" Tooltip="Run setup · model, effort, harness, and mode (Ctrl+Shift+E)" AccessibleName="Run setup"/>
+                                            <Image Source="icons/setup.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                                        </Overlay>
+                                        <Overlay Width="36" Height="34">
+                                            <Button Name="recall.open" Text="" Width="36" Height="34" Style="Flat" OnClicked="recall.open" Tooltip="Recall saved prompts (Ctrl+R)" AccessibleName="Recall saved prompts"/>
+                                            <Image Source="icons/recall.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                                        </Overlay>
+                                        <Button Name="context.compact" Text="Compact" Style="Flat" OnClicked="context.compact" Tooltip="Keep the task and recent messages for the next session" Visibility="Collapsed" Slot.VAlign="Center"/>
+                                        <Spacer Slot.Fill="1"/>
+                                        <Overlay Width="36" Height="34">
+                                            <Button Name="run.send" Text="" Width="36" Height="34" Style="Flat" Class="send-button" OnClicked="run.send" Tooltip="Send to lead (Ctrl+Enter)" AccessibleName="Send to lead"/>
+                                            <Image Source="icons/send.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                                        </Overlay>
+                                    </HBox>
+                                </VBox>
+                            </Border>
+                        </HBox>
+                    </VBox>
+                    <VBox Class="workspace" Slot.Title="Editor">
+                        <Border Class="tool-header" Padding="18,14" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                            <HBox>
+                                <VBox Slot.Fill="1">
+                                    <Label Name="code.title" Text="No file open" TextSize="17"/>
+                                    <Label Name="code.path" Text="Select a file in FILES" Class="data" Font="monospace"/>
+                                </VBox>
+                                <Button Name="code.save" Text="Save file" Style="Primary" OnClicked="code.save" Enabled="false" Slot.VAlign="Center"/>
+                            </HBox>
+                        </Border>
+                        <TextEditor Name="code.editor" Slot.Fill="1" Slot.Padding="14,0,14,14" LineNumbers="true" Wrap="true" Placeholder="Open a source file from the workspace explorer"/>
+                    </VBox>
+                    <VBox Class="workspace" Slot.Title="Endurance">
+                        <Border Class="tool-header" Padding="18,14" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                            <VBox Spacing="11">
+                                <HBox Spacing="10">
+                                    <VBox Slot.Fill="1" Spacing="4">
+                                        <Label Name="endurance.title" Text="Ship with confidence" TextSize="17"/>
+                                        <Label Name="endurance.save" Text="Saved to endurance/mission-1.yaml" Class="muted" TextSize="11" Wrap="true"/>
+                                    </VBox>
+                                    <Button Name="endurance.recurrence.toggle" Text="Recurrence" Style="Flat" OnClicked="endurance.recurrence.toggle" Slot.VAlign="Center"/>
+                                    <Button Text="Validate" Style="Flat" OnClicked="endurance.validate" Slot.VAlign="Center"/>
+                                    <Button Name="endurance.run" Text="Run workflow" Style="Primary" OnClicked="endurance.run" Slot.VAlign="Center"/>
+                                </HBox>
+                                <HBox Spacing="7">
+                                    <ComboBox Name="endurance.workflow" Width="230" OnChanged="endurance.workflow" Tooltip="Workflows stored in endurance/*.yaml" AccessibleName="Endurance workflow"/>
+                                    <Button Text="New" Style="Flat" OnClicked="endurance.new" Tooltip="Create a workflow"/>
+                                    <Button Text="Duplicate" Style="Flat" OnClicked="endurance.duplicate" Tooltip="Duplicate this workflow"/>
+                                    <TextInput Name="endurance.input" Placeholder="Task for this manual run…" Slot.Fill="1" AccessibleName="Manual workflow task"/>
+                                </HBox>
+                            </VBox>
+                        </Border>
+                        <Border Name="endurance.schedule" Class="section-header" Padding="16,12" BorderWidth="1" Slot.Padding="14,0,14,10" Visibility="Collapsed" Appear="Fade">
+                            <VBox Spacing="10">
+                                <HBox Spacing="10">
+                                    <VBox Slot.Fill="1" Spacing="3">
+                                        <Label Text="Recurrence" TextSize="14"/>
+                                        <Label Name="endurance.schedule.next" Text="Manual trigger only" Class="muted" TextSize="11"/>
+                                    </VBox>
+                                    <Checkbox Name="endurance.schedule.enabled" Text="Scheduled" Style="Switch" OnChanged="endurance.schedule.enabled" Slot.VAlign="Center"/>
+                                    <Button Text="Close" Style="Flat" OnClicked="endurance.recurrence.toggle" Slot.VAlign="Center"/>
+                                </HBox>
+                                <HBox Spacing="8">
+                                    <ComboBox Name="endurance.schedule.frequency" Items="Every hour|Every day|Every weekday|Every Monday|Custom cron" Selected="2" Width="170" OnChanged="endurance.schedule.frequency" AccessibleName="Recurrence frequency"/>
+                                    <TextInput Name="endurance.schedule.time" Text="09:00" Width="78" Tooltip="Local time in 24-hour HH:MM format" AccessibleName="Recurrence time"/>
+                                    <ComboBox Name="endurance.schedule.timezone" Items="Local timezone|UTC" Selected="0" Width="145" AccessibleName="Recurrence timezone"/>
+                                    <ComboBox Name="endurance.schedule.overlap" Items="Skip if running|Queue one run" Selected="0" Width="145" Tooltip="Policy when this workflow is already running" AccessibleName="Recurrence overlap policy"/>
+                                    <ComboBox Name="endurance.schedule.missed" Items="Skip missed runs|Run once on reopen" Selected="0" Width="170" Tooltip="Policy for occurrences missed while Stellar is closed" AccessibleName="Missed run policy"/>
+                                </HBox>
+                                <HBox Spacing="9">
+                                    <TextInput Name="endurance.schedule.cron" Text="0 9 * * 1-5" Placeholder="minute hour day month weekday" Slot.Fill="1" AccessibleName="Custom cron expression"/>
+                                    <Button Text="Save recurrence" Style="Primary" OnClicked="endurance.schedule.save" Slot.VAlign="Center"/>
+                                </HBox>
+                                <Label Name="endurance.schedule.summary" Text="Recurrence is disabled. Manual runs remain available." Class="muted" TextSize="11" Wrap="true"/>
+                            </VBox>
+                        </Border>
+                        <TabView Name="endurance.views" Class="tabs" Slot.Fill="1" OnChanged="endurance.view">
+                            <VBox Slot.Title="Canvas">
+                                <HBox Slot.Padding="14,4,14,10" Spacing="7">
+                                    <Button Text="Add step" Style="Flat" OnClicked="endurance.step.add"/>
+                                    <Button Text="Fit" Style="Flat" OnClicked="endurance.graph.fit"/>
+                                    <Button Text="Auto layout" Style="Flat" OnClicked="endurance.graph.layout"/>
+                                    <Label Name="endurance.summary" Text="5 steps · 2 agents · 1 write step" Class="data" TextSize="10" Slot.HAlign="Right" Slot.VAlign="Center"/>
+                                </HBox>
+                                <NodeGraph Name="endurance.graph" Slot.Fill="1" MinHeight="320" Slot.Padding="14,0" ReadOnly="false" AccessibleName="Endurance workflow canvas" AccessibleDescription="Agent and approval steps. Select a node to edit it; drag output to input to add dependencies. Delete removes the selected step."/>
+                                <Label Name="endurance.canvas.status" Text="Select a step to inspect it, or connect outputs to downstream inputs." Class="muted" TextSize="11" Wrap="true" Slot.Padding="18,8,18,14"/>
+                            </VBox>
+                            <VBox Slot.Title="YAML">
+                                <HBox Slot.Padding="14,10,14,8" Spacing="8">
+                                    <Label Name="endurance.yaml.path" Text="endurance/mission-1.yaml" Class="data" TextSize="10" Slot.Fill="1" Slot.VAlign="Center"/>
+                                    <Label Name="endurance.yaml.status" Text="Valid workflow · no cycles" Class="muted" TextSize="11" Slot.VAlign="Center"/>
+                                </HBox>
+                                <TextEditor Name="endurance.yaml" Slot.Fill="1" Slot.Padding="14,0,14,14" LineNumbers="true" Wrap="false" Placeholder="version: 1" AccessibleName="Endurance YAML editor"/>
+                            </VBox>
+                            <VBox Slot.Title="Runs">
+                                <HBox Slot.Fill="1">
+                                    <VBox Name="endurance.run.history" Width="230">
+                                        <Label Text="Run history" Class="section" Slot.Padding="14,14,14,8"/>
+                                        <ListView Name="endurance.run.list" Slot.Fill="1" OnActivated="endurance.run.open" Metric.BorderWidth="0" Metric.CornerRadius="0" AccessibleName="Endurance run history"/>
+                                    </VBox>
+                                    <VBox Slot.Fill="1">
+                                        <ComboBox Name="endurance.run.select" OnChanged="endurance.run.select" Visibility="Collapsed" Slot.Padding="12,10,12,0" AccessibleName="Select Endurance run"/>
+                                        <Border Class="section-header" Padding="16,12" BorderWidth="1">
+                                            <HBox Spacing="10">
+                                                <VBox Slot.Fill="1" Spacing="4">
+                                                    <Label Name="endurance.run.title" Text="No runs yet" TextSize="15"/>
+                                                    <Label Name="endurance.run.subtitle" Text="Run this workflow to create an inspectable execution." Class="muted" TextSize="11" Wrap="true"/>
+                                                </VBox>
+                                                <Button Name="endurance.run.stop" Text="Stop" Style="Flat" OnClicked="endurance.run.stop" Visibility="Collapsed" Slot.VAlign="Center"/>
+                                                <Button Name="endurance.run.resume" Text="Resume" Style="Flat" OnClicked="endurance.run.resume" Visibility="Collapsed" Slot.VAlign="Center"/>
+                                            </HBox>
+                                        </Border>
+                                        <Border Name="endurance.approval" Class="proposal" Padding="14" BorderWidth="1" Slot.Padding="14,10,14,0" Visibility="Collapsed" Appear="Fade">
+                                            <HBox Spacing="10">
+                                                <VBox Slot.Fill="1" Spacing="4">
+                                                    <Label Text="Implementation needs your approval" Class="proposal-title" Wrap="true"/>
+                                                    <Label Text="Research and review are complete. The next step can modify this workspace." Class="muted" TextSize="11" Wrap="true"/>
+                                                </VBox>
+                                                <Button Text="Reject" Style="Flat" OnClicked="endurance.approval.reject" Slot.VAlign="Center"/>
+                                                <Button Text="Continue" Style="Primary" OnClicked="endurance.approval.accept" Slot.VAlign="Center"/>
+                                            </HBox>
+                                        </Border>
+                                        <ScrollBox Slot.Fill="1">
+                                            <VBox Name="endurance.run.steps" Slot.Padding="16,12" Spacing="12"/>
+                                        </ScrollBox>
+                                    </VBox>
+                                </HBox>
+                            </VBox>
+                            <VBox Slot.Title="Live">
+                                <Border Class="tool-header" Padding="20,16" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                                    <HBox Spacing="14">
+                                        <VBox Slot.Fill="1" Spacing="5">
+                                            <Label Text="Mission control" TextSize="17"/>
+                                            <Label Name="graph.caption" Text="Lead standing by · no delegated missions" Class="muted" Wrap="true"/>
+                                        </VBox>
+                                        <Label Name="graph.state" Text="STANDBY" Class="data" TextSize="10" Slot.VAlign="Center"/>
+                                        <Button Text="Fit graph" Style="Flat" OnClicked="graph.fit" Slot.VAlign="Center" Tooltip="Frame the complete lineage"/>
+                                    </HBox>
+                                </Border>
+                                <NodeGraph Name="graph" Slot.Fill="1" MinHeight="320" Slot.Padding="14,0" ReadOnly="true" AccessibleName="Live agent lineage" AccessibleDescription="Orchestrator and delegated missions. Select a node for details; Fit graph frames the complete lineage."/>
+                                <Label Name="graph.selection" Text="Select a mission to inspect its role and status" Class="muted" TextSize="11" Wrap="true" Slot.Padding="18,10,18,16"/>
+                            </VBox>
+                        </TabView>
+                    </VBox>
+                    <TabView Name="more.tabs" Class="tabs" Slot.Title="More" Slot.Fill="1">
+                    <VBox Class="workspace" Slot.Title="Definitions">
+                        <Border Class="tool-header" Padding="18,14" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                            <HBox>
+                                <VBox Slot.Fill="1">
+                                    <Label Name="agent.title" Text="Select an agent" TextSize="17"/>
+                                    <Label Name="agent.path" Text=".agents/agents/*.md" Class="data" Font="monospace"/>
+                                </VBox>
+                                <HBox Spacing="7" Slot.VAlign="Center">
+                                    <Button Name="agent.delete" Text="Delete agent" Style="Flat" OnClicked="agent.delete" Tooltip="Permanently delete this custom agent"/>
+                                    <Button Text="Save agent" Style="Primary" OnClicked="agent.save" Slot.VAlign="Center"/>
+                                </HBox>
+                            </HBox>
+                        </Border>
+                        <TextEditor Name="agent.editor" Slot.Fill="1" Slot.Padding="14,0,14,14" Markdown="true" LineNumbers="true" Wrap="true" Placeholder="Select or create an agent definition"/>
+                    </VBox>
+                    <VBox Class="workspace" Slot.Title="Settings">
+                        <ScrollBox Slot.Fill="1">
+                            <VBox Slot.Padding="28,24" Spacing="22">
+                                <VBox Spacing="7">
+                                    <Label Text="Settings" TextSize="22"/>
+                                    <Label Text="Appearance, agent, and workspace preferences." Class="muted" Wrap="true"/>
+                                </VBox>
+
+                                <Border Class="section-header" Padding="20,18" BorderWidth="0" CornerRadius="10">
+                                    <VBox Spacing="16">
+                                        <Label Text="APPEARANCE" Class="section" Font="monospace"/>
+                                        <HBox Spacing="18">
+                                            <VBox Slot.Fill="1" Spacing="4">
+                                                <Label Text="Theme"/>
+                                                <Label Text="Restyle the workspace immediately." Class="muted" TextSize="11" Wrap="true"/>
+                                            </VBox>
+                                            <Button Name="settings.appearance.toggle" Text="Switch to light" Style="Flat" OnClicked="appearance.toggle" Slot.VAlign="Center"/>
+                                            <Button Name="settings.theme.gallery" Text="Choose a world" OnClicked="theme.browser" Width="150" Slot.VAlign="Center"/>
+                                        </HBox>
+                                        <HBox Spacing="10">
+                                            <VBox Slot.Fill="1" Spacing="4">
+                                                <Label Name="settings.interface.zoom" Text="Interface zoom · 115%"/>
+                                                <Label Text="Scale the complete interface." Class="muted" TextSize="11" Wrap="true"/>
+                                            </VBox>
+                                            <Button Text="Decrease" Style="Flat" OnClicked="settings.interface.decrease" Slot.VAlign="Center"/>
+                                            <Button Text="Reset" Style="Flat" OnClicked="settings.interface.reset" Slot.VAlign="Center"/>
+                                            <Button Text="Increase" Style="Flat" OnClicked="settings.interface.increase" Slot.VAlign="Center"/>
+                                        </HBox>
+                                        <HBox Spacing="10">
+                                            <VBox Slot.Fill="1" Spacing="4">
+                                                <Label Name="settings.editor.zoom" Text="Editor zoom · 100%"/>
+                                                <Label Text="Scale editors without changing the workspace chrome." Class="muted" TextSize="11" Wrap="true"/>
+                                            </VBox>
+                                            <Button Text="Decrease" Style="Flat" OnClicked="settings.editor.decrease" Slot.VAlign="Center"/>
+                                            <Button Text="Reset" Style="Flat" OnClicked="settings.editor.reset" Slot.VAlign="Center"/>
+                                            <Button Text="Increase" Style="Flat" OnClicked="settings.editor.increase" Slot.VAlign="Center"/>
+                                        </HBox>
+                                    </VBox>
+                                </Border>
+
+                                <Border Class="section-header" Padding="20,18" BorderWidth="0" CornerRadius="10">
+                                    <VBox Spacing="16">
+                                        <Label Text="AGENT WORKSPACE" Class="section" Font="monospace"/>
+                                        <HBox Spacing="18">
+                                            <VBox Slot.Fill="1" Spacing="4">
+                                                <Label Text="Agent harness"/>
+                                                <Label Text="Used for the next lead session." Class="muted" TextSize="11" Wrap="true"/>
+                                            </VBox>
+                                            <ComboBox Name="settings.harness" Items="Claude Code|Kimi Code" Selected="0" Width="150" OnChanged="settings.harness.changed" Slot.VAlign="Center"/>
+                                        </HBox>
+                                        <HBox Spacing="18">
+                                            <VBox Slot.Fill="1" Spacing="4">
+                                                <Label Text="Local vector recall"/>
+                                                <Label Text="Offline token and character matching. No model or network." Class="muted" TextSize="11" Wrap="true"/>
+                                            </VBox>
+                                            <Checkbox Name="settings.vector" Text="Enabled" Style="Switch" Checked="true" OnChanged="settings.vector" Slot.VAlign="Center"/>
+                                        </HBox>
+                                    </VBox>
+                                </Border>
+
+                                <Expander Name="settings.notifications.expander" Title="Notifications" Expanded="true">
+                                <Border Class="section-header" Padding="20,18" BorderWidth="0" CornerRadius="10">
+                                    <VBox Spacing="12">
+                                        <Label Text="Desktop alerts only. History stays in Alerts." Class="muted" TextSize="11" Wrap="true"/>
+                                        <Checkbox Name="settings.notifications.dnd" Text="Do not disturb" Style="Switch" OnChanged="alerts.dnd"/>
+                                        <Checkbox Name="settings.notifications.run" Text="Run results" Style="Switch" Checked="true" OnChanged="settings.notifications.run"/>
+                                        <Checkbox Name="settings.notifications.verification" Text="Verification failures" Style="Switch" Checked="true" OnChanged="settings.notifications.verification"/>
+                                        <Checkbox Name="settings.notifications.knowledge" Text="Knowledge review" Style="Switch" Checked="true" OnChanged="settings.notifications.knowledge"/>
+                                        <Checkbox Name="settings.notifications.mission" Text="Mission updates" Style="Switch" Checked="true" OnChanged="settings.notifications.mission"/>
+                                        <Checkbox Name="settings.notifications.autosave" Text="Autosave failures" Style="Switch" Checked="true" OnChanged="settings.notifications.autosave"/>
+                                    </VBox>
+                                </Border>
+                                </Expander>
+
+                                <Expander Name="settings.keyboard.expander" Title="Keyboard &amp; shortcuts" Expanded="true">
+                                <VBox Spacing="16">
+                                <Border Class="section-header" Padding="20,18" BorderWidth="0" CornerRadius="10">
+                                    <VBox Spacing="12">
+                                        <Label Text="CUSTOM SHORTCUTS" Class="section" Font="monospace"/>
+                                        <Label Text="Select an action, then Rebind. Ctrl, Alt, or Super is required." Class="muted" TextSize="11" Wrap="true"/>
+                                        <ComboBox Name="shortcut.action" Width="330" Items="Send to lead|Save active editor|New chat|Create agent|Create wiki note|Review knowledge|Review code|Accept proposal|Wiki preview|Command palette|Open workspace file|Search workspace content|Focus composer|Recall saved prompts|Open run setup|Open Knowledge|Open Memory Universe|Open theme gallery|Show or fold Files|Show or fold Panels|Open Settings" Selected="0" OnChanged="shortcut.changed" AccessibleName="Shortcut action"/>
+                                        <HBox Spacing="10">
+                                            <Label Name="shortcut.current" Text="Ctrl+Enter" Class="data" Font="monospace" Slot.Fill="1" Slot.VAlign="Center"/>
+                                            <Button Name="shortcut.rebind" Text="Rebind" Style="Primary" OnClicked="shortcut.rebind"/>
+                                            <Button Text="Reset" Style="Flat" OnClicked="shortcut.reset"/>
+                                        </HBox>
+                                    </VBox>
+                                </Border>
+
+                                <Border Class="section-header" Padding="20,18" BorderWidth="0" CornerRadius="10">
+                                    <VBox Spacing="12">
+                                        <Label Text="DEFAULT KEYBOARD REFERENCE" Class="section" Font="monospace" Slot.Padding="0,0,0,4"/>
+                                        <HBox><Label Text="Ctrl+," Class="data" Font="monospace" MinWidth="132"/><Label Text="Open or close Settings" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Esc" Class="data" Font="monospace" MinWidth="132"/><Label Text="Return from Settings" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+Enter" Class="data" Font="monospace" MinWidth="132"/><Label Text="Send to lead" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+L" Class="data" Font="monospace" MinWidth="132"/><Label Text="Focus the lead composer" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+R" Class="data" Font="monospace" MinWidth="132"/><Label Text="Recall saved prompts" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+Shift+E" Class="data" Font="monospace" MinWidth="132"/><Label Text="Open run setup" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+B" Class="data" Font="monospace" MinWidth="132"/><Label Text="Show or fold Files" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+Shift+B" Class="data" Font="monospace" MinWidth="132"/><Label Text="Show or fold Panels" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+S" Class="data" Font="monospace" MinWidth="132"/><Label Text="Save the active file, agent, or note" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+N" Class="data" Font="monospace" MinWidth="132"/><Label Text="Start a new conversation" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+Alt+A" Class="data" Font="monospace" MinWidth="132"/><Label Text="Create an agent" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+Shift+N" Class="data" Font="monospace" MinWidth="132"/><Label Text="Create a wiki note" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+K" Class="data" Font="monospace" MinWidth="132"/><Label Text="Open Knowledge" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+M" Class="data" Font="monospace" MinWidth="132"/><Label Text="Open Memory Universe" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+Shift+T" Class="data" Font="monospace" MinWidth="132"/><Label Text="Open the planet theme gallery" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+P" Class="data" Font="monospace" MinWidth="132"/><Label Text="Open wiki preview" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+Shift+P" Class="data" Font="monospace" MinWidth="132"/><Label Text="Open the command palette" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+Shift+O" Class="data" Font="monospace" MinWidth="132"/><Label Text="Open a workspace file" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+Shift+F" Class="data" Font="monospace" MinWidth="132"/><Label Text="Search text in the workspace" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+Shift+R" Class="data" Font="monospace" MinWidth="132"/><Label Text="Open the pending knowledge proposal" Slot.Fill="1"/></HBox>
+                                        <HBox><Label Text="Ctrl+Shift+D" Class="data" Font="monospace" MinWidth="132"/><Label Text="Review code changes and checkpoints" Slot.Fill="1"/></HBox>
+                                    </VBox>
+                                </Border>
+                                </VBox>
+                                </Expander>
+
+                                <HBox>
+                                    <Label Text="Saved automatically" Class="muted" TextSize="11" Slot.Fill="1" Slot.VAlign="Center"/>
+                                    <Button Name="settings.close" Text="Done" Style="Primary" OnClicked="settings.close" MinWidth="92"/>
+                                </HBox>
+                            </VBox>
+                        </ScrollBox>
+                    </VBox>
+                    <VBox Class="workspace" Slot.Title="Memory">
+                        <Border Class="section-header" Padding="20,14" BorderWidth="1" CornerRadius="12" Slot.Padding="18,14">
+                            <HBox Spacing="18">
+                                <VBox Slot.Fill="1" Spacing="5">
+                                    <Label Text="Memory Universe" TextSize="22"/>
+                                    <Label Text="Reviewed episodes orbit the workspace; entities and relations form the outer systems." Class="muted" Wrap="true"/>
+                                    <Label Name="memory.stats" Text="0 episodes · 0 entities · 0 relations" Class="data" Font="monospace" TextSize="11"/>
+                                </VBox>
+                                <Button Text="Fit universe" Style="Flat" OnClicked="memory.fit" Slot.VAlign="Center" Tooltip="Frame every memory (0)"/>
+                                <Button Text="Open Knowledge" Style="Flat" OnClicked="knowledge.open_tab" Slot.VAlign="Center"/>
+                            </HBox>
+                        </Border>
+                        <Custom Name="memory.canvas" Slot.Fill="1" MinHeight="320" Slot.Padding="18,0" Tooltip="Drag to pan, scroll to zoom, and select a planet to inspect its memory"/>
+                        <Border Name="memory.details" Class="section-header" Padding="18,14" BorderWidth="1" CornerRadius="12" Slot.Padding="18,14,18,18" Visibility="Collapsed" Appear="Fade">
+                            <VBox Spacing="10">
+                                <ScrollBox Height="220">
+                                    <Label Name="memory.detail" Markdown="true" Wrap="true"/>
+                                </ScrollBox>
+                                <HBox>
+                                    <Spacer Slot.Fill="1"/>
+                                    <Button Name="memory.forget" Text="Forget memory" Style="Flat" OnClicked="memory.forget" Tooltip="Delete this accepted memory and its touching relations" Enabled="false"/>
+                                </HBox>
+                            </VBox>
+                        </Border>
+                    </VBox>
+                    <VBox Class="workspace" Slot.Title="Worktrees">
+                        <Border Class="tool-header" Padding="20,16" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                            <HBox Spacing="14">
+                                <VBox Slot.Fill="1" Spacing="5">
+                                    <Label Text="Isolated worktrees" TextSize="17"/>
+                                    <Label Name="mission.summary" Text="Create a Git worktree, then review exactly what returns to this workspace." Class="muted" Wrap="true"/>
+                                </VBox>
+                                <Button Name="mission.return" Text="Return to workspace" Style="Flat" OnClicked="mission.return" Visibility="Collapsed" Slot.VAlign="Center"/>
+                            </HBox>
+                        </Border>
+                        <HBox Slot.Padding="14,0,14,10" Spacing="8">
+                            <TextInput Name="mission.title" Placeholder="Describe an isolated task…" Slot.Fill="1"/>
+                            <ComboBox Name="mission.repo" Width="250" Tooltip="Repository for the isolated worktree" AccessibleName="Mission repository"/>
+                            <Button Name="mission.create" Text="Create and run" Style="Primary" OnClicked="mission.create"/>
+                        </HBox>
+                        <Label Name="mission.empty" Text="No missions yet. Describe an isolated task above to create a Git worktree." Class="muted" Wrap="true" Slot.Padding="14,4,14,12"/>
+                        <ListView Name="mission.list" Height="140" OnActivated="mission.review" Slot.Padding="14,0,14,8" Metric.BorderWidth="0" Metric.CornerRadius="0" AccessibleName="Git missions" Visibility="Collapsed"/>
+                        <HBox Name="mission.hunks.row" Slot.Padding="14,0,14,8" Spacing="8" Visibility="Collapsed">
+                            <ComboBox Name="mission.hunks" Slot.Fill="1" Tooltip="Mission hunk to apply" AccessibleName="Mission diff hunk"/>
+                            <Button Name="mission.apply_hunk" Text="Apply hunk" Style="Flat" OnClicked="mission.apply_hunk"/>
+                        </HBox>
+                        <HBox Name="mission.actions.row" Slot.Padding="14,0,14,8" Spacing="8" Visibility="Collapsed">
+                            <Button Name="mission.review" Text="Refresh diff" Style="Flat" OnClicked="mission.review"/>
+                            <Spacer Slot.Fill="1"/>
+                            <Button Name="mission.discard" Text="Discard mission" Style="Flat" OnClicked="mission.discard"/>
+                            <Button Name="mission.apply" Text="Apply to workspace" Style="Primary" OnClicked="mission.apply"/>
+                        </HBox>
+                        <TextEditor Name="mission.diff" Slot.Fill="1" Slot.Padding="14,0,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Select a mission to inspect its complete diff" Visibility="Collapsed"/>
+                    </VBox>
+                    </TabView>
+                    <TabView Name="review.tabs" Class="tabs" Slot.Title="Review" Slot.Fill="1">
+                        <VBox Class="workspace" Slot.Title="Code changes">
+                            <Border Class="tool-header" Padding="20,16" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                                <VBox Spacing="5">
+                                    <Label Name="checkpoint.title" Text="No checkpoints yet" TextSize="17" Wrap="true"/>
+                                    <Label Name="checkpoint.summary" Text="Complete a Build run to create a checkpoint. Diffs, hunk restores, and verification results will appear here." Class="muted" Wrap="true"/>
+                                </VBox>
+                            </Border>
+                            <HBox Name="checkpoint.history.row" Slot.Padding="14,0,14,8" Spacing="8" Visibility="Collapsed">
+                                <ComboBox Name="checkpoint.history" Slot.Fill="1" OnChanged="checkpoint.history_changed" Tooltip="Task checkpoint to inspect" AccessibleName="Task checkpoint"/>
+                                <Button Name="checkpoint.restore" Text="Restore task" Style="Flat" OnClicked="checkpoint.restore" Tooltip="Restore files to their state before this task"/>
+                            </HBox>
+                            <HBox Name="checkpoint.files.row" Slot.Padding="14,0,14,10" Spacing="8" Visibility="Collapsed">
+                                <ComboBox Name="checkpoint.files" Slot.Fill="1" OnChanged="checkpoint.file_changed" Tooltip="Changed file to inspect" AccessibleName="Changed file"/>
+                                <Button Name="checkpoint.open" Text="Open file" Style="Flat" OnClicked="checkpoint.open" Tooltip="Open the selected file in Editor"/>
+                            </HBox>
+                            <HBox Name="checkpoint.hunks.row" Slot.Padding="14,0,14,10" Spacing="8" Visibility="Collapsed">
+                                <ComboBox Name="checkpoint.hunks" Slot.Fill="1" Tooltip="Diff hunk to restore" AccessibleName="Checkpoint diff hunk"/>
+                                <Button Name="checkpoint.restore_hunk" Text="Restore hunk" Style="Flat" OnClicked="checkpoint.restore_hunk" Tooltip="Restore only the selected hunk after validating its file"/>
+                            </HBox>
+                            <TabView Name="checkpoint.content.tabs" Class="tabs" Slot.Fill="1" Visibility="Collapsed">
+                                <TextEditor Name="checkpoint.diff" Slot.Title="Diff" Slot.Fill="1" Slot.Padding="14,10,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Complete an agent run to inspect source changes here"/>
+                                <VBox Slot.Title="Verification">
+                                    <ListView Name="verification.results" Height="140" OnActivated="verification.open" Slot.Padding="14,8,14,6" Metric.BorderWidth="0" Metric.CornerRadius="0" AccessibleName="Build and test results"/>
+                                    <HBox Name="verification.actions.row" Slot.Padding="14,0,14,8" Spacing="8">
+                                        <Button Name="verification.rerun" Text="Rerun check" Style="Flat" OnClicked="verification.rerun"/>
+                                        <Button Name="verification.watch" Text="Watch checks" Style="Flat" OnClicked="verification.watch" Tooltip="Rerun the selected check after autosave"/>
+                                        <Label Name="verification.run_state" Class="muted" TextSize="11" Slot.Fill="1" Slot.VAlign="Center"/>
+                                    </HBox>
+                                    <HBox Name="verification.diagnostics.row" Slot.Padding="14,0,14,8" Spacing="8">
+                                        <ComboBox Name="verification.diagnostics" Slot.Fill="1" Tooltip="Diagnostic to inspect" AccessibleName="Verification diagnostic"/>
+                                        <Button Name="verification.open_diagnostic" Text="Open diagnostic" Style="Flat" OnClicked="verification.open_diagnostic" Tooltip="Open the diagnostic at its source line"/>
+                                    </HBox>
+                                    <TextEditor Name="verification.detail" Slot.Fill="1" Slot.Padding="14,10,14,14" ReadOnly="true" LineNumbers="true" Wrap="true" Placeholder="Build and test commands from the agent run will appear here"/>
+                                </VBox>
+                            </TabView>
+                        </VBox>
+                        <VBox Class="workspace" Slot.Title="Knowledge">
+                            <Border Class="tool-header" Padding="20,16" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                                <VBox Spacing="5">
+                                    <Label Name="proposal.title" Text="No pending proposal" TextSize="17" Wrap="true"/>
+                                    <Label Name="proposal.files" Class="muted" Wrap="true"/>
+                                </VBox>
+                            </Border>
+                            <TextEditor Name="proposal.diff" Slot.Fill="1" Slot.Padding="14,0,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="A completed run can produce a reviewed wiki proposal here"/>
+                            <HBox Slot.Padding="18,14" Spacing="10">
+                                <Label Text="Validated against current files before writing" Class="muted" Slot.Fill="1" Slot.VAlign="Center"/>
+                                <Button Text="Discard" Style="Flat" OnClicked="proposal.discard"/>
+                                <Button Name="proposal.accept" Text="Accept and write" Style="Primary" OnClicked="proposal.accept"/>
+                            </HBox>
+                        </VBox>
+                    </TabView>
+                </TabView>
+            </VBox>
+
+            <VBox Name="right.sidebar" Class="surface" Slot.Fill="0.21" MinWidth="300" MaxWidth="380" Appear="SlideLeft">
+                <TabView Name="right.tabs" Class="tabs" Slot.Fill="1" OnChanged="wiki.view">
+                    <ScrollBox Slot.Title="Run">
+                        <VBox Slot.Padding="12,14" Spacing="12">
+                            <Border Class="activity" Padding="14" BorderWidth="1" CornerRadius="14">
+                                <VBox Spacing="11">
+                                    <HBox>
+                                        <Label Text="Orchestrator" TextSize="15" Slot.Fill="1"/>
+                                        <Label Name="activity.lead" Text="Ready" Class="muted" TextSize="11" Slot.VAlign="Center"/>
+                                    </HBox>
+                                    <Label Name="activity.harness" Text="Claude Code · workspace session" Class="muted" TextSize="11" Wrap="true"/>
+                                    <Label Name="activity.action" Text="Waiting for a task" TextSize="11" Wrap="true"/>
+                                    <Label Name="run.usage" Text="Run cost · no runs yet" Class="data" Font="monospace" TextSize="11" Wrap="true"/>
+                                    <Separator/>
+                                    <Label Name="graph.summary" Text="Lineage · no subagents" Class="section" TextSize="11" Visibility="Collapsed"/>
+                                    <Label Name="activity.empty" Text="Delegated work appears here." Class="muted" TextSize="11" Wrap="true"/>
+                                    <VBox Name="activity.rows" Spacing="10"/>
+                                    <Button Name="graph.toggle" Text="Open mission control" Style="Flat" OnClicked="graph.toggle" Visibility="Collapsed" Slot.HAlign="Right"/>
+                                </VBox>
+                            </Border>
+                            <Border Name="checkpoint.bar" Class="activity" Padding="14" Visibility="Collapsed" BorderWidth="1" Appear="Fade">
+                                <VBox Spacing="9">
+                                    <Label Name="checkpoint.notice.title" Text="Code changes ready" Class="section"/>
+                                    <Label Name="checkpoint.notice" Wrap="true"/>
+                                    <Button Text="Review results" Style="Flat" OnClicked="checkpoint.review"/>
+                                </VBox>
+                            </Border>
+                            <Border Name="proposal.bar" Class="proposal" Padding="14" Visibility="Collapsed" BorderWidth="1" Appear="Fade">
+                                <VBox Spacing="9">
+                                    <Label Text="Wiki review ready" Class="section proposal-title"/>
+                                    <Label Name="proposal.summary" Wrap="true"/>
+                                    <Button Text="Review proposed edits" Style="Primary" OnClicked="proposal.open"/>
+                                </VBox>
+                            </Border>
+                        </VBox>
+                    </ScrollBox>
+                    <VBox Slot.Title="Wiki">
+                        <Border Class="section-header wiki-chrome" Padding="16,12" BorderWidth="1">
+                            <HBox>
+                                <VBox Slot.Fill="1">
+                                    <Label Name="note.title" Text="Select a note" TextSize="17" Wrap="true"/>
+                                    <Label Name="note.path" Text="wiki/*.md" Class="data" Font="monospace"/>
+                                </VBox>
+                                <Button Text="Save note" Style="Primary" OnClicked="wiki.save" Slot.VAlign="Center"/>
+                            </HBox>
+                        </Border>
+                        <TabView Name="wiki.tabs" Class="tabs" Slot.Fill="1">
+                            <TextEditor Name="note.editor" Slot.Title="Edit" Markdown="true" Wrap="true" Metric.BorderWidth="0" Metric.CornerRadius="0" Placeholder="Select or create a workspace note"/>
+                            <ScrollBox Slot.Title="Preview">
+                                <Label Name="note.preview" Markdown="true" Wrap="true" Slot.Padding="18,16"/>
+                            </ScrollBox>
+                        </TabView>
+                        <Border Class="section-header wiki-chrome" Padding="16,12" BorderWidth="1">
+                            <Label Name="note.links" Text="Backlinks: none" Class="muted" TextSize="11" Wrap="true"/>
+                        </Border>
+                    </VBox>
+                    <VBox Slot.Title="Graph">
+                        <Border Class="section-header wiki-chrome" Padding="16,12" BorderWidth="1">
+                            <VBox Spacing="9">
+                                <TextInput Name="knowledge.search" Placeholder="Search entities and relations…" OnCommitted="knowledge.search"/>
+                                <Label Name="knowledge.stats" Text="0 entities · 0 relations" Class="muted" TextSize="11" Wrap="true"/>
+                            </VBox>
+                        </Border>
+                        <ListView Name="knowledge.results" Slot.Fill="0.46" OnActivated="knowledge.open" Slot.Padding="10,8"/>
+                        <ScrollBox Slot.Fill="0.54">
+                            <Label Name="knowledge.detail" Text="Select an entity or relation to inspect its provenance." Markdown="true" Wrap="true" Class="muted" Slot.Padding="16,12"/>
+                        </ScrollBox>
+                        <HBox Slot.Padding="12,0,12,10">
+                            <Spacer Slot.Fill="1"/>
+                            <Button Name="knowledge.forget" Text="Forget selected record" Style="Flat" OnClicked="memory.forget" Enabled="false"/>
+                        </HBox>
+                    </VBox>
+                    <VBox Slot.Title="Log" Slot.Padding="12" Spacing="10">
+                        <HBox Spacing="10">
+                            <VBox Slot.Fill="1" Spacing="3">
+                                <Label Text="NOTIFICATIONS" Class="section" Font="monospace"/>
+                                <Label Text="History stays here even when OS alerts are muted." Class="muted" TextSize="11" Wrap="true"/>
+                            </VBox>
+                            <Checkbox Name="alerts.dnd" Text="Do not disturb" Style="Switch" OnChanged="alerts.dnd" Slot.VAlign="Center"/>
+                        </HBox>
+                        <HBox Spacing="8">
+                            <Button Name="alerts.open" Text="Open" Style="Primary" OnClicked="alerts.open" Enabled="false" Slot.Fill="1"/>
+                            <Button Name="alerts.clear" Text="Clear" Style="Flat" OnClicked="alerts.clear" Slot.Fill="1"/>
+                        </HBox>
+                        <ListView Name="alerts.list" Slot.Fill="0.55" AccessibleName="Notification history"/>
+                        <ScrollBox Slot.Fill="0.45">
+                            <Label Name="alerts.detail" Text="Run results, verification failures, knowledge reviews, and mission updates will appear here." Class="muted" Wrap="true" Slot.Padding="6"/>
+                        </ScrollBox>
+                    </VBox>
+                    <ScrollBox Slot.Title="Step">
+                        <VBox Slot.Padding="14,16" Spacing="13">
+                            <VBox Spacing="5">
+                                <Label Name="endurance.step.title" Text="Select a step" TextSize="16"/>
+                                <Label Name="endurance.step.description" Text="Choose a node on the Endurance canvas to edit its execution contract." Class="muted" TextSize="11" Wrap="true"/>
+                            </VBox>
+                            <Separator/>
+                            <VBox Spacing="9">
+                                <Label Text="Definition" Class="section"/>
+                                <Label Text="Step ID" Class="muted" TextSize="10"/>
+                                <TextInput Name="endurance.step.name" OnCommitted="endurance.step.changed" AccessibleName="Step identifier"/>
+                                <Label Text="Agent" Class="muted" TextSize="10"/>
+                                <ComboBox Name="endurance.step.agent" OnChanged="endurance.step.changed" AccessibleName="Step agent"/>
+                                <Label Text="Harness" Class="muted" TextSize="10"/>
+                                <ComboBox Name="endurance.step.harness" Items="Inherit|Claude Code|Kimi Code" Selected="0" OnChanged="endurance.step.changed" AccessibleName="Step harness"/>
+                                <Label Text="Mode" Class="muted" TextSize="10"/>
+                                <ComboBox Name="endurance.step.mode" Items="Build|Ask|Review" Selected="1" OnChanged="endurance.step.changed" AccessibleName="Step mode"/>
+                                <Label Text="Isolation" Class="muted" TextSize="10"/>
+                                <ComboBox Name="endurance.step.isolation" Items="Workspace|Git worktree" Selected="0" OnChanged="endurance.step.changed" AccessibleName="Step isolation"/>
+                            </VBox>
+                            <Separator/>
+                            <VBox Spacing="6">
+                                <Label Text="Dependencies" Class="section"/>
+                                <Label Name="endurance.step.needs" Text="None · entry step" Class="muted" TextSize="11" Wrap="true"/>
+                            </VBox>
+                            <Separator/>
+                            <VBox Spacing="7">
+                                <Label Text="Prompt" Class="section"/>
+                                <TextEditor Name="endurance.step.prompt" Height="140" Wrap="true" OnChanged="endurance.step.changed" Placeholder="Describe this step and reference inputs or previous outputs…" AccessibleName="Step prompt"/>
+                            </VBox>
+                            <HBox Spacing="8">
+                                <VBox Slot.Fill="1" Spacing="5">
+                                    <Label Text="Timeout" Class="muted" TextSize="10"/>
+                                    <ComboBox Name="endurance.step.timeout" Items="5 minutes|15 minutes|30 minutes|60 minutes" Selected="1" OnChanged="endurance.step.changed" AccessibleName="Step timeout"/>
+                                </VBox>
+                                <VBox Slot.Fill="1" Spacing="5">
+                                    <Label Text="Retries" Class="muted" TextSize="10"/>
+                                    <ComboBox Name="endurance.step.retries" Items="0|1|2" Selected="0" OnChanged="endurance.step.changed" AccessibleName="Step retries"/>
+                                </VBox>
+                            </HBox>
+                            <HBox Spacing="7">
+                                <Button Text="Duplicate" Style="Flat" OnClicked="endurance.step.duplicate"/>
+                                <Button Text="Delete" Style="Flat" OnClicked="endurance.step.delete"/>
+                            </HBox>
+                        </VBox>
+                    </ScrollBox>
+                </TabView>
+            </VBox>
+        </Splitter>
+
+        <Border Class="statusbar" Padding="14,8" BorderWidth="1">
+            <HBox>
+                <Label Name="status" Text="Opening workspace…" Class="muted" TextSize="11" Slot.Fill="1" Slot.VAlign="Center"/>
+                <Button Name="theme.current" Style="Flat" OnClicked="theme.browser" Width="210" Slot.HAlign="Right" Tooltip="Open the planet theme gallery" AccessibleName="Choose color theme">
+                    <HBox Spacing="9" Slot.VAlign="Center">
+                        <Custom Name="theme.current.art" Width="26" Height="26" HitTestable="false" AccessibleHidden="true"/>
+                        <Label Name="theme.current.label" Text="Earth Dark" Slot.VAlign="Center"/>
+                    </HBox>
+                </Button>
+            </HBox>
+        </Border>
+    </VBox>
+    <Border Name="theme.gallery" Class="workspace gallery-backdrop" Slot.Fill="1" Padding="34,26" BorderWidth="0" Visibility="Collapsed" Appear="Fade">
+        <VBox Spacing="18">
+            <HBox>
+                <Label Text="Choose your world" TextSize="24" Slot.Fill="1" Slot.VAlign="Center"/>
+                <Button Name="theme.gallery.close" Text="Close" Style="Flat" OnClicked="theme.gallery.close" Slot.VAlign="Center"/>
+            </HBox>
+            <Custom Name="theme.carousel" Slot.Fill="1" MinHeight="240" AccessibleName="World previews"
+                    AccessibleDescription="Choose a world. Left and right arrows browse planets; up and down arrows change Dark, Light, or Glass."/>
+            <VBox Spacing="8">
+                <Label Name="theme.gallery.family" Text="Earth" TextSize="26" TextAlign="Center"/>
+                <Label Name="theme.gallery.position" Text="1 / 5" Class="muted" TextAlign="Center"/>
+            </VBox>
+            <HBox Spacing="8" Slot.HAlign="Center">
+                <Button Name="theme.gallery.dark" Text="Dark" Style="Primary" OnClicked="theme.gallery.dark" Width="104"/>
+                <Button Name="theme.gallery.light" Text="Light" Style="Flat" OnClicked="theme.gallery.light" Width="104"/>
+                <Button Name="theme.gallery.glass" Text="Glass" Style="Flat" OnClicked="theme.gallery.glass" Width="104"/>
+            </HBox>
+            <HBox>
+                <Button Name="theme.gallery.previous" Text="Previous" Style="Flat" OnClicked="theme.gallery.previous"/>
+                <Label Text="← →  Worlds     ↑ ↓  Finish     Esc  Close" Class="muted" TextAlign="Center" Slot.Fill="1" Slot.VAlign="Center"/>
+                <Button Name="theme.gallery.next" Text="Next" Style="Flat" OnClicked="theme.gallery.next"/>
+            </HBox>
+        </VBox>
+    </Border>
+    <Border Name="run.setup" Class="activity" Width="390" Padding="16" BorderWidth="1" CornerRadius="14" Shadow="28,0,10"
+            Slot.HAlign="Center" Slot.VAlign="Bottom" Slot.Padding="12,0,12,92" Visibility="Collapsed" Appear="FlyUp">
+        <VBox Spacing="12">
+            <HBox>
+                <Label Text="Run setup" TextSize="16" Slot.Fill="1" Slot.VAlign="Center"/>
+                <Button Text="Done" Style="Flat" OnClicked="run.setup.close" Slot.VAlign="Center"/>
+            </HBox>
+            <HBox Spacing="12">
+                <Label Text="Model" Class="muted" MinWidth="70" Slot.VAlign="Center"/>
+                <ComboBox Name="model.select" Items="Default model|Sonnet|Opus|Haiku" Selected="0" Width="240" OnChanged="model.changed" Tooltip="Model for the next lead run" AccessibleName="Model"/>
+            </HBox>
+            <HBox Spacing="12">
+                <Label Text="Effort" Class="muted" MinWidth="70" Slot.VAlign="Center"/>
+                <ComboBox Name="effort.select" Items="Default effort|Low|Medium|High|XHigh|Max" Selected="0" Width="240" OnChanged="effort.changed" Tooltip="Reasoning effort for the next lead run" AccessibleName="Reasoning effort"/>
+            </HBox>
+            <HBox Spacing="12">
+                <Label Text="Harness" Class="muted" MinWidth="70" Slot.VAlign="Center"/>
+                <ComboBox Name="harness" Items="Claude Code|Kimi Code" Selected="0" Width="240" OnChanged="harness.changed" Tooltip="Harness for new lead sessions"/>
+            </HBox>
+            <HBox Spacing="12">
+                <Label Text="Mode" Class="muted" MinWidth="70" Slot.VAlign="Center"/>
+                <ComboBox Name="run.mode" Items="Build|Ask|Review" Selected="0" Width="240" OnChanged="run.mode.changed" Tooltip="Build changes code; Ask and Review are read-only" AccessibleName="Run mode"/>
+            </HBox>
+        </VBox>
+    </Border>
+    <Border Name="recall.palette" Class="activity" Width="680" Padding="18" BorderWidth="1" CornerRadius="16" Shadow="28,0,10"
+            Slot.HAlign="Center" Slot.VAlign="Bottom" Slot.Padding="12,0,12,92" Visibility="Collapsed" Appear="FlyUp">
+        <VBox Spacing="10">
+            <HBox Spacing="12">
+                <Image Source="icons/recall.png" Width="18" Height="18" TintText="true" AccessibleHidden="true" Slot.VAlign="Center"/>
+                <VBox Slot.Fill="1" Spacing="3">
+                    <Label Text="Recall" TextSize="17"/>
+                    <Label Text="Your prompts, ready to reuse." Class="muted" TextSize="11"/>
+                </VBox>
+                <Button Text="Close" Style="Flat" OnClicked="recall.close" Slot.VAlign="Center"/>
+            </HBox>
+            <TextInput Name="recall.search" Placeholder="Search saved prompts…" OnChanged="recall.changed" AccessibleName="Search saved prompts"/>
+            <ListView Name="recall.results" Height="300" OnActivated="recall.use" Metric.BorderWidth="0" Metric.CornerRadius="0" AccessibleName="Saved prompt recommendations"/>
+            <HBox Spacing="8">
+                <Button Name="recall.pin" Text="Pin" Style="Flat" OnClicked="recall.pin" Enabled="false"/>
+                <Button Name="recall.erase" Text="Forget" Style="Flat" OnClicked="recall.erase" Enabled="false"/>
+                <Label Name="recall.status" Class="muted" TextSize="11" Wrap="true" Slot.Fill="1" Slot.VAlign="Center" Slot.HAlign="Right"/>
+            </HBox>
+        </VBox>
+    </Border>
+    <Border Name="command.palette" Class="activity" Width="640" Padding="18" BorderWidth="1" CornerRadius="16" Shadow="28,0,10"
+            Slot.HAlign="Center" Slot.VAlign="Top" Slot.Padding="12,72,12,0" Visibility="Collapsed" Appear="FlyDown">
+        <VBox Spacing="10">
+            <HBox Spacing="12">
+                <Image Source="icons/search.png" Width="17" Height="17" TintText="true" AccessibleHidden="true" Slot.VAlign="Center"/>
+                <Label Name="palette.title" Text="Command palette" TextSize="17" Slot.Fill="1" Slot.VAlign="Center"/>
+                <Button Text="Close" Style="Flat" OnClicked="palette.close" Slot.VAlign="Center"/>
+            </HBox>
+            <TextInput Name="palette.search" Placeholder="Type a command…" AccessibleName="Command and workspace search"/>
+            <ListView Name="palette.results" Height="360" OnActivated="palette.open" Metric.BorderWidth="0" Metric.CornerRadius="0" AccessibleName="Search results"/>
+            <Label Name="palette.status" Class="muted" TextSize="11" Wrap="true"/>
+        </VBox>
+    </Border>
+    <Overlay Name="splash.container" Slot.Fill="1">
+        <Custom Name="splash.screen" Slot.Fill="1" AccessibleName="Stellar opening"
+                AccessibleDescription="The complete Do not go gentle into that good night poem by Dylan Thomas with an original instrumental score. Activate Skip, click anywhere, or press Enter, Space, or Escape to enter Stellar."/>
+        <HBox Slot.HAlign="Left" Slot.VAlign="Bottom" Slot.Padding="48,0,0,40" Spacing="10">
+            <Overlay Width="36" Height="36" Slot.VAlign="Center">
+                <Button Name="splash.sound" Text="" Width="36" Height="36" Style="Flat" OnClicked="splash.sound"
+                        Tooltip="Mute the original score" AccessibleName="Mute original score"/>
+                <Image Name="splash.sound.on" Source="icons/sound.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                <Image Name="splash.sound.off" Source="icons/mute.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center" Visibility="Collapsed"/>
+            </Overlay>
+            <Label Name="splash.sound.title" Text="Do Not Go Gentle · Original score" Class="muted" TextSize="10" Slot.VAlign="Center"/>
+        </HBox>
+        <Button Name="splash.skip" Text="Skip" Style="Flat" OnClicked="splash.skip" Width="92" Height="36"
+                Slot.HAlign="Right" Slot.VAlign="Bottom" Slot.Padding="0,0,52,42"
+                Tooltip="Skip the opening and enter Stellar" AccessibleName="Skip opening"/>
+    </Overlay>
+    </Overlay>
+</Window>
