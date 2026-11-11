@@ -1427,8 +1427,10 @@ void App::reset_session() {
     activity_count_ = 0;
     activity_failed_ = 0;
     saw_delta_ = false;
-    proposal_.reset();
-    Rwidget_set_visibility(id("proposal.bar"), R_COLLAPSED);
+    // A pending knowledge proposal belongs to the workspace, not to the conversation: starting or
+    // switching chats keeps it, including its unreviewed wiki edits (only graph writes are stored
+    // on disk, so resetting it here silently dropped the Markdown changes).
+    Rwidget_set_visibility(id("proposal.bar"), proposal_ ? R_VISIBLE : R_COLLAPSED);
     Rwidget_clear_children(id("transcript"));
     add_message("READY",
         "Describe a change or ask about this workspace. Stellar will inspect the code, implement what is needed, run relevant checks, and report the result.");
@@ -3801,6 +3803,8 @@ void App::open_workspace_path(const std::filesystem::path& path) {
         finish_checkpoint("stopped");
         wiki_process_.stop();
         save_profile();
+        // A proposal targets the old workspace's wiki; the new one reloads its own staged writes.
+        proposal_.reset();
         workspace_ = Workspace(path);
         workspace_.initialize();
         selected_checkpoint_id_.clear();
