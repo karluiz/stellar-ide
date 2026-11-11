@@ -82,8 +82,8 @@
                         <Button Name="threads.archive" Text="" Width="36" Height="34" Style="Flat" OnClicked="thread.archive" Tooltip="Archive selected conversation" AccessibleName="Archive selected conversation"/>
                         <Image Source="icons/archive.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
                     </Overlay>
-                    <Button Name="agents.new" Text="New" Style="Flat" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)" Visibility="Collapsed"/>
-                    <Button Name="notes.new" Text="New" Style="Flat" OnClicked="wiki.new" Tooltip="Create a Markdown note (Ctrl+Shift+N)" Visibility="Collapsed"/>
+                    <Button Name="agents.new" Text="New" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)" Visibility="Collapsed"/>
+                    <Button Name="notes.new" Text="New" OnClicked="wiki.new" Tooltip="Create a Markdown note (Ctrl+Shift+N)" Visibility="Collapsed"/>
                 </HBox>
                 <HBox Name="navigation.search.row" Spacing="8" Slot.Padding="14,4,14,6">
                     <Image Source="icons/search.png" Width="16" Height="16" TintText="true" AccessibleHidden="true" Slot.VAlign="Center"/>
@@ -119,7 +119,7 @@
                                         <Label Name="queue.state" Text="Follow-up queued" Class="section" Wrap="true"/>
                                         <Label Name="queue.prompt" Class="muted" TextSize="11" Wrap="true"/>
                                     </VBox>
-                                    <Button Name="queue.review" Text="Review knowledge" Style="Flat" OnClicked="proposal.open" Visibility="Collapsed" Slot.VAlign="Center"/>
+                                    <Button Name="queue.review" Text="Review knowledge" OnClicked="proposal.open" Visibility="Collapsed" Slot.VAlign="Center"/>
                                     <Button Text="Cancel" Style="Flat" OnClicked="queue.cancel" Tooltip="Remove the queued follow-up" Slot.VAlign="Center"/>
                                 </HBox>
                             </Border>
@@ -152,7 +152,7 @@
                                             <Button Name="recall.open" Text="" Width="36" Height="34" Style="Flat" OnClicked="recall.open" Tooltip="Recall saved prompts (Ctrl+R)" AccessibleName="Recall saved prompts"/>
                                             <Image Source="icons/recall.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
                                         </Overlay>
-                                        <Button Name="context.compact" Text="Compact" Style="Flat" OnClicked="context.compact" Tooltip="Keep the task and recent messages for the next session" Visibility="Collapsed" Slot.VAlign="Center"/>
+                                        <Button Name="context.compact" Text="Compact" OnClicked="context.compact" Tooltip="Keep the task and recent messages for the next session" Visibility="Collapsed" Slot.VAlign="Center"/>
                                         <Spacer Slot.Fill="1"/>
                                         <Overlay Width="36" Height="34">
                                             <Button Name="run.send" Text="" Width="36" Height="34" Style="Flat" Class="send-button" OnClicked="run.send" Tooltip="Send to lead (Enter)" AccessibleName="Send to lead"/>
@@ -189,14 +189,14 @@
                                         <Label Name="endurance.title" Text="Ship with confidence" TextSize="17"/>
                                         <Label Name="endurance.save" Text="Saved to endurance/mission-1.yaml" Class="muted" TextSize="11" Wrap="true"/>
                                     </VBox>
-                                    <Button Name="endurance.recurrence.toggle" Text="Recurrence" Style="Flat" OnClicked="endurance.recurrence.toggle" Slot.VAlign="Center"/>
-                                    <Button Text="Validate" Style="Flat" OnClicked="endurance.validate" Slot.VAlign="Center"/>
+                                    <Button Name="endurance.recurrence.toggle" Text="Recurrence" OnClicked="endurance.recurrence.toggle" Slot.VAlign="Center"/>
+                                    <Button Text="Validate" OnClicked="endurance.validate" Slot.VAlign="Center"/>
                                     <Button Name="endurance.run" Text="Run workflow" Style="Primary" OnClicked="endurance.run" Slot.VAlign="Center"/>
                                 </HBox>
                                 <HBox Spacing="7">
                                     <ComboBox Name="endurance.workflow" Width="230" OnChanged="endurance.workflow" Tooltip="Workflows stored in endurance/*.yaml" AccessibleName="Endurance workflow"/>
-                                    <Button Text="New" Style="Flat" OnClicked="endurance.new" Tooltip="Create a workflow"/>
-                                    <Button Text="Duplicate" Style="Flat" OnClicked="endurance.duplicate" Tooltip="Duplicate this workflow"/>
+                                    <Button Text="New" OnClicked="endurance.new" Tooltip="Create a workflow"/>
+                                    <Button Text="Duplicate" OnClicked="endurance.duplicate" Tooltip="Duplicate this workflow"/>
                                     <TextInput Name="endurance.input" Placeholder="Task for this manual run…" Slot.Fill="1" AccessibleName="Manual workflow task"/>
                                 </HBox>
                             </VBox>
@@ -228,9 +228,9 @@
                         <TabView Name="endurance.views" Class="tabs" Slot.Fill="1" OnChanged="endurance.view">
                             <VBox Slot.Title="Canvas">
                                 <HBox Slot.Padding="14,4,14,10" Spacing="7">
-                                    <Button Text="Add step" Style="Flat" OnClicked="endurance.step.add"/>
-                                    <Button Text="Fit" Style="Flat" OnClicked="endurance.graph.fit"/>
-                                    <Button Text="Auto layout" Style="Flat" OnClicked="endurance.graph.layout"/>
+                                    <Button Text="Add step" OnClicked="endurance.step.add"/>
+                                    <Button Text="Fit" OnClicked="endurance.graph.fit"/>
+                                    <Button Text="Auto layout" OnClicked="endurance.graph.layout"/>
                                     <Label Name="endurance.summary" Text="5 steps · 2 agents · 1 write step" Class="data" TextSize="10" Slot.HAlign="Right" Slot.VAlign="Center"/>
                                 </HBox>
                                 <NodeGraph Name="endurance.graph" Slot.Fill="1" MinHeight="320" Slot.Padding="14,0" ReadOnly="false" AccessibleName="Endurance workflow canvas" AccessibleDescription="Agent and approval steps. Select a node to edit it; drag output to input to add dependencies. Delete removes the selected step."/>
@@ -257,8 +257,8 @@
                                                     <Label Name="endurance.run.title" Text="No runs yet" TextSize="15"/>
                                                     <Label Name="endurance.run.subtitle" Text="Run this workflow to create an inspectable execution." Class="muted" TextSize="11" Wrap="true"/>
                                                 </VBox>
-                                                <Button Name="endurance.run.stop" Text="Stop" Style="Flat" OnClicked="endurance.run.stop" Visibility="Collapsed" Slot.VAlign="Center"/>
-                                                <Button Name="endurance.run.resume" Text="Resume" Style="Flat" OnClicked="endurance.run.resume" Visibility="Collapsed" Slot.VAlign="Center"/>
+                                                <Button Name="endurance.run.stop" Text="Stop" OnClicked="endurance.run.stop" Visibility="Collapsed" Slot.VAlign="Center"/>
+                                                <Button Name="endurance.run.resume" Text="Resume" OnClicked="endurance.run.resume" Visibility="Collapsed" Slot.VAlign="Center"/>
                                             </HBox>
                                         </Border>
                                         <Border Name="endurance.approval" Class="proposal" Padding="14" BorderWidth="1" Slot.Padding="14,10,14,0" Visibility="Collapsed" Appear="Fade">
@@ -267,7 +267,7 @@
                                                     <Label Text="Implementation needs your approval" Class="proposal-title" Wrap="true"/>
                                                     <Label Text="Research and review are complete. The next step can modify this workspace." Class="muted" TextSize="11" Wrap="true"/>
                                                 </VBox>
-                                                <Button Text="Reject" Style="Flat" OnClicked="endurance.approval.reject" Slot.VAlign="Center"/>
+                                                <Button Class="danger" Text="Reject" OnClicked="endurance.approval.reject" Slot.VAlign="Center"/>
                                                 <Button Text="Continue" Style="Primary" OnClicked="endurance.approval.accept" Slot.VAlign="Center"/>
                                             </HBox>
                                         </Border>
@@ -285,7 +285,7 @@
                                             <Label Name="graph.caption" Text="Lead standing by · no delegated missions" Class="muted" Wrap="true"/>
                                         </VBox>
                                         <Label Name="graph.state" Text="STANDBY" Class="data" TextSize="10" Slot.VAlign="Center"/>
-                                        <Button Text="Fit graph" Style="Flat" OnClicked="graph.fit" Slot.VAlign="Center" Tooltip="Frame the complete lineage"/>
+                                        <Button Text="Fit graph" OnClicked="graph.fit" Slot.VAlign="Center" Tooltip="Frame the complete lineage"/>
                                     </HBox>
                                 </Border>
                                 <NodeGraph Name="graph" Slot.Fill="1" MinHeight="320" Slot.Padding="14,0" ReadOnly="true" AccessibleName="Live agent lineage" AccessibleDescription="Orchestrator and delegated missions. Select a node for details; Fit graph frames the complete lineage."/>
@@ -302,7 +302,7 @@
                                     <Label Name="agent.path" Text=".agents/agents/*.md" Class="data" Font="monospace"/>
                                 </VBox>
                                 <HBox Spacing="7" Slot.VAlign="Center">
-                                    <Button Name="agent.delete" Text="Delete agent" Style="Flat" OnClicked="agent.delete" Tooltip="Permanently delete this custom agent"/>
+                                    <Button Class="danger" Name="agent.delete" Text="Delete agent" OnClicked="agent.delete" Tooltip="Permanently delete this custom agent"/>
                                     <Button Text="Save agent" Style="Primary" OnClicked="agent.save" Slot.VAlign="Center"/>
                                 </HBox>
                             </HBox>
@@ -311,7 +311,7 @@
                             <VBox Width="240" Slot.Padding="10,10,10,12" Spacing="6">
                                 <HBox Slot.Padding="6,0,6,4">
                                     <Label Text="Agent definitions" Class="section" Slot.Fill="1" Slot.VAlign="Center"/>
-                                    <Button Text="New" Style="Flat" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)"/>
+                                    <Button Text="New" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)"/>
                                 </HBox>
                                 <TextInput Name="agent.search" Placeholder="Search agents…" OnChanged="navigation.search" Tooltip="Filter agent definitions"/>
                                 <ListView Name="agents" Class="nav-list" Slot.Fill="1" OnActivated="agent.open" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
@@ -335,7 +335,7 @@
                                                 <Label Text="Theme"/>
                                                 <Label Text="Restyle the workspace immediately." Class="muted" TextSize="11" Wrap="true"/>
                                             </VBox>
-                                            <Button Name="settings.appearance.toggle" Text="Switch to light" Style="Flat" OnClicked="appearance.toggle" Slot.VAlign="Center"/>
+                                            <Button Name="settings.appearance.toggle" Text="Switch to light" OnClicked="appearance.toggle" Slot.VAlign="Center"/>
                                             <Button Name="settings.theme.gallery" Text="Choose a world" OnClicked="theme.browser" Width="150" Slot.VAlign="Center"/>
                                         </HBox>
                                         <HBox Spacing="10">
@@ -343,18 +343,18 @@
                                                 <Label Name="settings.interface.zoom" Text="Interface zoom · 115%"/>
                                                 <Label Text="Scale the complete interface." Class="muted" TextSize="11" Wrap="true"/>
                                             </VBox>
-                                            <Button Text="Decrease" Style="Flat" OnClicked="settings.interface.decrease" Slot.VAlign="Center"/>
-                                            <Button Text="Reset" Style="Flat" OnClicked="settings.interface.reset" Slot.VAlign="Center"/>
-                                            <Button Text="Increase" Style="Flat" OnClicked="settings.interface.increase" Slot.VAlign="Center"/>
+                                            <Button Text="Decrease" OnClicked="settings.interface.decrease" Slot.VAlign="Center"/>
+                                            <Button Text="Reset" OnClicked="settings.interface.reset" Slot.VAlign="Center"/>
+                                            <Button Text="Increase" OnClicked="settings.interface.increase" Slot.VAlign="Center"/>
                                         </HBox>
                                         <HBox Spacing="10">
                                             <VBox Slot.Fill="1" Spacing="4">
                                                 <Label Name="settings.editor.zoom" Text="Editor zoom · 100%"/>
                                                 <Label Text="Scale editors without changing the workspace chrome." Class="muted" TextSize="11" Wrap="true"/>
                                             </VBox>
-                                            <Button Text="Decrease" Style="Flat" OnClicked="settings.editor.decrease" Slot.VAlign="Center"/>
-                                            <Button Text="Reset" Style="Flat" OnClicked="settings.editor.reset" Slot.VAlign="Center"/>
-                                            <Button Text="Increase" Style="Flat" OnClicked="settings.editor.increase" Slot.VAlign="Center"/>
+                                            <Button Text="Decrease" OnClicked="settings.editor.decrease" Slot.VAlign="Center"/>
+                                            <Button Text="Reset" OnClicked="settings.editor.reset" Slot.VAlign="Center"/>
+                                            <Button Text="Increase" OnClicked="settings.editor.increase" Slot.VAlign="Center"/>
                                         </HBox>
                                     </VBox>
                                 </Border>
@@ -389,7 +389,7 @@
                                         <HBox Spacing="10">
                                             <Label Name="shortcut.current" Text="Ctrl+Enter" Class="data" Font="monospace" Slot.Fill="1" Slot.VAlign="Center"/>
                                             <Button Name="shortcut.rebind" Text="Rebind" Style="Primary" OnClicked="shortcut.rebind"/>
-                                            <Button Text="Reset" Style="Flat" OnClicked="shortcut.reset"/>
+                                            <Button Text="Reset" OnClicked="shortcut.reset"/>
                                         </HBox>
                                     </VBox>
                                 </Border>
@@ -439,8 +439,8 @@
                                     <Label Text="Reviewed episodes orbit the workspace; entities and relations form the outer systems." Class="muted" Wrap="true"/>
                                     <Label Name="memory.stats" Text="0 episodes · 0 entities · 0 relations" Class="data" Font="monospace" TextSize="11"/>
                                 </VBox>
-                                <Button Text="Fit universe" Style="Flat" OnClicked="memory.fit" Slot.VAlign="Center" Tooltip="Frame every memory (0)"/>
-                                <Button Text="Open Knowledge" Style="Flat" OnClicked="knowledge.open_tab" Slot.VAlign="Center"/>
+                                <Button Text="Fit universe" OnClicked="memory.fit" Slot.VAlign="Center" Tooltip="Frame every memory (0)"/>
+                                <Button Text="Open Knowledge" OnClicked="knowledge.open_tab" Slot.VAlign="Center"/>
                             </HBox>
                         </Border>
                         <Custom Name="memory.canvas" Slot.Fill="1" MinHeight="320" Slot.Padding="18,0" Tooltip="Drag to pan, scroll to zoom, and select a planet to inspect its memory"/>
@@ -451,7 +451,7 @@
                                 </ScrollBox>
                                 <HBox>
                                     <Spacer Slot.Fill="1"/>
-                                    <Button Name="memory.forget" Text="Forget memory" Style="Flat" OnClicked="memory.forget" Tooltip="Delete this accepted memory and its touching relations" Enabled="false"/>
+                                    <Button Class="danger" Name="memory.forget" Text="Forget memory" OnClicked="memory.forget" Tooltip="Delete this accepted memory and its touching relations" Enabled="false"/>
                                 </HBox>
                             </VBox>
                         </Border>
@@ -463,7 +463,7 @@
                                     <Label Text="Isolated worktrees" TextSize="17"/>
                                     <Label Name="mission.summary" Text="Create a Git worktree, then review exactly what returns to this workspace." Class="muted" Wrap="true"/>
                                 </VBox>
-                                <Button Name="mission.return" Text="Return to workspace" Style="Flat" OnClicked="mission.return" Visibility="Collapsed" Slot.VAlign="Center"/>
+                                <Button Name="mission.return" Text="Return to workspace" OnClicked="mission.return" Visibility="Collapsed" Slot.VAlign="Center"/>
                             </HBox>
                         </Border>
                         <HBox Slot.Padding="14,0,14,10" Spacing="8">
@@ -475,12 +475,12 @@
                         <ListView Name="mission.list" Height="140" OnActivated="mission.review" Slot.Padding="14,0,14,8" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Git missions" Visibility="Collapsed"/>
                         <HBox Name="mission.hunks.row" Slot.Padding="14,0,14,8" Spacing="8" Visibility="Collapsed">
                             <ComboBox Name="mission.hunks" Slot.Fill="1" Tooltip="Mission hunk to apply" AccessibleName="Mission diff hunk"/>
-                            <Button Name="mission.apply_hunk" Text="Apply hunk" Style="Flat" OnClicked="mission.apply_hunk"/>
+                            <Button Name="mission.apply_hunk" Text="Apply hunk" OnClicked="mission.apply_hunk"/>
                         </HBox>
                         <HBox Name="mission.actions.row" Slot.Padding="14,0,14,8" Spacing="8" Visibility="Collapsed">
-                            <Button Name="mission.review" Text="Refresh diff" Style="Flat" OnClicked="mission.review"/>
+                            <Button Name="mission.review" Text="Refresh diff" OnClicked="mission.review"/>
                             <Spacer Slot.Fill="1"/>
-                            <Button Name="mission.discard" Text="Discard mission" Style="Flat" OnClicked="mission.discard"/>
+                            <Button Class="danger" Name="mission.discard" Text="Discard mission" OnClicked="mission.discard"/>
                             <Button Name="mission.apply" Text="Apply to workspace" Style="Primary" OnClicked="mission.apply"/>
                         </HBox>
                         <TextEditor Name="mission.diff" Font="monospace" Slot.Fill="1" Slot.Padding="14,0,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Select a mission to inspect its complete diff" Visibility="Collapsed"/>
@@ -496,29 +496,29 @@
                             </Border>
                             <HBox Name="checkpoint.history.row" Slot.Padding="14,0,14,8" Spacing="8" Visibility="Collapsed">
                                 <ComboBox Name="checkpoint.history" Slot.Fill="1" OnChanged="checkpoint.history_changed" Tooltip="Task checkpoint to inspect" AccessibleName="Task checkpoint"/>
-                                <Button Name="checkpoint.restore" Text="Restore task" Style="Flat" OnClicked="checkpoint.restore" Tooltip="Restore files to their state before this task"/>
+                                <Button Name="checkpoint.restore" Text="Restore task" OnClicked="checkpoint.restore" Tooltip="Restore files to their state before this task"/>
                             </HBox>
                             <HBox Name="checkpoint.files.row" Slot.Padding="14,0,14,10" Spacing="8" Visibility="Collapsed">
                                 <ComboBox Name="checkpoint.files" Slot.Fill="1" OnChanged="checkpoint.file_changed" Tooltip="Changed file to inspect" AccessibleName="Changed file"/>
-                                <Button Name="checkpoint.open" Text="Open file" Style="Flat" OnClicked="checkpoint.open" Tooltip="Open the selected file in Editor"/>
-                                <Button Name="checkpoint.restore.inline" Text="Restore task" Style="Flat" OnClicked="checkpoint.restore" Visibility="Collapsed" Tooltip="Restore files to their state before this task"/>
+                                <Button Name="checkpoint.open" Text="Open file" OnClicked="checkpoint.open" Tooltip="Open the selected file in Editor"/>
+                                <Button Name="checkpoint.restore.inline" Text="Restore task" OnClicked="checkpoint.restore" Visibility="Collapsed" Tooltip="Restore files to their state before this task"/>
                             </HBox>
                             <HBox Name="checkpoint.hunks.row" Slot.Padding="14,0,14,10" Spacing="8" Visibility="Collapsed">
                                 <ComboBox Name="checkpoint.hunks" Slot.Fill="1" Tooltip="Diff hunk to restore" AccessibleName="Checkpoint diff hunk"/>
-                                <Button Name="checkpoint.restore_hunk" Text="Restore hunk" Style="Flat" OnClicked="checkpoint.restore_hunk" Tooltip="Restore only the selected hunk after validating its file"/>
+                                <Button Name="checkpoint.restore_hunk" Text="Restore hunk" OnClicked="checkpoint.restore_hunk" Tooltip="Restore only the selected hunk after validating its file"/>
                             </HBox>
                             <TabView Name="checkpoint.content.tabs" Class="tabs" Slot.Fill="1" Visibility="Collapsed">
                                 <TextEditor Name="checkpoint.diff" Font="monospace" Slot.Title="Diff" Slot.Fill="1" Slot.Padding="14,10,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Complete an agent run to inspect source changes here"/>
                                 <VBox Slot.Title="Verification">
                                     <ListView Name="verification.results" Height="140" OnActivated="verification.open" Slot.Padding="14,8,14,6" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Build and test results"/>
                                     <HBox Name="verification.actions.row" Slot.Padding="14,0,14,8" Spacing="8">
-                                        <Button Name="verification.rerun" Text="Rerun check" Style="Flat" OnClicked="verification.rerun"/>
-                                        <Button Name="verification.watch" Text="Watch checks" Style="Flat" OnClicked="verification.watch" Tooltip="Rerun the selected check after autosave"/>
+                                        <Button Name="verification.rerun" Text="Rerun check" OnClicked="verification.rerun"/>
+                                        <Button Name="verification.watch" Text="Watch checks" OnClicked="verification.watch" Tooltip="Rerun the selected check after autosave"/>
                                         <Label Name="verification.run_state" Class="muted" TextSize="11" Slot.Fill="1" Slot.VAlign="Center"/>
                                     </HBox>
                                     <HBox Name="verification.diagnostics.row" Slot.Padding="14,0,14,8" Spacing="8">
                                         <ComboBox Name="verification.diagnostics" Slot.Fill="1" Tooltip="Diagnostic to inspect" AccessibleName="Verification diagnostic"/>
-                                        <Button Name="verification.open_diagnostic" Text="Open diagnostic" Style="Flat" OnClicked="verification.open_diagnostic" Tooltip="Open the diagnostic at its source line"/>
+                                        <Button Name="verification.open_diagnostic" Text="Open diagnostic" OnClicked="verification.open_diagnostic" Tooltip="Open the diagnostic at its source line"/>
                                     </HBox>
                                     <TextEditor Name="verification.detail" Font="monospace" Slot.Fill="1" Slot.Padding="14,10,14,14" ReadOnly="true" LineNumbers="true" Wrap="true" Placeholder="Build and test commands from the agent run will appear here"/>
                                 </VBox>
@@ -534,7 +534,7 @@
                             <TextEditor Name="proposal.diff" Font="monospace" Slot.Fill="1" Slot.Padding="14,0,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="A completed run can produce a knowledge proposal to review here"/>
                             <HBox Name="proposal.actions" Slot.Padding="18,14" Spacing="10">
                                 <Label Text="Validated against current files before writing" Class="muted" Slot.Fill="1" Slot.VAlign="Center"/>
-                                <Button Text="Discard" Style="Flat" OnClicked="proposal.discard"/>
+                                <Button Class="danger" Text="Discard" OnClicked="proposal.discard"/>
                                 <Button Name="proposal.accept" Text="Accept and write" Style="Primary" OnClicked="proposal.accept"/>
                             </HBox>
                         </VBox>
@@ -605,7 +605,7 @@
                         <Label Name="context.title" Text="Activity" TextSize="17"/>
                         <Label Name="context.subtitle" Text="Live agent work and run details" Class="muted" TextSize="11" Wrap="true"/>
                     </VBox>
-                    <Button Name="context.alerts" Text="Alerts" Style="Flat" OnClicked="alerts.view" Tooltip="Open notification history" Slot.VAlign="Center"/>
+                    <Button Name="context.alerts" Text="Alerts" OnClicked="alerts.view" Tooltip="Open notification history" Slot.VAlign="Center"/>
                     <Button Text="Close" Style="Flat" OnClicked="context.close" Tooltip="Close this panel" Slot.VAlign="Center"/>
                 </HBox>
                 <Switcher Name="right.tabs" Slot.Fill="1">
@@ -624,14 +624,14 @@
                                     <Label Name="graph.summary" Text="Lineage · no subagents" Class="section" TextSize="11" Visibility="Collapsed"/>
                                     <Label Name="activity.empty" Text="Delegated work appears here." Class="muted" TextSize="11" Wrap="true"/>
                                     <VBox Name="activity.rows" Spacing="10"/>
-                                    <Button Name="graph.toggle" Text="Open mission control" Style="Flat" OnClicked="graph.toggle" Visibility="Collapsed" Slot.HAlign="Right"/>
+                                    <Button Name="graph.toggle" Text="Open mission control" OnClicked="graph.toggle" Visibility="Collapsed" Slot.HAlign="Right"/>
                                 </VBox>
                             </Border>
                             <Border Name="checkpoint.bar" Class="activity" Padding="14" Visibility="Collapsed" BorderWidth="1" Appear="Fade">
                                 <VBox Spacing="6">
                                     <HBox Spacing="8">
                                         <Label Name="checkpoint.notice.title" Text="Code changes ready" Class="section" Slot.Fill="1" Slot.VAlign="Center"/>
-                                        <Button Text="Review" Style="Flat" OnClicked="checkpoint.review" Tooltip="Open the changes in Review" Slot.VAlign="Center"/>
+                                        <Button Text="Review" OnClicked="checkpoint.review" Tooltip="Open the changes in Review" Slot.VAlign="Center"/>
                                     </HBox>
                                     <Label Name="checkpoint.notice" Class="muted" TextSize="12" Wrap="true"/>
                                 </VBox>
@@ -650,7 +650,7 @@
                     <VBox Slot.Title="Wiki">
                         <HBox Slot.Padding="12,10,12,0" Spacing="8">
                             <TextInput Name="notes.search" Placeholder="Search notes…" OnChanged="navigation.search" Tooltip="Filter workspace notes" Slot.Fill="1"/>
-                            <Button Text="New" Style="Flat" OnClicked="wiki.new" Tooltip="Create a Markdown note (Ctrl+Shift+N)" Slot.VAlign="Center"/>
+                            <Button Text="New" OnClicked="wiki.new" Tooltip="Create a Markdown note (Ctrl+Shift+N)" Slot.VAlign="Center"/>
                         </HBox>
                         <ListView Name="wiki" Class="nav-list" Height="130" OnActivated="wiki.open" Slot.Padding="10,6,10,8" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Workspace notes"/>
                         <Border Class="section-header wiki-chrome" Padding="16,12" BorderWidth="1">
@@ -688,14 +688,14 @@
                         </ScrollBox>
                         <HBox Slot.Padding="12,0,12,10">
                             <Spacer Slot.Fill="1"/>
-                            <Button Name="knowledge.forget" Text="Forget selected record" Style="Flat" OnClicked="memory.forget" Enabled="false"/>
+                            <Button Class="danger" Name="knowledge.forget" Text="Forget selected record" OnClicked="memory.forget" Enabled="false"/>
                         </HBox>
                     </VBox>
                     <VBox Slot.Title="Log" Slot.Padding="12" Spacing="10">
                         <Label Text="Run and workflow events appear here without desktop pop-ups." Class="muted" TextSize="11" Wrap="true"/>
                         <HBox Spacing="8">
                             <Button Name="alerts.open" Text="Open" Style="Primary" OnClicked="alerts.open" Enabled="false" Slot.Fill="1"/>
-                            <Button Name="alerts.clear" Text="Clear" Style="Flat" OnClicked="alerts.clear" Slot.Fill="1"/>
+                            <Button Name="alerts.clear" Text="Clear" OnClicked="alerts.clear" Slot.Fill="1"/>
                         </HBox>
                         <ListView Name="alerts.list" Slot.Fill="0.55" AccessibleName="Notification history"/>
                         <ScrollBox Slot.Fill="0.45">
@@ -743,8 +743,8 @@
                                 </VBox>
                             </HBox>
                             <HBox Spacing="7">
-                                <Button Text="Duplicate" Style="Flat" OnClicked="endurance.step.duplicate"/>
-                                <Button Text="Delete" Style="Flat" OnClicked="endurance.step.delete"/>
+                                <Button Text="Duplicate" OnClicked="endurance.step.duplicate"/>
+                                <Button Class="danger" Text="Delete" OnClicked="endurance.step.delete"/>
                             </HBox>
                         </VBox>
                     </ScrollBox>
@@ -827,8 +827,8 @@
             <TextInput Name="recall.search" Placeholder="Search saved prompts…" OnChanged="recall.changed" AccessibleName="Search saved prompts"/>
             <ListView Name="recall.results" Height="300" OnActivated="recall.use" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Saved prompt recommendations"/>
             <HBox Spacing="8">
-                <Button Name="recall.pin" Text="Pin" Style="Flat" OnClicked="recall.pin" Enabled="false"/>
-                <Button Name="recall.erase" Text="Forget" Style="Flat" OnClicked="recall.erase" Enabled="false"/>
+                <Button Name="recall.pin" Text="Pin" OnClicked="recall.pin" Enabled="false"/>
+                <Button Class="danger" Name="recall.erase" Text="Forget" OnClicked="recall.erase" Enabled="false"/>
                 <Label Name="recall.status" Class="muted" TextSize="11" Wrap="true" Slot.Fill="1" Slot.VAlign="Center" Slot.HAlign="Right"/>
             </HBox>
         </VBox>

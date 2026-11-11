@@ -17,7 +17,10 @@
     <Style Widget="FileBrowser" Track="#00000000" Handle="#87613E" HandleHovered="#C08D5E"/>
     <!-- Navigation lists sit directly on the sidebar: only rows carry a fill. The transparent fill keeps the panel hue so an unfocused selection blends toward it, not toward black. -->
     <Style Widget="ListView" Class="nav-list" Input="#241B1400"/>
-    <Style Widget="Button" CornerRadius="8"/>
+    <!-- Buttons: one 30px height everywhere. Default is the secondary action (control fill and border), Primary the one main
+         action of a view, Flat only toolbars and icons. "danger" marks destructive actions with the Danger colour. -->
+    <Style Widget="Button" CornerRadius="7" ControlHeight="30" PaddingX="12" PaddingY="5"/>
+    <Style Widget="Button" Class="danger" Text="#FF8E72"/>
     <Style Widget="Button" Class="header-action" Control="#00000000" ControlHovered="#3A2A1D" ControlPressed="#4D3725" Text="#F4E9DA"/>
     <Style Widget="Button" Class="send-button" Control="#3A2A1D" ControlHovered="#4D3725" ControlPressed="#64472E" Text="#F4E9DA" CornerRadius="17"/>
     <Style Widget="HeaderBar" Header="#1D150F" Text="#F4E9DA"/>

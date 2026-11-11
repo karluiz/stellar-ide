@@ -3485,11 +3485,8 @@ bool App::confirm(const std::string& title, const std::string& text, const std::
     Rwidget_set_min_size(proceed, 84.0f, -1.0f);
     Rbutton_set_style(cancel, R_BUTTON_FLAT);
     if (destructive) {
-        float danger[4];
-        Rwidget_get_color(Rwindow_get_content(window_), R_COLOR_DANGER, &danger[0], &danger[1], &danger[2], &danger[3]);
         Rbutton_set_style(proceed, R_BUTTON_DEFAULT);
-        Rwidget_set_color(proceed, R_COLOR_TEXT, danger[0], danger[1], danger[2], 1.0f);
-        Rwidget_set_color(proceed, R_COLOR_CONTROL_BORDER, danger[0], danger[1], danger[2], 0.6f);
+        Rwidget_set_class(proceed, "danger");
     } else {
         Rbutton_set_style(proceed, R_BUTTON_PRIMARY);
     }

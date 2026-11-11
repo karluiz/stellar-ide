@@ -9,7 +9,10 @@
         Success="#65C18C" Warning="#E5B567" Danger="#F07575" Link="#E88B5B" Code="#0D0D0D"/>
     <Metrics FontSize="13" ControlHeight="34" RowHeight="36" SplitterSize="3" PaddingX="11" PaddingY="7" Spacing="8"/>
     <Syntax Comment="#8E8E8A" String="#65C18C" Number="#E5B567" Keyword="#E8794A" Type="#E88B5B" Function="#D8D8D4" Heading="#F2F2F0" Strong="#FFFFFF" Link="#E88B5B"/>
-    <Style Widget="Button" CornerRadius="8"/>
+    <!-- Buttons: one 30px height everywhere. Default is the secondary action (control fill and border), Primary the one main
+         action of a view, Flat only toolbars and icons. "danger" marks destructive actions with the Danger colour. -->
+    <Style Widget="Button" CornerRadius="7" ControlHeight="30" PaddingX="12" PaddingY="5"/>
+    <Style Widget="Button" Class="danger" Text="#F07575"/>
     <Style Widget="Button" Class="header-action" Control="#00000000" ControlHovered="#191919" ControlPressed="#272727" Text="#C8C8C4"/>
     <Style Widget="Button" Class="send-button" Control="#2B2B2B" ControlHovered="#3A3A3A" ControlPressed="#474747" Text="#F5F5F2" CornerRadius="17"/>
     <Style Widget="HeaderBar" Header="#030303" Text="#F2F2F0"/>

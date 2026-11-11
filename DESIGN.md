@@ -360,8 +360,11 @@ Most divisions are one-pixel theme-colored strokes. Graph nodes retain an 11px n
 ## Components
 
 ### Buttons
-- **Primary:** In Earth Dark, green fill with near-black AccentText, 8px corners, 34px standard height, and compact padding. Used for Save file/agent/note, Review changes, Accept and write, and Settings Done. Other variants pair their own Accent and AccentText tokens.
-- **Flat:** Text-led native actions such as New, Fit, Delete, Discard, Activity, and zoom controls. They rest transparently and use themed hover/pressed fills. Navigation and Appearance icon buttons use 17px authored icons inside 36×34px targets. Appearance shows sun/moon rather than the retired Settings gear.
+Every button is one of three variants, 30px tall with 7px corners and 12×5px padding (set once per theme on `Widget="Button"`).
+- **Primary:** Accent fill with AccentText. At most one per view, for its main commitment: Save file/agent/note, Run workflow, Create and run, Apply to workspace, Accept and write, Settings Done.
+- **Secondary (Default style):** Control fill with a 1px ControlBorder. Every other text action in content: New, Duplicate, Validate, Fit, Add step, Restore task, Open file, Refresh diff, Pin, Review knowledge. A button that reads as text only is never a content action.
+- **Destructive:** A secondary button with `Class="danger"`, whose label takes the theme's Danger colour: Delete agent, Discard mission, Forget memory, Reject, Discard, Delete, Forget. Never Primary.
+- **Flat:** Transparent until hovered, only for toolbars and chrome: header actions (New chat, Activity, Retry, Stop), icon buttons, zoom controls, Close/Cancel/Skip, the inline Copy under answers, attachment Remove/Clear, and segmented toggles (Archived, Dark/Light/Glass). Navigation and Appearance icon buttons use 17px authored icons inside 36×34px targets.
 - **Send:** A 36×34px circular icon button inside the composer, with a 16px send icon and accessible name `Send to lead`. Every variant supplies its Control, ControlHovered, ControlPressed, and Text colors. Send is disabled while the lead runs; Stop appears in the unified header only during a run.
 - **Confirmations:** Confirmation dialogs name the action on the button (Delete agent, Restore files, Apply changes, Discard mission) next to a flat Cancel; never Yes/No. Safe actions use the Primary button and Enter confirms. Destructive actions use the Danger colour on a default button and Enter cancels; Escape always cancels.
 - **State:** Preserve native hover, pressed, disabled, and the active variant's keyboard-focus feedback. Do not communicate errors, completion, or availability by color alone.
