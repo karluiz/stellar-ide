@@ -1288,7 +1288,14 @@ void App::archive_selected_thread() {
 // Replaces an automatic title with the one the knowledge curator proposed. A title the user has
 // already changed is left alone: only titles still equal to the prompt-derived one are replaced.
 void App::apply_agent_title(const std::string& proposed) {
+    // The title comes from model output: keep one line, collapse spacing, and cap it at six words
+    // through the same cleanup as prompt-derived titles.
     auto title = proposed;
+    for (auto& c : title) {
+        if (c == '\n' || c == '\r' || c == '\t') c = ' ';
+    }
+    title = conversation_title(title);
+    if (title == "New conversation") return;
     while (!title.empty() && (title.back() == '.' || title.back() == ' ' || title.back() == '"')) title.pop_back();
     while (!title.empty() && (title.front() == '"' || title.front() == ' ')) title.erase(0, 1);
     if (title.empty() || thread_messages_.empty()) return;
