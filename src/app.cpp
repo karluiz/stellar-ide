@@ -759,7 +759,7 @@ void App::refresh_composer_index() {
 }
 
 void App::complete_composer(const char* prefix) {
-    if (harness_ != Harness::KimiCode) return;
+    // @ file mentions work with both harnesses; / skills and commands exist only for Kimi Code.
     const auto editor = id("composer");
     int line_number = 0;
     int column = 0;
@@ -787,6 +787,7 @@ void App::complete_composer(const char* prefix) {
         }
     }
 
+    if (harness_ != Harness::KimiCode) return;
     const auto colon = start - 1;
     const bool namespaced = colon >= 6 && line[colon] == ':' && line.compare(static_cast<size_t>(colon - 6), 6, "/skill") == 0 &&
         (colon == 6 || std::isspace(static_cast<unsigned char>(line[colon - 7])));
@@ -1760,6 +1761,9 @@ std::string App::current_effort() const {
 
 void App::refresh_model_controls() {
     const bool kimi = harness_ == Harness::KimiCode;
+    Rtext_editor_set_placeholder(id("composer"), kimi
+        ? "Describe a task · / skills · @ files · paste an image…"
+        : "Describe a task · @ files · paste an image…");
     const std::vector<std::string> models = kimi
         ? std::vector<std::string>{"", "kimi-code/kimi-for-coding", "kimi-code/kimi-for-coding-highspeed", "kimi-code/k3", "kimi-code/k3-256k", "kimi-code/k3.1-pro", "kimi-code/k3.1-pro-highspeed"}
         : std::vector<std::string>{"", "sonnet", "opus", "haiku"};
