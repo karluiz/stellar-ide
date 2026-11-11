@@ -2583,7 +2583,17 @@ void App::refresh_notifications() {
     for (auto entry = entries.rbegin(); entry != entries.rend(); ++entry) {
         if (entry->id == previous_id) selected = static_cast<int>(notification_rows_.size());
         notification_rows_.push_back(entry->id);
-        Rlist_view_add_item(id("alerts.list"), (entry->kind + " · " + entry->title).c_str());
+        // "Stellar · " repeats on every event and the kind repeats the title; rows show what happened
+        // and when, and the body appears in the detail below once selected.
+        auto title = entry->title;
+        if (title.rfind("Stellar · ", 0) == 0) title.erase(0, std::string("Stellar · ").size());
+        std::string age;
+        if (entry->created_at > 0) {
+            const auto seconds = std::max<std::int64_t>(0, static_cast<std::int64_t>(std::time(nullptr)) - entry->created_at);
+            age = seconds < 60 ? "now" : seconds < 3600 ? std::to_string(seconds / 60) + "m"
+                : seconds < 86400 ? std::to_string(seconds / 3600) + "h" : std::to_string(seconds / 86400) + "d";
+        }
+        Rlist_view_add_item(id("alerts.list"), (shortened(title, 34) + (age.empty() ? "" : " · " + age)).c_str());
     }
     Rwidget_set_enabled(id("alerts.clear"), !entries.empty());
     if (selected >= 0) Rlist_view_set_selected(id("alerts.list"), selected);
