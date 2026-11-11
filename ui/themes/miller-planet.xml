@@ -36,7 +36,7 @@
     <Style Class="tabs" Panel="#0A1D27" CornerRadius="0"/>
     <Style Class="run-header" Panel="#0D2632" Border="#3C6877" CornerRadius="0"/>
     <Style Class="section-header" Panel="#0E2530" Border="#2C505D" CornerRadius="0"/>
-    <Style Class="tool-header" Panel="#0E2530" Border="#4C8290" CornerRadius="10"/>
+    <Style Class="tool-header" Panel="#00000000" Border="#00000000" CornerRadius="10"/>
     <Style Class="composer" Panel="#102B38" Border="#4C8290" CornerRadius="14"/>
     <Style Class="activity" Panel="#0E2530" Border="#4C8290" CornerRadius="14"/>
     <Style Class="statusbar" Panel="#061119" Border="#2C505D" CornerRadius="0"/>

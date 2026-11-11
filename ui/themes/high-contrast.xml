@@ -28,7 +28,7 @@
     <Style Class="tabs" Panel="#000000" CornerRadius="0"/>
     <Style Class="run-header" Panel="#090909" Border="#FFFFFF" CornerRadius="0"/>
     <Style Class="section-header" Panel="#090909" Border="#FFFFFF" CornerRadius="0"/>
-    <Style Class="tool-header" Panel="#090909" Border="#FFFFFF" CornerRadius="10"/>
+    <Style Class="tool-header" Panel="#00000000" Border="#00000000" CornerRadius="10"/>
     <Style Class="composer" Panel="#000000" Border="#FFFFFF" CornerRadius="14"/>
     <Style Class="activity" Panel="#090909" Border="#FFFFFF" CornerRadius="14"/>
     <Style Class="statusbar" Panel="#000000" Border="#FFFFFF" CornerRadius="0"/>

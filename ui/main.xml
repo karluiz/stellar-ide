@@ -49,29 +49,53 @@
                 <VBox Slot.Padding="12,14,12,8" Spacing="3">
                     <Label Text="Work" Class="section" Slot.Padding="12,0,12,6"/>
                     <Button Class="instant-hover" Name="nav.chat" Height="36" OnClicked="nav.chat" Tooltip="Chat with your lead agent">
-                        <Label Text="Chat" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                        <HBox Spacing="10" HitTestable="false" Slot.HAlign="Left" Slot.VAlign="Center">
+                            <Image Source="icons/nav-chat.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.VAlign="Center"/>
+                            <Label Text="Chat" Slot.VAlign="Center"/>
+                        </HBox>
                     </Button>
                     <Button Class="instant-hover" Name="nav.canvas" Height="36" OnClicked="nav.canvas" Tooltip="Create and edit interfaces in Tesseract">
-                        <Label Text="Tesseract UI" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                        <HBox Spacing="10" HitTestable="false" Slot.HAlign="Left" Slot.VAlign="Center">
+                            <Image Source="icons/nav-canvas.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.VAlign="Center"/>
+                            <Label Text="Tesseract UI" Slot.VAlign="Center"/>
+                        </HBox>
                     </Button>
                     <Button Class="instant-hover" Name="nav.workflows" Height="36" OnClicked="nav.workflows" Tooltip="Build and run multi-agent workflows in Endurance">
-                        <Label Text="Workflows" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                        <HBox Spacing="10" HitTestable="false" Slot.HAlign="Left" Slot.VAlign="Center">
+                            <Image Source="icons/nav-workflows.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.VAlign="Center"/>
+                            <Label Text="Workflows" Slot.VAlign="Center"/>
+                        </HBox>
                     </Button>
                     <Label Text="Workspace" Class="section" Slot.Padding="12,14,12,6"/>
                     <Button Class="instant-hover" Name="nav.files" Height="36" OnClicked="nav.files" Tooltip="Browse and open workspace files">
-                        <Label Text="Files" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                        <HBox Spacing="10" HitTestable="false" Slot.HAlign="Left" Slot.VAlign="Center">
+                            <Image Source="icons/nav-files.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.VAlign="Center"/>
+                            <Label Text="Files" Slot.VAlign="Center"/>
+                        </HBox>
                     </Button>
                     <Button Class="instant-hover" Name="nav.agents" Height="36" OnClicked="nav.agents" Tooltip="Edit shared agent definitions">
-                        <Label Text="Agents" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                        <HBox Spacing="10" HitTestable="false" Slot.HAlign="Left" Slot.VAlign="Center">
+                            <Image Source="icons/nav-agents.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.VAlign="Center"/>
+                            <Label Text="Agents" Slot.VAlign="Center"/>
+                        </HBox>
                     </Button>
                     <Button Class="instant-hover" Name="nav.review" Height="36" OnClicked="nav.review" Tooltip="Review code and knowledge changes">
-                        <Label Text="Review" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                        <HBox Spacing="10" HitTestable="false" Slot.HAlign="Left" Slot.VAlign="Center">
+                            <Image Source="icons/nav-review.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.VAlign="Center"/>
+                            <Label Text="Review" Slot.VAlign="Center"/>
+                        </HBox>
                     </Button>
                     <Button Class="instant-hover" Name="nav.knowledge" Height="36" OnClicked="nav.knowledge" Tooltip="Open notes, knowledge, and reviewed memory">
-                        <Label Text="Knowledge" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                        <HBox Spacing="10" HitTestable="false" Slot.HAlign="Left" Slot.VAlign="Center">
+                            <Image Source="icons/nav-knowledge.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.VAlign="Center"/>
+                            <Label Text="Knowledge" Slot.VAlign="Center"/>
+                        </HBox>
                     </Button>
                     <Button Class="instant-hover" Name="nav.worktrees" Height="36" OnClicked="nav.worktrees" Tooltip="Run and review isolated Git tasks">
-                        <Label Text="Worktrees" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                        <HBox Spacing="10" HitTestable="false" Slot.HAlign="Left" Slot.VAlign="Center">
+                            <Image Source="icons/nav-worktrees.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.VAlign="Center"/>
+                            <Label Text="Worktrees" Slot.VAlign="Center"/>
+                        </HBox>
                     </Button>
                 </VBox>
                 <!-- One heading row for the list below, above its search field: chats, agents, or notes. -->
@@ -98,7 +122,10 @@
                 <Spacer Name="navigation.bottom.spacer" Slot.Fill="1"/>
                 <HBox Slot.Padding="12,8,12,12">
                     <Button Class="instant-hover" Name="nav.settings" Height="36" OnClicked="nav.settings" Slot.Fill="1" Tooltip="Appearance, agent, and workspace preferences">
-                        <Label Text="Settings" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                        <HBox Spacing="10" HitTestable="false" Slot.HAlign="Left" Slot.VAlign="Center">
+                            <Image Source="icons/nav-settings.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.VAlign="Center"/>
+                            <Label Text="Settings" Slot.VAlign="Center"/>
+                        </HBox>
                     </Button>
                 </HBox>
             </VBox>
@@ -164,7 +191,7 @@
                         </HBox>
                     </VBox>
                     <VBox Class="workspace" Slot.Title="Editor">
-                        <Border Class="tool-header" Padding="18,14" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                        <Border Class="tool-header" Padding="0,10" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
                             <HBox>
                                 <VBox Slot.Fill="1">
                                     <Label Name="code.title" Text="No file open" TextSize="17"/>
@@ -182,7 +209,7 @@
                         </HBox>
                     </VBox>
                     <VBox Class="workspace" Slot.Title="Endurance">
-                        <Border Class="tool-header" Padding="18,14" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                        <Border Class="tool-header" Padding="0,10" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
                             <VBox Spacing="11">
                                 <HBox Spacing="10">
                                     <VBox Slot.Fill="1" Spacing="4">
@@ -278,7 +305,7 @@
                                 </HBox>
                             </VBox>
                             <VBox Slot.Title="Live">
-                                <Border Class="tool-header" Padding="20,16" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                                <Border Class="tool-header" Padding="0,12" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
                                     <HBox Spacing="14">
                                         <VBox Slot.Fill="1" Spacing="5">
                                             <Label Text="Mission control" TextSize="17"/>
@@ -295,7 +322,7 @@
                     </VBox>
                     <Switcher Name="more.tabs" Slot.Title="More" Slot.Fill="1">
                     <VBox Class="workspace" Slot.Title="Definitions">
-                        <Border Class="tool-header" Padding="18,14" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                        <Border Class="tool-header" Padding="0,10" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
                             <HBox>
                                 <VBox Slot.Fill="1">
                                     <Label Name="agent.title" Text="Select an agent" TextSize="17"/>
@@ -457,7 +484,7 @@
                         </Border>
                     </VBox>
                     <VBox Class="workspace" Slot.Title="Worktrees">
-                        <Border Class="tool-header" Padding="20,16" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                        <Border Class="tool-header" Padding="0,12" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
                             <HBox Spacing="14">
                                 <VBox Slot.Fill="1" Spacing="5">
                                     <Label Text="Isolated worktrees" TextSize="17"/>
@@ -488,7 +515,7 @@
                     </Switcher>
                     <TabView Name="review.tabs" Class="tabs" Slot.Title="Review" Slot.Fill="1">
                         <VBox Class="workspace" Slot.Title="Code changes">
-                            <Border Class="tool-header" Padding="20,16" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                            <Border Class="tool-header" Padding="0,12" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
                                 <VBox Spacing="5">
                                     <Label Name="checkpoint.title" Text="No checkpoints yet" TextSize="17" Wrap="true"/>
                                     <Label Name="checkpoint.summary" Text="Complete a Build run to create a checkpoint. Diffs, hunk restores, and verification results will appear here." Class="muted" Wrap="true"/>
@@ -525,7 +552,7 @@
                             </TabView>
                         </VBox>
                         <VBox Class="workspace" Slot.Title="Knowledge">
-                            <Border Class="tool-header" Padding="20,16" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
+                            <Border Class="tool-header" Padding="0,12" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
                                 <VBox Spacing="5">
                                     <Label Name="proposal.title" Text="No pending proposal" TextSize="17" Wrap="true"/>
                                     <Label Name="proposal.files" Class="muted" Wrap="true"/>
