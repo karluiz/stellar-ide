@@ -64,6 +64,7 @@ public:
     void load_file_tree_folder(size_t node);
     void update_file_tree_icons();
     void pump_file_tree();
+    void clamp_side_panes();
     static void file_tree_selected(Rid tree, Rid item, void* user);
     std::string workspace_summary() const;
     Rid window() const;

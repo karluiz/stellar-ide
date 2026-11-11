@@ -1,0 +1,39 @@
+<!-- Graphite: a neutral terminal-like finish. Gray surfaces, one blue accent, no tinted chrome. -->
+<Theme Name="GraphiteLight" Base="Light" Accent="#0A6CDB" AccentText="#FFFFFF" CornerRadius="10">
+    <Colors
+        Window="#FFFFFF" Panel="#F6F6F6" Input="#FFFFFF"
+        Text="#1F1F1F" TextDisabled="#6B6B6B" TextPlaceholder="#8A8A8A" AccentText="#FFFFFF"
+        Border="#E2E2E2" Control="#F1F1F1" ControlHovered="#E8E8E8" ControlPressed="#DDDDDD" ControlBorder="#D2D2D2"
+        Selection="#DCE8F8" RowHovered="#EFEFEF" Track="#E6E6E6" Handle="#B5B5B5"
+        Separator="#E4E4E4" Header="#FAFAFA" HeaderHovered="#EDEDED" TabActive="#FFFFFF"
+        Popup="#FFFFFF" PopupBorder="#D2D2D2" Focus="#0A6CDB"
+        Success="#1A7F37" Warning="#9A6700" Danger="#CF222E" Link="#0969DA" Code="#F6F6F6"/>
+    <Metrics ScrollbarSize="10" FontSize="13" ControlHeight="30" RowHeight="36" SplitterSize="3" PaddingX="11" PaddingY="5" Spacing="8"/>
+    <Syntax Comment="#6B6B6B" String="#0A7A3E" Number="#9A6700" Keyword="#0A6CDB" Type="#8250DF" Function="#953800" Heading="#1F1F1F" Strong="#000000" Link="#0969DA"/>
+    <Style Widget="ScrollBox" Track="#00000000" Handle="#C4C4C4" HandleHovered="#8A8A8A"/>
+    <Style Widget="ListView" Track="#00000000" Handle="#C4C4C4" HandleHovered="#8A8A8A"/>
+    <Style Widget="TreeView" Track="#00000000" Handle="#C4C4C4" HandleHovered="#8A8A8A"/>
+    <Style Widget="TextEditor" Track="#00000000" Handle="#C4C4C4" HandleHovered="#8A8A8A"/>
+    <Style Widget="ListView" Class="nav-list" Input="#F6F6F600"/>
+    <Style Widget="TreeView" Class="file-tree" Input="#FFFFFF00" Border="#00000000" ControlBorder="#00000000" Focus="#00000000" RowHeight="26" Indent="14"/>
+    <Style Widget="Button" CornerRadius="7" PaddingX="12"/>
+    <Style Widget="Button" Class="danger" Text="#CF222E"/>
+    <Style Widget="Button" Class="header-action" Control="#00000000" ControlHovered="#F1F1F1" ControlPressed="#E8E8E8" Text="#1F1F1F"/>
+    <Style Widget="Button" Class="send-button" Control="#F1F1F1" ControlHovered="#E8E8E8" ControlPressed="#DDDDDD" Text="#1F1F1F" CornerRadius="17"/>
+    <Style Widget="HeaderBar" Header="#F6F6F6" Text="#1F1F1F"/>
+    <Style Widget="TextEditor" Class="composer-input" Input="#00000000" Border="#00000000" ControlBorder="#00000000" RowHovered="#00000000"/>
+    <Style Widget="Label" Class="section" Text="#6B6B6B" FontSize="11"/>
+    <Style Widget="Label" Class="muted" Text="#6B6B6B"/>
+    <Style Widget="Label" Class="data" Text="#0A6CDB" FontSize="11"/>
+    <Style Widget="Label" Class="proposal-title" Text="#0A6CDB"/>
+    <Style Class="surface" Panel="#F6F6F6" CornerRadius="0"/>
+    <Style Class="workspace" Window="#FFFFFF" Panel="#FFFFFF" CornerRadius="0"/>
+    <Style Class="tabs" Panel="#FFFFFF" Header="#00000000" TabActive="#00000000" CornerRadius="0"/>
+    <Style Class="run-header" Panel="#F6F6F6" Border="#E2E2E2" CornerRadius="0"/>
+    <Style Class="section-header" Panel="#F6F6F6" Border="#E2E2E2" CornerRadius="0"/>
+    <Style Class="tool-header" Panel="#00000000" Border="#00000000" CornerRadius="10"/>
+    <Style Class="composer" Panel="#FFFFFF" Border="#D2D2D2" CornerRadius="14"/>
+    <Style Class="activity" Panel="#FFFFFF" Border="#D2D2D2" CornerRadius="14"/>
+    <Style Class="statusbar" Panel="#F3F3F3" Border="#E2E2E2" CornerRadius="0"/>
+    <Style Class="proposal" Panel="#F0F5FC" Border="#B9CDEA" CornerRadius="10"/>
+</Theme>

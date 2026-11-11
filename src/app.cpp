@@ -98,6 +98,7 @@ int theme_family(int index) {
 
 int theme_finish(int index) {
     if (index >= 14 && index <= 18) return 2;
+    if (index == 19 || index == 20) return index - 19;
     return index == 4 || index == 5 || index == 8 || index == 11 || index == 13 ? 1 : 0;
 }
 
@@ -364,6 +365,7 @@ const std::vector<PaletteCommand>& palette_commands() {
         {"Activity", "Inspect live agent work and run details", "activity.open"},
         {"Alerts", "Open notification history", "alerts.view"},
         {"Choose your world", "Open the planet theme gallery", "theme.browser"},
+        {"Use Graphite", "Switch to the neutral Graphite theme", "theme.graphite"},
         {"Settings", "Appearance, harness, zoom, and keyboard", "settings.toggle"},
         {"Show or fold navigation", "Toggle the left sidebar", "sidebar.left"},
         {"Show or fold context panel", "Toggle the right sidebar", "sidebar.right"},
@@ -422,7 +424,7 @@ bool App::create() {
         "shortcut.changed", "shortcut.rebind", "shortcut.reset",
         "theme.earth", "theme.earth.light", "theme.earth.glass", "theme.miller", "theme.miller.light", "theme.miller.glass", "theme.mann", "theme.mann.dark", "theme.mann.glass",
         "theme.edmunds", "theme.edmunds.dark", "theme.edmunds.glass", "theme.gargantua", "theme.gargantua.light", "theme.gargantua.glass",
-        "theme.browser", "theme.gallery.close", "theme.gallery.previous", "theme.gallery.next",
+        "theme.browser", "theme.graphite", "theme.gallery.close", "theme.gallery.previous", "theme.gallery.next",
         "theme.gallery.dark", "theme.gallery.light", "theme.gallery.glass", "memory.open", "memory.fit", "memory.forget", "splash.skip", "splash.sound",
         "tesseract.open", "tesseract.fit", "tesseract.zoom.in", "tesseract.zoom.out", "tesseract.selection.clear",
         "endurance.open", "endurance.workflow", "endurance.new", "endurance.duplicate", "endurance.validate", "endurance.run", "endurance.view",
@@ -1693,15 +1695,17 @@ void App::select_theme(int index) {
     static const char* names[] = {
         "RavenIDE", "LedgerLight", "LedgerHighContrast", "MillerPlanet", "MannPlanet", "EdmundsPlanet",
         "Gargantua", "LedgerHighContrastLight", "MillerPlanetLight", "MannPlanetDark", "EdmundsPlanetDark", "GargantuaLight",
-        "EarthPlanet", "EarthPlanetLight", "EarthPlanetGlass", "MillerPlanetGlass", "MannPlanetGlass", "EdmundsPlanetGlass", "GargantuaGlass"
+        "EarthPlanet", "EarthPlanetLight", "EarthPlanetGlass", "MillerPlanetGlass", "MannPlanetGlass", "EdmundsPlanetGlass", "GargantuaGlass",
+        "Graphite", "GraphiteLight"
     };
     static const char* labels[] = {
         "Ledger Dark", "Ledger Light", "High Contrast Dark", "Miller's Planet Dark", "Mann's Planet Light", "Edmunds' Planet Light",
         "Gargantua Dark", "High Contrast Light", "Miller's Planet Light", "Mann's Planet Dark", "Edmunds' Planet Dark", "Gargantua Light",
-        "Earth Dark", "Earth Light", "Earth Glass", "Miller's Planet Glass", "Mann's Planet Glass", "Edmunds' Planet Glass", "Gargantua Glass"
+        "Earth Dark", "Earth Light", "Earth Glass", "Miller's Planet Glass", "Mann's Planet Glass", "Edmunds' Planet Glass", "Gargantua Glass",
+        "Graphite Dark", "Graphite Light"
     };
-    if (index < 3 || index == 7 || index > 18) {
-        set_status("Only Interstellar planet themes are available");
+    if (index < 3 || index == 7 || index > 20) {
+        set_status("Only the planet and Graphite themes are available");
         return;
     }
     if (!Rtheme_use(names[index])) {
@@ -1716,12 +1720,14 @@ void App::select_theme(int index) {
     Rwidget_set_user_handle(id("theme.current.art"), reinterpret_cast<void*>(static_cast<intptr_t>(index + 1)));
     Rwidget_invalidate(id("theme.current.art"));
     static const char* family_labels[] = {"Earth", "Miller's Planet", "Mann's Planet", "Edmunds' Planet", "Gargantua"};
-    const int family = theme_family(index);
-    const int finish = theme_finish(index);
+    // Graphite is not a planet: the gallery keeps showing the last planet world.
+    const bool graphite = index >= 19;
+    const int family = graphite ? theme_gallery_.family() : theme_family(index);
+    const int finish = graphite ? -1 : theme_finish(index);
     if (Rwidget_get_visibility(id("theme.gallery")) != R_VISIBLE || theme_gallery_.family() != family) {
         theme_gallery_.set_family(family, Rwidget_get_visibility(id("theme.gallery")) == R_VISIBLE);
     }
-    theme_gallery_.set_finish(finish);
+    if (!graphite) theme_gallery_.set_finish(finish);
     Rlabel_set_text(id("theme.gallery.family"), family_labels[family]);
     Rlabel_set_text(id("theme.gallery.position"), (std::to_string(family + 1) + " / 5").c_str());
     Rbutton_set_style(id("theme.gallery.dark"), finish == 0 ? R_BUTTON_PRIMARY : R_BUTTON_FLAT);
@@ -1729,7 +1735,7 @@ void App::select_theme(int index) {
     Rbutton_set_style(id("theme.gallery.glass"), finish == 2 ? R_BUTTON_PRIMARY : R_BUTTON_FLAT);
     Rwidget_set_accessible_name(id("theme.carousel"), (family_labels[family] + std::string(" preview, ") + std::to_string(family + 1) + " of 5").c_str());
     Rwidget_invalidate(id("theme.carousel"));
-    const bool dark = index == 3 || index == 6 || index == 9 || index == 10 || index == 12 || (index >= 14 && index <= 18);
+    const bool dark = index == 3 || index == 6 || index == 9 || index == 10 || index == 12 || (index >= 14 && index <= 18) || index == 19;
     Rwidget_set_visibility(id("appearance.sun"), dark ? R_VISIBLE : R_COLLAPSED);
     Rwidget_set_visibility(id("appearance.moon"), dark ? R_COLLAPSED : R_VISIBLE);
     Rbutton_set_text(id("settings.appearance.toggle"), dark ? "Switch to light" : "Switch to dark");
@@ -1775,7 +1781,7 @@ void App::select_theme(int index) {
 }
 
 void App::toggle_appearance() {
-    static const int partners[] = {1, 0, 7, 8, 9, 10, 11, 2, 3, 4, 5, 6, 13, 12, 13, 8, 4, 5, 11};
+    static const int partners[] = {1, 0, 7, 8, 9, 10, 11, 2, 3, 4, 5, 6, 13, 12, 13, 8, 4, 5, 11, 20, 19};
     select_theme(partners[theme_index_]);
 }
 
@@ -3439,6 +3445,7 @@ void App::pump() {
     }
     sync_accessibility();
     pump_file_tree();
+    clamp_side_panes();
     // The Review → Knowledge tab follows the pending proposal. A cheap key detects changes.
     const auto proposal_key = proposal_ ? proposal_->summary + "#" + std::to_string(proposal_->edits.size()) + "#" +
         std::to_string(proposal_->graph.size()) : std::string();
@@ -3561,6 +3568,30 @@ void App::sync_accessibility() {
     }
     const bool covered = splash_.active() || Rwidget_get_visibility(id("theme.gallery")) == R_VISIBLE;
     Rwidget_set_accessible_hidden(id("app.shell"), covered);
+}
+
+// Raven's splitter ignores MaxWidth while dragging and grows every pane with the window, so the
+// sidebars could be dragged across most of the window. Each frame they are held to their range
+// (navigation 240–310px, the right panel 300–380px) and the center takes the rest.
+void App::clamp_side_panes() {
+    const auto left = id("left.sidebar");
+    const auto center = id("center.workspace");
+    const auto right = id("right.sidebar");
+    const auto width = [](Rid pane) {
+        if (!Rwidget_is_valid(pane) || Rwidget_get_visibility(pane) != R_VISIBLE) return 0.0f;
+        float x = 0.0f, y = 0.0f, w = 0.0f, h = 0.0f;
+        Rwidget_get_rect(pane, &x, &y, &w, &h);
+        return w;
+    };
+    const float lw = width(left), cw = width(center), rw = width(right);
+    if (cw <= 0.0f) return;
+    const float l = lw > 0.0f ? std::clamp(lw, 240.0f, 310.0f) : 0.0f;
+    const float r = rw > 0.0f ? std::clamp(rw, 300.0f, 380.0f) : 0.0f;
+    if (std::abs(l - lw) < 1.0f && std::abs(r - rw) < 1.0f) return;
+    const float c = std::max(420.0f, lw + cw + rw - l - r);
+    if (l > 0.0f) Rslot_set_fill(left, l);
+    if (r > 0.0f) Rslot_set_fill(right, r);
+    Rslot_set_fill(center, c);
 }
 
 // The Files explorer: a tree of the workspace like a code editor's, folders first, loaded lazily.
@@ -5342,6 +5373,7 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "theme.gallery.light") app.select_theme(theme_index(app.theme_gallery_.family(), 1));
     else if (name == "theme.gallery.glass") app.select_theme(theme_index(app.theme_gallery_.family(), 2));
     else if (name == "theme.earth") app.select_theme(12);
+    else if (name == "theme.graphite") app.select_theme(app.theme_index_ == 20 ? 20 : 19);
     else if (name == "theme.earth.light") app.select_theme(13);
     else if (name == "theme.earth.glass") app.select_theme(14);
     else if (name == "theme.miller") app.select_theme(3);

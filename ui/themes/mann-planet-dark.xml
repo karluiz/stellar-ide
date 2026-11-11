@@ -7,7 +7,7 @@
         Separator="#36505C" Header="#111F26" HeaderHovered="#294451" TabActive="#20404E"
         Popup="#13252D" PopupBorder="#527685" Focus="#7FC7DE"
         Success="#8FD5B2" Warning="#E5B567" Danger="#F07575" Link="#8AD4E8" Code="#13252D"/>
-    <Metrics ScrollbarSize="10" FontSize="13" ControlHeight="34" RowHeight="36" SplitterSize="3" PaddingX="11" PaddingY="7" Spacing="8"/>
+    <Metrics ScrollbarSize="10" FontSize="13" ControlHeight="30" RowHeight="36" SplitterSize="3" PaddingX="11" PaddingY="5" Spacing="8"/>
     <Syntax Comment="#9AB0B9" String="#8FD5B2" Number="#E5B567" Keyword="#7FC7DE" Type="#8AD4E8" Function="#C4DCE4" Heading="#EAF4F7" Strong="#FFFFFF" Link="#8AD4E8"/>
     <!-- Scrollbars stay quiet until hovered: no track, a muted thumb, and the accent only under the pointer. -->
     <Style Widget="ScrollBox" Track="#00000000" Handle="#527685" HandleHovered="#7FB7C9"/>
@@ -17,11 +17,11 @@
     <Style Widget="FileBrowser" Track="#00000000" Handle="#527685" HandleHovered="#7FB7C9"/>
     <!-- Navigation lists sit directly on the sidebar: only rows carry a fill. The transparent fill keeps the panel hue so an unfocused selection blends toward it, not toward black. -->
     <Style Widget="ListView" Class="nav-list" Input="#111F2600"/>
-    <!-- Buttons: one 30px height everywhere. Default is the secondary action (control fill and border), Primary the one main
+    <!-- Buttons share the 30px ControlHeight of every input and combo box. Default is the secondary action (control fill and border), Primary the one main
          action of a view, Flat only toolbars and icons. "danger" marks destructive actions with the Danger colour. -->
     <!-- The Files tree sits directly on the workspace surface, with compact rows like a code editor explorer. -->
     <Style Widget="TreeView" Class="file-tree" Input="#0B141800" Border="#00000000" ControlBorder="#00000000" Focus="#00000000" RowHeight="26" Indent="14"/>
-    <Style Widget="Button" CornerRadius="7" ControlHeight="30" PaddingX="12" PaddingY="5"/>
+    <Style Widget="Button" CornerRadius="7" PaddingX="12"/>
     <Style Widget="Button" Class="danger" Text="#F07575"/>
     <Style Widget="Button" Class="header-action" Control="#00000000" ControlHovered="#1D323D" ControlPressed="#294451" Text="#EAF4F7"/>
     <Style Widget="Button" Class="send-button" Control="#1D323D" ControlHovered="#294451" ControlPressed="#365866" Text="#EAF4F7" CornerRadius="17"/>
@@ -33,7 +33,8 @@
     <Style Widget="Label" Class="proposal-title" Text="#7FC7DE"/>
     <Style Class="surface" Panel="#111F26" CornerRadius="0"/>
     <Style Class="workspace" Window="#0B1418" Panel="#0B1418" CornerRadius="0"/>
-    <Style Class="tabs" Panel="#0D181E" CornerRadius="0"/>
+    <!-- Tabs are text with an accent underline on one divider line: no strip or active fill. -->
+    <Style Class="tabs" Panel="#0D181E" Header="#00000000" TabActive="#00000000" CornerRadius="0"/>
     <Style Class="run-header" Panel="#111F26" Border="#36505C" CornerRadius="0"/>
     <Style Class="section-header" Panel="#13252D" Border="#36505C" CornerRadius="0"/>
     <Style Class="tool-header" Panel="#00000000" Border="#00000000" CornerRadius="10"/>

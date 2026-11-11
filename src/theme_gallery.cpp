@@ -603,6 +603,12 @@ int ThemeGallery::event(Rid widget, const REvent* event) {
 
 void ThemeGallery::paint(Rid widget, RPainter* painter, float width, float height) const {
     const int index = static_cast<int>(reinterpret_cast<intptr_t>(Rwidget_get_user_handle(widget))) - 1;
+    // Graphite is not a planet world: its chip is a plain accent dot.
+    if (index == 19 || index == 20) {
+        const float radius = std::min(width, height) * 0.3f;
+        circle(painter, width * 0.5f, height * 0.5f, radius, rgb(index == 19 ? 0x4C9AFF : 0x0A6CDB));
+        return;
+    }
     static RSpring hover_springs[19];
     const float hover = index >= 0 && index < 19 ? Rdraw_spring(painter, &hover_springs[index], Rwidget_is_hovered(widget) ? 1.0f : 0.0f, R_MOTION_SMOOTH) : 0.0f;
     paint_scene(painter, index, 0.0f, 0.0f, width, height, static_cast<float>(time_), hover,

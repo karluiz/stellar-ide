@@ -359,6 +359,15 @@ Most divisions are one-pixel theme-colored strokes. Graph nodes retain an 11px n
 
 ## Components
 
+### Control rhythm
+Every control is 30px: buttons, text inputs, combo boxes, and icon buttons (`ControlHeight="30"`, 5px vertical padding in every theme), so a row of mixed controls shares one top and bottom edge. Buttons that end a stack of rows share one width so the fields beside them end on one line (Review: 116px). Tab views sit on the content edge (14px), and tabs are text with an accent underline on a single divider, with no strip or active fill.
+
+### Pane limits
+The navigation sidebar stays between 240 and 310px and the right panel between 300 and 380px, both while dragging and when the window grows; the center takes the rest and never drops below 420px.
+
+### Graphite
+A neutral finish alongside the planet worlds, in dark and light: gray surfaces, one blue accent (#4C9AFF dark, #0A6CDB light), and no tinted chrome, for people who want the quiet look of a terminal. Chosen from Settings → Appearance → Graphite or the command palette; the sun/moon toggle switches between its two finishes, and its status chip is a plain accent dot.
+
 ### Sidebar grid
 One left edge for everything in the sidebar: an 8px outer gutter and a 10px inner inset put section labels, destination icons, the list heading, the search text and chat titles all at 18px. Destinations are 32px rows with 2px gaps; the list heading's Archived toggle and archive icon are 28px, 11px text, right-aligned. The chat search is a plain 30px field with no external magnifier.
 

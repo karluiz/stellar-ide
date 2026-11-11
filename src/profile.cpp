@@ -51,7 +51,7 @@ void WorkspaceProfileStore::load() {
     data.interface_zoom = std::clamp(root.value("interface_zoom", data.interface_zoom), 0.5f, 2.0f);
     data.editor_zoom = std::clamp(root.value("editor_zoom", data.editor_zoom), 0.5f, 2.5f);
     data.theme = root.value("theme", data.theme);
-    const int themes[] = {3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
+    const int themes[] = {3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
     if (std::find(std::begin(themes), std::end(themes), data.theme) == std::end(themes)) data.theme = 12;
     data.harness = std::clamp(root.value("harness", data.harness), 0, 1);
     data.run_mode = std::clamp(root.value("run_mode", data.run_mode), 0, 2);

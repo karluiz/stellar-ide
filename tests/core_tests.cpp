@@ -785,6 +785,18 @@ void profile_tests() {
     migrated.save();
     expect(raven::WorkspaceProfileStore(root).data.right_sidebar == false,
            "migrated context preference did not survive reload");
+    for (const int theme : {19, 20}) {
+        raven::WorkspaceProfileStore graphite(root);
+        graphite.data.theme = theme;
+        graphite.save();
+        expect(raven::WorkspaceProfileStore(root).data.theme == theme, "Graphite theme did not survive reload");
+    }
+    {
+        raven::WorkspaceProfileStore unknown(root);
+        unknown.data.theme = 21;
+        unknown.save();
+        expect(raven::WorkspaceProfileStore(root).data.theme == 12, "unknown theme did not fall back to Earth Dark");
+    }
     std::filesystem::remove_all(root);
 }
 

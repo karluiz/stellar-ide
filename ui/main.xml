@@ -202,11 +202,11 @@
                             </HBox>
                         </Border>
                         <HBox Slot.Fill="1">
-                            <VBox Width="260" Slot.Padding="10,8,10,12">
-                                <Label Text="Workspace files" Class="section" Slot.Padding="6,0,6,4"/>
+                            <VBox Width="250" Slot.Padding="14,6,0,14" Spacing="6">
+                                <Label Text="Workspace files" Class="section" Slot.Padding="0,6,0,0"/>
                                 <TreeView Name="workspace.files" Class="file-tree" Slot.Fill="1" AccessibleName="Workspace files"/>
                             </VBox>
-                            <TextEditor Name="code.editor" Slot.Fill="1" Slot.Padding="14,0,14,14" LineNumbers="true" Wrap="true" Placeholder="Open a source file from the workspace explorer"/>
+                            <TextEditor Name="code.editor" Slot.Fill="1" Slot.Padding="14,6,14,14" LineNumbers="true" Wrap="true" Placeholder="Open a source file from the workspace explorer"/>
                         </HBox>
                     </VBox>
                     <VBox Class="workspace" Slot.Title="Endurance">
@@ -253,32 +253,32 @@
                                 <Label Name="endurance.schedule.summary" Text="Turn on Scheduled and save to run this workflow automatically." Class="muted" TextSize="11" Wrap="true"/>
                             </VBox>
                         </Border>
-                        <TabView Name="endurance.views" Class="tabs" Slot.Fill="1" OnChanged="endurance.view">
+                        <TabView Name="endurance.views" Slot.Padding="14,0,14,0" Class="tabs" Slot.Fill="1" OnChanged="endurance.view">
                             <VBox Slot.Title="Canvas">
-                                <HBox Slot.Padding="14,4,14,10" Spacing="7">
+                                <HBox Slot.Padding="0,10,0,10" Spacing="7">
                                     <Button Text="Add step" OnClicked="endurance.step.add"/>
                                     <Button Text="Fit" OnClicked="endurance.graph.fit"/>
                                     <Button Text="Auto layout" OnClicked="endurance.graph.layout"/>
                                     <Label Name="endurance.summary" Text="5 steps · 2 agents · 1 write step" Class="data" TextSize="10" Slot.HAlign="Right" Slot.VAlign="Center"/>
                                 </HBox>
-                                <NodeGraph Name="endurance.graph" Slot.Fill="1" MinHeight="320" Slot.Padding="14,0" ReadOnly="false" AccessibleName="Endurance workflow canvas" AccessibleDescription="Agent and approval steps. Select a node to edit it; drag output to input to add dependencies. Delete removes the selected step."/>
-                                <Label Name="endurance.canvas.status" Text="Select a step to inspect it, or connect outputs to downstream inputs." Class="muted" TextSize="11" Wrap="true" Slot.Padding="18,8,18,14"/>
+                                <NodeGraph Name="endurance.graph" Slot.Fill="1" MinHeight="320" Slot.Padding="0,0" ReadOnly="false" AccessibleName="Endurance workflow canvas" AccessibleDescription="Agent and approval steps. Select a node to edit it; drag output to input to add dependencies. Delete removes the selected step."/>
+                                <Label Name="endurance.canvas.status" Text="Select a step to inspect it, or connect outputs to downstream inputs." Class="muted" TextSize="11" Wrap="true" Slot.Padding="4,8,4,14"/>
                             </VBox>
                             <VBox Slot.Title="YAML">
-                                <HBox Slot.Padding="14,10,14,8" Spacing="8">
+                                <HBox Slot.Padding="0,10,0,8" Spacing="8">
                                     <Label Name="endurance.yaml.path" Text="endurance/mission-1.yaml" Class="data" TextSize="10" Slot.Fill="1" Slot.VAlign="Center"/>
                                     <Label Name="endurance.yaml.status" Text="Valid workflow · no cycles" Class="muted" TextSize="11" Slot.VAlign="Center"/>
                                 </HBox>
-                                <TextEditor Name="endurance.yaml" Font="monospace" Slot.Fill="1" Slot.Padding="14,0,14,14" LineNumbers="true" Wrap="false" Placeholder="version: 1" AccessibleName="Endurance YAML editor"/>
+                                <TextEditor Name="endurance.yaml" Font="monospace" Slot.Fill="1" Slot.Padding="0,0,0,14" LineNumbers="true" Wrap="false" Placeholder="version: 1" AccessibleName="Endurance YAML editor"/>
                             </VBox>
                             <VBox Slot.Title="Runs">
                                 <HBox Slot.Fill="1">
                                     <VBox Name="endurance.run.history" Width="230">
-                                        <Label Text="Run history" Class="section" Slot.Padding="14,14,14,8"/>
+                                        <Label Text="Run history" Class="section" Slot.Padding="0,14,14,8"/>
                                         <ListView Name="endurance.run.list" Class="nav-list" Slot.Fill="1" OnActivated="endurance.run.open" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Endurance run history"/>
                                     </VBox>
                                     <VBox Slot.Fill="1">
-                                        <ComboBox Name="endurance.run.select" OnChanged="endurance.run.select" Visibility="Collapsed" Slot.Padding="12,10,12,0" AccessibleName="Select Endurance run"/>
+                                        <ComboBox Name="endurance.run.select" OnChanged="endurance.run.select" Visibility="Collapsed" Slot.Padding="0,10,0,0" AccessibleName="Select Endurance run"/>
                                         <Border Class="section-header" Padding="16,12" BorderWidth="1">
                                             <HBox Spacing="10">
                                                 <VBox Slot.Fill="1" Spacing="4">
@@ -289,7 +289,7 @@
                                                 <Button Name="endurance.run.resume" Text="Resume" OnClicked="endurance.run.resume" Visibility="Collapsed" Slot.VAlign="Center"/>
                                             </HBox>
                                         </Border>
-                                        <Border Name="endurance.approval" Class="proposal" Padding="14" BorderWidth="1" Slot.Padding="14,10,14,0" Visibility="Collapsed" Appear="Fade">
+                                        <Border Name="endurance.approval" Class="proposal" Padding="14" BorderWidth="1" Slot.Padding="0,10,0,0" Visibility="Collapsed" Appear="Fade">
                                             <HBox Spacing="10">
                                                 <VBox Slot.Fill="1" Spacing="4">
                                                     <Label Text="Implementation needs your approval" Class="proposal-title" Wrap="true"/>
@@ -306,7 +306,7 @@
                                 </HBox>
                             </VBox>
                             <VBox Slot.Title="Live">
-                                <Border Class="tool-header" Padding="0,12" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
+                                <Border Class="tool-header" Padding="0,12" BorderWidth="0" CornerRadius="10" Slot.Padding="0,8,0,4">
                                     <HBox Spacing="14">
                                         <VBox Slot.Fill="1" Spacing="5">
                                             <Label Text="Mission control" TextSize="17"/>
@@ -316,8 +316,8 @@
                                         <Button Text="Fit graph" OnClicked="graph.fit" Slot.VAlign="Center" Tooltip="Frame the complete lineage"/>
                                     </HBox>
                                 </Border>
-                                <NodeGraph Name="graph" Slot.Fill="1" MinHeight="320" Slot.Padding="14,0" ReadOnly="true" AccessibleName="Live agent lineage" AccessibleDescription="Orchestrator and delegated missions. Select a node for details; Fit graph frames the complete lineage."/>
-                                <Label Name="graph.selection" Text="Select a mission to inspect its role and status" Class="muted" TextSize="11" Wrap="true" Slot.Padding="18,10,18,16"/>
+                                <NodeGraph Name="graph" Slot.Fill="1" MinHeight="320" Slot.Padding="0,0" ReadOnly="true" AccessibleName="Live agent lineage" AccessibleDescription="Orchestrator and delegated missions. Select a node for details; Fit graph frames the complete lineage."/>
+                                <Label Name="graph.selection" Text="Select a mission to inspect its role and status" Class="muted" TextSize="11" Wrap="true" Slot.Padding="4,10,4,16"/>
                             </VBox>
                         </TabView>
                     </VBox>
@@ -336,15 +336,15 @@
                             </HBox>
                         </Border>
                         <HBox Slot.Fill="1">
-                            <VBox Width="240" Slot.Padding="10,10,10,12" Spacing="6">
-                                <HBox Slot.Padding="6,0,6,4">
+                            <VBox Width="250" Slot.Padding="14,6,0,14" Spacing="6">
+                                <HBox>
                                     <Label Text="Agent definitions" Class="section" Slot.Fill="1" Slot.VAlign="Center"/>
                                     <Button Text="New" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)"/>
                                 </HBox>
                                 <TextInput Name="agent.search" Placeholder="Search agents…" OnChanged="navigation.search" Tooltip="Filter agent definitions"/>
                                 <ListView Name="agents" Class="nav-list" Slot.Fill="1" OnActivated="agent.open" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
                             </VBox>
-                            <TextEditor Name="agent.editor" Slot.Fill="1" Slot.Padding="14,0,14,14" Markdown="true" LineNumbers="true" Wrap="true" Placeholder="Select or create an agent definition"/>
+                            <TextEditor Name="agent.editor" Slot.Fill="1" Slot.Padding="14,6,14,14" Markdown="true" LineNumbers="true" Wrap="true" Placeholder="Select or create an agent definition"/>
                         </HBox>
                     </VBox>
                     <VBox Class="workspace" Slot.Title="Settings">
@@ -364,7 +364,8 @@
                                                 <Label Text="Restyle the workspace immediately." Class="muted" TextSize="11" Wrap="true"/>
                                             </VBox>
                                             <Button Name="settings.appearance.toggle" Text="Switch to light" OnClicked="appearance.toggle" Slot.VAlign="Center"/>
-                                            <Button Name="settings.theme.gallery" Text="Choose a world" OnClicked="theme.browser" Width="150" Slot.VAlign="Center"/>
+                                            <Button Name="settings.theme.graphite" Text="Graphite" OnClicked="theme.graphite" Tooltip="Neutral gray theme with a blue accent" Slot.VAlign="Center"/>
+                                            <Button Name="settings.theme.gallery" Text="Choose a world" OnClicked="theme.browser" Slot.VAlign="Center"/>
                                         </HBox>
                                         <HBox Spacing="10">
                                             <VBox Slot.Fill="1" Spacing="4">
@@ -514,53 +515,53 @@
                         <TextEditor Name="mission.diff" Font="monospace" Slot.Fill="1" Slot.Padding="14,0,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Select a mission to inspect its complete diff" Visibility="Collapsed"/>
                     </VBox>
                     </Switcher>
-                    <TabView Name="review.tabs" Class="tabs" Slot.Title="Review" Slot.Fill="1">
+                    <TabView Name="review.tabs" Slot.Padding="14,0,14,0" Class="tabs" Slot.Title="Review" Slot.Fill="1">
                         <VBox Class="workspace" Slot.Title="Code changes">
-                            <Border Class="tool-header" Padding="0,12" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
+                            <Border Class="tool-header" Padding="0,12" BorderWidth="0" CornerRadius="10" Slot.Padding="0,8,0,4">
                                 <VBox Spacing="5">
                                     <Label Name="checkpoint.title" Text="No checkpoints yet" TextSize="17" Wrap="true"/>
                                     <Label Name="checkpoint.summary" Text="Complete a Build run to create a checkpoint. Diffs, hunk restores, and verification results will appear here." Class="muted" Wrap="true"/>
                                 </VBox>
                             </Border>
-                            <HBox Name="checkpoint.history.row" Slot.Padding="14,0,14,8" Spacing="8" Visibility="Collapsed">
+                            <HBox Name="checkpoint.history.row" Slot.Padding="0,0,0,8" Spacing="8" Visibility="Collapsed">
                                 <ComboBox Name="checkpoint.history" Slot.Fill="1" OnChanged="checkpoint.history_changed" Tooltip="Task checkpoint to inspect" AccessibleName="Task checkpoint"/>
-                                <Button Name="checkpoint.restore" Text="Restore task" OnClicked="checkpoint.restore" Tooltip="Restore files to their state before this task"/>
+                                <Button Width="116" Name="checkpoint.restore" Text="Restore task" OnClicked="checkpoint.restore" Tooltip="Restore files to their state before this task"/>
                             </HBox>
-                            <HBox Name="checkpoint.files.row" Slot.Padding="14,0,14,10" Spacing="8" Visibility="Collapsed">
+                            <HBox Name="checkpoint.files.row" Slot.Padding="0,0,0,10" Spacing="8" Visibility="Collapsed">
                                 <ComboBox Name="checkpoint.files" Slot.Fill="1" OnChanged="checkpoint.file_changed" Tooltip="Changed file to inspect" AccessibleName="Changed file"/>
-                                <Button Name="checkpoint.open" Text="Open file" OnClicked="checkpoint.open" Tooltip="Open the selected file in Editor"/>
-                                <Button Name="checkpoint.restore.inline" Text="Restore task" OnClicked="checkpoint.restore" Visibility="Collapsed" Tooltip="Restore files to their state before this task"/>
+                                <Button Width="116" Name="checkpoint.open" Text="Open file" OnClicked="checkpoint.open" Tooltip="Open the selected file in Editor"/>
+                                <Button Width="116" Name="checkpoint.restore.inline" Text="Restore task" OnClicked="checkpoint.restore" Visibility="Collapsed" Tooltip="Restore files to their state before this task"/>
                             </HBox>
-                            <HBox Name="checkpoint.hunks.row" Slot.Padding="14,0,14,10" Spacing="8" Visibility="Collapsed">
+                            <HBox Name="checkpoint.hunks.row" Slot.Padding="0,0,0,10" Spacing="8" Visibility="Collapsed">
                                 <ComboBox Name="checkpoint.hunks" Slot.Fill="1" Tooltip="Diff hunk to restore" AccessibleName="Checkpoint diff hunk"/>
-                                <Button Name="checkpoint.restore_hunk" Text="Restore hunk" OnClicked="checkpoint.restore_hunk" Tooltip="Restore only the selected hunk after validating its file"/>
+                                <Button Width="116" Name="checkpoint.restore_hunk" Text="Restore hunk" OnClicked="checkpoint.restore_hunk" Tooltip="Restore only the selected hunk after validating its file"/>
                             </HBox>
                             <TabView Name="checkpoint.content.tabs" Class="tabs" Slot.Fill="1" Visibility="Collapsed">
-                                <TextEditor Name="checkpoint.diff" Font="monospace" Slot.Title="Diff" Slot.Fill="1" Slot.Padding="14,10,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Complete an agent run to inspect source changes here"/>
+                                <TextEditor Name="checkpoint.diff" Font="monospace" Slot.Title="Diff" Slot.Fill="1" Slot.Padding="0,10,0,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Complete an agent run to inspect source changes here"/>
                                 <VBox Slot.Title="Verification">
-                                    <ListView Name="verification.results" Height="140" OnActivated="verification.open" Slot.Padding="14,8,14,6" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Build and test results"/>
-                                    <HBox Name="verification.actions.row" Slot.Padding="14,0,14,8" Spacing="8">
+                                    <ListView Name="verification.results" Height="140" OnActivated="verification.open" Slot.Padding="0,8,0,6" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Build and test results"/>
+                                    <HBox Name="verification.actions.row" Slot.Padding="0,0,0,8" Spacing="8">
                                         <Button Name="verification.rerun" Text="Rerun check" OnClicked="verification.rerun"/>
                                         <Button Name="verification.watch" Text="Watch checks" OnClicked="verification.watch" Tooltip="Rerun the selected check after autosave"/>
                                         <Label Name="verification.run_state" Class="muted" TextSize="11" Slot.Fill="1" Slot.VAlign="Center"/>
                                     </HBox>
-                                    <HBox Name="verification.diagnostics.row" Slot.Padding="14,0,14,8" Spacing="8">
+                                    <HBox Name="verification.diagnostics.row" Slot.Padding="0,0,0,8" Spacing="8">
                                         <ComboBox Name="verification.diagnostics" Slot.Fill="1" Tooltip="Diagnostic to inspect" AccessibleName="Verification diagnostic"/>
                                         <Button Name="verification.open_diagnostic" Text="Open diagnostic" OnClicked="verification.open_diagnostic" Tooltip="Open the diagnostic at its source line"/>
                                     </HBox>
-                                    <TextEditor Name="verification.detail" Font="monospace" Slot.Fill="1" Slot.Padding="14,10,14,14" ReadOnly="true" LineNumbers="true" Wrap="true" Placeholder="Build and test commands from the agent run will appear here"/>
+                                    <TextEditor Name="verification.detail" Font="monospace" Slot.Fill="1" Slot.Padding="0,10,0,14" ReadOnly="true" LineNumbers="true" Wrap="true" Placeholder="Build and test commands from the agent run will appear here"/>
                                 </VBox>
                             </TabView>
                         </VBox>
                         <VBox Class="workspace" Slot.Title="Knowledge">
-                            <Border Class="tool-header" Padding="0,12" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
+                            <Border Class="tool-header" Padding="0,12" BorderWidth="0" CornerRadius="10" Slot.Padding="0,8,0,4">
                                 <VBox Spacing="5">
                                     <Label Name="proposal.title" Text="No pending proposal" TextSize="17" Wrap="true"/>
                                     <Label Name="proposal.files" Class="muted" Wrap="true"/>
                                 </VBox>
                             </Border>
-                            <TextEditor Name="proposal.diff" Font="monospace" Slot.Fill="1" Slot.Padding="14,0,14,14" ReadOnly="true" LineNumbers="true" Wrap="true" Placeholder="A completed run can produce a knowledge proposal to review here"/>
-                            <HBox Name="proposal.actions" Slot.Padding="18,14" Spacing="10">
+                            <TextEditor Name="proposal.diff" Font="monospace" Slot.Fill="1" Slot.Padding="0,0,0,14" ReadOnly="true" LineNumbers="true" Wrap="true" Placeholder="A completed run can produce a knowledge proposal to review here"/>
+                            <HBox Name="proposal.actions" Slot.Padding="0,14" Spacing="10">
                                 <Label Text="Validated against current files before writing" Class="muted" Slot.Fill="1" Slot.VAlign="Center"/>
                                 <Button Class="danger" Text="Discard" OnClicked="proposal.discard"/>
                                 <Button Name="proposal.accept" Text="Accept and write" Style="Primary" OnClicked="proposal.accept"/>
@@ -610,13 +611,13 @@
                                     </HBox>
                                     <TextEditor Name="tesseract.composer" Class="composer-input" Height="48" Wrap="true" AutoPairs="false" Placeholder="Describe an interface · paste a reference image…" AccessibleName="Tesseract prompt"/>
                                     <HBox Spacing="8">
-                                        <Overlay Width="36" Height="34">
-                                            <Button Name="tesseract.setup" Text="" Width="36" Height="34" Style="Flat" OnClicked="run.setup.toggle" Tooltip="Run setup · model, effort, harness, and mode (Ctrl+Shift+E)" AccessibleName="Run setup"/>
+                                        <Overlay Width="30" Height="30">
+                                            <Button Name="tesseract.setup" Text="" Width="30" Height="30" Style="Flat" OnClicked="run.setup.toggle" Tooltip="Run setup · model, effort, harness, and mode (Ctrl+Shift+E)" AccessibleName="Run setup"/>
                                             <Image Source="icons/setup.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
                                         </Overlay>
                                         <Spacer Slot.Fill="1"/>
-                                        <Overlay Width="36" Height="34">
-                                            <Button Name="tesseract.send" Text="" Width="36" Height="34" Style="Flat" Class="send-button" OnClicked="run.send" Tooltip="Create with agent (Enter)" AccessibleName="Create with agent"/>
+                                        <Overlay Width="30" Height="30">
+                                            <Button Name="tesseract.send" Text="" Width="30" Height="30" Style="Flat" Class="send-button" OnClicked="run.send" Tooltip="Create with agent (Enter)" AccessibleName="Create with agent"/>
                                             <Image Source="icons/send.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
                                         </Overlay>
                                     </HBox>
@@ -705,7 +706,7 @@
                             <VBox Spacing="9">
                                 <HBox Spacing="8">
                                     <TextInput Name="knowledge.search" Placeholder="Search knowledge…" OnCommitted="knowledge.search" Slot.Fill="1"/>
-                                    <Button Text="Universe" Style="Flat" OnClicked="memory.open" Tooltip="Visualize reviewed memory" Slot.VAlign="Center"/>
+                                    <Button Text="Universe" OnClicked="memory.open" Tooltip="Visualize reviewed memory" Slot.VAlign="Center"/>
                                 </HBox>
                                 <Label Name="knowledge.stats" Text="0 entities · 0 relations" Class="muted" TextSize="11" Wrap="true"/>
                             </VBox>
