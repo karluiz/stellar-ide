@@ -69,6 +69,14 @@ std::string conversation_title(const std::string& prompt) {
     return title.empty() ? "New conversation" : title;
 }
 
+// Compact age for list rows: "now", "5m", "3h", "2d".
+std::string relative_age(std::int64_t timestamp) {
+    if (timestamp <= 0) return "";
+    const auto seconds = std::max<std::int64_t>(0, static_cast<std::int64_t>(std::time(nullptr)) - timestamp);
+    return seconds < 60 ? "now" : seconds < 3600 ? std::to_string(seconds / 60) + "m"
+        : seconds < 86400 ? std::to_string(seconds / 3600) + "h" : std::to_string(seconds / 86400) + "d";
+}
+
 std::string counted(size_t count, const char* noun) {
     return std::to_string(count) + " " + noun + (count == 1 ? "" : "s");
 }
@@ -1230,11 +1238,7 @@ void App::refresh_threads() {
         std::string suffix;
         if (thread.id == current_thread_id_ && (lead_process_.running() || wiki_process_.running())) suffix = "running";
         else if (thread.id == current_thread_id_ && last_run_failed_) suffix = "failed";
-        else if (thread.updated_at > 0) {
-            const auto age = std::max<std::int64_t>(0, static_cast<std::int64_t>(std::time(nullptr)) - thread.updated_at);
-            suffix = age < 60 ? "now" : age < 3600 ? std::to_string(age / 60) + "m"
-                : age < 86400 ? std::to_string(age / 3600) + "h" : std::to_string(age / 86400) + "d";
-        }
+        else suffix = relative_age(thread.updated_at);
         const size_t width = suffix.empty() ? 26 : 26 - std::min<size_t>(suffix.size() + 3, 12);
         Rlist_view_add_item(id("threads"), (shortened(thread.title, width) + (suffix.empty() ? "" : " · " + suffix)).c_str());
     }
@@ -2587,12 +2591,7 @@ void App::refresh_notifications() {
         // and when, and the body appears in the detail below once selected.
         auto title = entry->title;
         if (title.rfind("Stellar · ", 0) == 0) title.erase(0, std::string("Stellar · ").size());
-        std::string age;
-        if (entry->created_at > 0) {
-            const auto seconds = std::max<std::int64_t>(0, static_cast<std::int64_t>(std::time(nullptr)) - entry->created_at);
-            age = seconds < 60 ? "now" : seconds < 3600 ? std::to_string(seconds / 60) + "m"
-                : seconds < 86400 ? std::to_string(seconds / 3600) + "h" : std::to_string(seconds / 86400) + "d";
-        }
+        const auto age = relative_age(entry->created_at);
         Rlist_view_add_item(id("alerts.list"), (shortened(title, 34) + (age.empty() ? "" : " · " + age)).c_str());
     }
     Rwidget_set_enabled(id("alerts.clear"), !entries.empty());
