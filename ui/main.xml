@@ -224,7 +224,7 @@
                                     <TextInput Name="endurance.schedule.cron" Text="0 9 * * 1-5" Placeholder="minute hour day month weekday" Slot.Fill="1" AccessibleName="Custom cron expression"/>
                                     <Button Text="Save recurrence" Style="Primary" OnClicked="endurance.schedule.save" Slot.VAlign="Center"/>
                                 </HBox>
-                                <Label Name="endurance.schedule.summary" Text="Recurrence is disabled. Manual runs remain available." Class="muted" TextSize="11" Wrap="true"/>
+                                <Label Name="endurance.schedule.summary" Text="Turn on Scheduled and save to run this workflow automatically." Class="muted" TextSize="11" Wrap="true"/>
                             </VBox>
                         </Border>
                         <TabView Name="endurance.views" Class="tabs" Slot.Fill="1" OnChanged="endurance.view">

@@ -5104,7 +5104,7 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "endurance.schedule.save") app.save_endurance_recurrence();
     else if (name == "endurance.schedule.enabled") {
         Rlabel_set_text(app.id("endurance.schedule.summary"), Rcheckbox_is_checked(app.id("endurance.schedule.enabled"))
-            ? "Scheduled recurrence will be saved with this workflow." : "Recurrence is disabled. Manual runs remain available.");
+            ? "Scheduled recurrence will be saved with this workflow." : "Turn on Scheduled and save to run this workflow automatically.");
     }
     else if (name == "endurance.schedule.frequency") {
         const int frequency = Rcombo_box_get_selected(app.id("endurance.schedule.frequency"));

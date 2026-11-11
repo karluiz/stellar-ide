@@ -561,7 +561,7 @@ void App::update_endurance_schedule_controls() {
     Rlabel_set_text(id("endurance.schedule.next"), schedule ? ("Next run · " + time_label(schedule->next_at, recurrence.timezone)).c_str() : "Manual trigger only");
     Rlabel_set_text(id("endurance.schedule.summary"), recurrence.enabled
         ? (recurrence.expression + " · " + recurrence.timezone + " · overlap " + recurrence.overlap + " · missed " + recurrence.missed_runs).c_str()
-        : "Recurrence is disabled. Manual runs remain available.");
+        : "Turn on Scheduled and save to run this workflow automatically.");  // the header already says "Manual trigger only"
 }
 
 void App::save_endurance_recurrence() {
