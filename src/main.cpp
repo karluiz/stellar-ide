@@ -95,8 +95,9 @@ int main(int argc, char** argv) {
             else if (value == "gargantua") theme = 6;
             else if (value == "gargantua-light") theme = 11;
             else if (value == "gargantua-glass") theme = 18;
-            else if (value == "graphite") theme = 19;
-            else if (value == "graphite-light") theme = 20;
+            else if (value == "wormhole") theme = 19;
+            else if (value == "wormhole-light") theme = 20;
+            else if (value == "wormhole-glass") theme = 21;
             else {
                 std::cerr << "Unknown theme: " << value << " (expected a supported planet variant, for example earth, mann-dark, or miller-glass)\n";
                 return 2;
@@ -127,7 +128,7 @@ int main(int argc, char** argv) {
         else if (argument == "--tesseract") tesseract = true;
         else if (argument == "--demo") demo = true;
         else if (argument == "--help") {
-            std::cout << "raven-ide [--workspace PATH] [--harness claude|kimi] [--mode build|ask|review] [--watch] [--endurance] [--memory] [--tesseract] [--theme earth|earth-light|earth-glass|miller|miller-light|miller-glass|mann|mann-dark|mann-glass|edmunds|edmunds-dark|edmunds-glass|gargantua|gargantua-light|gargantua-glass|graphite|graphite-light] [--prompt TEXT] [--workflow-task TEXT] [--open-file PATH] [--demo]\n";
+            std::cout << "raven-ide [--workspace PATH] [--harness claude|kimi] [--mode build|ask|review] [--watch] [--endurance] [--memory] [--tesseract] [--theme earth|earth-light|earth-glass|miller|miller-light|miller-glass|mann|mann-dark|mann-glass|edmunds|edmunds-dark|edmunds-glass|gargantua|gargantua-light|gargantua-glass|wormhole|wormhole-light|wormhole-glass] [--prompt TEXT] [--workflow-task TEXT] [--open-file PATH] [--demo]\n";
             return 0;
         } else if (!argument.empty() && argument[0] != '-') {
             workspace = argument;
@@ -170,8 +171,9 @@ int main(int argc, char** argv) {
         "gargantua.xml",
         "gargantua-light.xml",
         "gargantua-glass.xml",
-        "graphite.xml",
-        "graphite-light.xml"
+        "wormhole.xml",
+        "wormhole-light.xml",
+        "wormhole-glass.xml"
     };
     for (const auto* file : theme_files) {
         const auto path = ui_dir / "themes" / file;

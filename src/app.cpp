@@ -89,6 +89,7 @@ std::string counted(size_t count, const char* noun) {
 }
 
 int theme_family(int index) {
+    if (index >= 19 && index <= 21) return 5;
     if (index >= 12 && index <= 14) return 0;
     if (index == 3 || index == 8 || index == 15) return 1;
     if (index == 4 || index == 9 || index == 16) return 2;
@@ -98,15 +99,15 @@ int theme_family(int index) {
 
 int theme_finish(int index) {
     if (index >= 14 && index <= 18) return 2;
-    if (index == 19 || index == 20) return index - 19;
+    if (index >= 19 && index <= 21) return index - 19;
     return index == 4 || index == 5 || index == 8 || index == 11 || index == 13 ? 1 : 0;
 }
 
 int theme_index(int family, int finish) {
-    static const int indices[5][3] = {
-        {12, 13, 14}, {3, 8, 15}, {9, 4, 16}, {10, 5, 17}, {6, 11, 18}
+    static const int indices[6][3] = {
+        {12, 13, 14}, {3, 8, 15}, {9, 4, 16}, {10, 5, 17}, {6, 11, 18}, {19, 20, 21}
     };
-    return indices[std::clamp(family, 0, 4)][std::clamp(finish, 0, 2)];
+    return indices[std::clamp(family, 0, 5)][std::clamp(finish, 0, 2)];
 }
 
 std::string join(const std::vector<std::string>& values, const std::string& separator) {
@@ -365,7 +366,6 @@ const std::vector<PaletteCommand>& palette_commands() {
         {"Activity", "Inspect live agent work and run details", "activity.open"},
         {"Alerts", "Open notification history", "alerts.view"},
         {"Choose your world", "Open the planet theme gallery", "theme.browser"},
-        {"Use Graphite", "Switch to the neutral Graphite theme", "theme.graphite"},
         {"Settings", "Appearance, harness, zoom, and keyboard", "settings.toggle"},
         {"Show or fold navigation", "Toggle the left sidebar", "sidebar.left"},
         {"Show or fold context panel", "Toggle the right sidebar", "sidebar.right"},
@@ -424,7 +424,7 @@ bool App::create() {
         "shortcut.changed", "shortcut.rebind", "shortcut.reset",
         "theme.earth", "theme.earth.light", "theme.earth.glass", "theme.miller", "theme.miller.light", "theme.miller.glass", "theme.mann", "theme.mann.dark", "theme.mann.glass",
         "theme.edmunds", "theme.edmunds.dark", "theme.edmunds.glass", "theme.gargantua", "theme.gargantua.light", "theme.gargantua.glass",
-        "theme.browser", "theme.graphite", "theme.gallery.close", "theme.gallery.previous", "theme.gallery.next",
+        "theme.browser", "theme.gallery.close", "theme.gallery.previous", "theme.gallery.next",
         "theme.gallery.dark", "theme.gallery.light", "theme.gallery.glass", "memory.open", "memory.fit", "memory.forget", "splash.skip", "splash.sound",
         "tesseract.open", "tesseract.fit", "tesseract.zoom.in", "tesseract.zoom.out", "tesseract.selection.clear",
         "endurance.open", "endurance.workflow", "endurance.new", "endurance.duplicate", "endurance.validate", "endurance.run", "endurance.view",
@@ -539,7 +539,6 @@ bool App::create() {
         }
         return R_FALSE;
     }, this);
-    Rwidget_set_color(id("threads"), R_COLOR_INPUT, 0.0f, 0.0f, 0.0f, 0.0f);
     Rwidget_set_color(id("composer"), R_COLOR_FOCUS, 0.0f, 0.0f, 0.0f, 0.0f);
     Rwidget_set_color(id("composer"), R_COLOR_ROW_HOVERED, 0.0f, 0.0f, 0.0f, 0.0f);
     Rwidget_set_color(id("tesseract.composer"), R_COLOR_FOCUS, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -1686,7 +1685,7 @@ void App::select_watch_checks(bool enabled) {
 }
 
 void App::update_composer_focus() {
-    const bool glass = theme_index_ >= 14 && theme_index_ <= 18;
+    const bool glass = (theme_index_ >= 14 && theme_index_ <= 18) || theme_index_ == 21;
     const bool focused = Rwidget_is_focused(id("composer"));
     Rwidget_set_opacity(id("composer.shell"), glass && !focused ? 0.82f : 1.0f);
 }
@@ -1696,16 +1695,16 @@ void App::select_theme(int index) {
         "RavenIDE", "LedgerLight", "LedgerHighContrast", "MillerPlanet", "MannPlanet", "EdmundsPlanet",
         "Gargantua", "LedgerHighContrastLight", "MillerPlanetLight", "MannPlanetDark", "EdmundsPlanetDark", "GargantuaLight",
         "EarthPlanet", "EarthPlanetLight", "EarthPlanetGlass", "MillerPlanetGlass", "MannPlanetGlass", "EdmundsPlanetGlass", "GargantuaGlass",
-        "Graphite", "GraphiteLight"
+        "Wormhole", "WormholeLight", "WormholeGlass"
     };
     static const char* labels[] = {
         "Ledger Dark", "Ledger Light", "High Contrast Dark", "Miller's Planet Dark", "Mann's Planet Light", "Edmunds' Planet Light",
         "Gargantua Dark", "High Contrast Light", "Miller's Planet Light", "Mann's Planet Dark", "Edmunds' Planet Dark", "Gargantua Light",
         "Earth Dark", "Earth Light", "Earth Glass", "Miller's Planet Glass", "Mann's Planet Glass", "Edmunds' Planet Glass", "Gargantua Glass",
-        "Graphite Dark", "Graphite Light"
+        "Wormhole Dark", "Wormhole Light", "Wormhole Glass"
     };
-    if (index < 3 || index == 7 || index > 20) {
-        set_status("Only the planet and Graphite themes are available");
+    if (index < 3 || index == 7 || index > 21) {
+        set_status("Only the Interstellar worlds are available");
         return;
     }
     if (!Rtheme_use(names[index])) {
@@ -1719,23 +1718,21 @@ void App::select_theme(int index) {
     Rlabel_set_text(id("theme.current.label"), labels[index]);
     Rwidget_set_user_handle(id("theme.current.art"), reinterpret_cast<void*>(static_cast<intptr_t>(index + 1)));
     Rwidget_invalidate(id("theme.current.art"));
-    static const char* family_labels[] = {"Earth", "Miller's Planet", "Mann's Planet", "Edmunds' Planet", "Gargantua"};
-    // Graphite is not a planet: the gallery keeps showing the last planet world.
-    const bool graphite = index >= 19;
-    const int family = graphite ? theme_gallery_.family() : theme_family(index);
-    const int finish = graphite ? -1 : theme_finish(index);
+    static const char* family_labels[] = {"Earth", "Miller's Planet", "Mann's Planet", "Edmunds' Planet", "Gargantua", "Wormhole"};
+    const int family = theme_family(index);
+    const int finish = theme_finish(index);
     if (Rwidget_get_visibility(id("theme.gallery")) != R_VISIBLE || theme_gallery_.family() != family) {
         theme_gallery_.set_family(family, Rwidget_get_visibility(id("theme.gallery")) == R_VISIBLE);
     }
-    if (!graphite) theme_gallery_.set_finish(finish);
+    theme_gallery_.set_finish(finish);
     Rlabel_set_text(id("theme.gallery.family"), family_labels[family]);
-    Rlabel_set_text(id("theme.gallery.position"), (std::to_string(family + 1) + " / 5").c_str());
+    Rlabel_set_text(id("theme.gallery.position"), (std::to_string(family + 1) + " / 6").c_str());
     Rbutton_set_style(id("theme.gallery.dark"), finish == 0 ? R_BUTTON_PRIMARY : R_BUTTON_FLAT);
     Rbutton_set_style(id("theme.gallery.light"), finish == 1 ? R_BUTTON_PRIMARY : R_BUTTON_FLAT);
     Rbutton_set_style(id("theme.gallery.glass"), finish == 2 ? R_BUTTON_PRIMARY : R_BUTTON_FLAT);
-    Rwidget_set_accessible_name(id("theme.carousel"), (family_labels[family] + std::string(" preview, ") + std::to_string(family + 1) + " of 5").c_str());
+    Rwidget_set_accessible_name(id("theme.carousel"), (family_labels[family] + std::string(" preview, ") + std::to_string(family + 1) + " of 6").c_str());
     Rwidget_invalidate(id("theme.carousel"));
-    const bool dark = index == 3 || index == 6 || index == 9 || index == 10 || index == 12 || (index >= 14 && index <= 18) || index == 19;
+    const bool dark = index == 3 || index == 6 || index == 9 || index == 10 || index == 12 || (index >= 14 && index <= 18) || index == 19 || index == 21;
     Rwidget_set_visibility(id("appearance.sun"), dark ? R_VISIBLE : R_COLLAPSED);
     Rwidget_set_visibility(id("appearance.moon"), dark ? R_COLLAPSED : R_VISIBLE);
     Rbutton_set_text(id("settings.appearance.toggle"), dark ? "Switch to light" : "Switch to dark");
@@ -1781,7 +1778,7 @@ void App::select_theme(int index) {
 }
 
 void App::toggle_appearance() {
-    static const int partners[] = {1, 0, 7, 8, 9, 10, 11, 2, 3, 4, 5, 6, 13, 12, 13, 8, 4, 5, 11, 20, 19};
+    static const int partners[] = {1, 0, 7, 8, 9, 10, 11, 2, 3, 4, 5, 6, 13, 12, 13, 8, 4, 5, 11, 20, 19, 20};
     select_theme(partners[theme_index_]);
 }
 
@@ -5373,7 +5370,6 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "theme.gallery.light") app.select_theme(theme_index(app.theme_gallery_.family(), 1));
     else if (name == "theme.gallery.glass") app.select_theme(theme_index(app.theme_gallery_.family(), 2));
     else if (name == "theme.earth") app.select_theme(12);
-    else if (name == "theme.graphite") app.select_theme(app.theme_index_ == 20 ? 20 : 19);
     else if (name == "theme.earth.light") app.select_theme(13);
     else if (name == "theme.earth.glass") app.select_theme(14);
     else if (name == "theme.miller") app.select_theme(3);

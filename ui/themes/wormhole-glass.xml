@@ -1,0 +1,25 @@
+<!-- Wormhole Glass: frosted graphite panels over a cold lensed starfield. -->
+<Theme Name="WormholeGlass" Base="Wormhole" Material="Solid" Wallpaper="#0A0B0E,#1A2232,#101216,#1E2738">
+    <Glass Frost="0.92" Refraction="0.28" Saturation="0.65" Rim="0.42" Shadow="0.45"/>
+    <Colors TextDisabled="#B8B8B8" TextPlaceholder="#C4C4C4"/>
+    <Style Widget="VBox" Material="Solid" Panel="#00000000"/>
+    <Style Widget="HBox" Material="Solid" Panel="#00000000"/>
+    <Style Widget="Overlay" Material="Solid" Panel="#00000000"/>
+    <Style Widget="Splitter" Material="Solid" Panel="#00000000"/>
+    <Style Widget="ScrollBox" Material="Solid" Panel="#00000000"/>
+    <Style Widget="TextEditor" Material="Solid" Input="#00000000" Border="#00000000" ControlBorder="#00000000"/>
+    <Style Widget="ListView" Material="Solid" Input="#00000000" Border="#00000000"/>
+    <Style Widget="TreeView" Material="Solid" Input="#00000000" Border="#00000000"/>
+    <Style Widget="FileBrowser" Material="Solid" Input="#00000000" Border="#00000000"/>
+    <Style Class="surface" Material="Solid" Panel="#121212D9" CornerRadius="0"/>
+    <Style Class="workspace" Material="Solid" Window="#00000000" Panel="#00000000" CornerRadius="0"/>
+    <Style Class="gallery-backdrop" Material="Solid" Window="#0A0B0E" Panel="#0A0B0E" CornerRadius="0"/>
+    <Style Class="wiki-chrome" Material="Solid" Panel="#00000000" Border="#00000000" CornerRadius="0"/>
+    <Style Class="tabs" Material="Solid" Header="#00000000" TabActive="#00000000" HeaderHovered="#4C9AFF14" CornerRadius="0"/>
+    <Style Class="composer" Material="FrostedGlass" Panel="#181818"/>
+    <Style Class="activity" Material="FrostedGlass" Panel="#161616"/>
+    <Style Class="proposal" Material="TintedGlass" Panel="#1F2733"/>
+    <Style Widget="TextEditor" Class="composer-input" Material="Solid" Focus="#00000000" RowHovered="#00000000"/>
+    <Style Widget="Label" Class="section" Text="#C2C2C2"/>
+    <Style Widget="Label" Class="muted" Text="#C2C2C2"/>
+</Theme>

@@ -1,5 +1,5 @@
-<!-- Graphite: a neutral terminal-like finish. Gray surfaces, one blue accent, no tinted chrome. -->
-<Theme Name="Graphite" Base="Dark" Accent="#4C9AFF" AccentText="#FFFFFF" CornerRadius="10">
+<!-- Wormhole: the neutral world. Graphite surfaces, one blue accent, no tinted chrome. -->
+<Theme Name="Wormhole" Base="Dark" Accent="#4C9AFF" AccentText="#FFFFFF" CornerRadius="10">
     <Colors
         Window="#141414" Panel="#1B1B1B" Input="#202020"
         Text="#E8E8E8" TextDisabled="#8C8C8C" TextPlaceholder="#7E7E7E" AccentText="#FFFFFF"

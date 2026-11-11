@@ -35,7 +35,7 @@ private:
     int hovered_direction_ = 0;
     bool tracking_ = false;
     std::chrono::steady_clock::time_point last_wheel_;
-    std::array<ThemePreviewPalette, 19> palettes_;
+    std::array<ThemePreviewPalette, 22> palettes_;
     std::array<Rid, 5> planet_textures_{};
     Rid planet_shader_ = R_INVALID_ID;
     bool reduce_motion_ = false;

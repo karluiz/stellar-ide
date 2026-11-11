@@ -258,6 +258,11 @@ void memory_universe_tests() {
     expect(!gallery.advance(0.1, true), "Theme gallery animated with reduced motion enabled");
     expect(gallery.advance(0.04, false), "Theme gallery did not reach its animation frame");
     expect(!gallery.advance(0.01, false), "Theme gallery exceeded its animation frame rate");
+    expect(gallery.move(-1, false) == 5, "Theme gallery did not wrap back to the Wormhole");
+    expect(gallery.move(1, false) == 0, "Theme gallery did not wrap from the Wormhole to Earth");
+    gallery.set_family(5, false);
+    expect(gallery.family() == 5, "Theme gallery could not select the sixth world");
+    gallery.set_family(0, false);
     REvent wheel{};
     wheel.type = R_EVENT_MOUSE_WHEEL;
     wheel.wheel_y = 1.0f;
@@ -785,15 +790,15 @@ void profile_tests() {
     migrated.save();
     expect(raven::WorkspaceProfileStore(root).data.right_sidebar == false,
            "migrated context preference did not survive reload");
-    for (const int theme : {19, 20}) {
+    for (const int theme : {19, 20, 21}) {
         raven::WorkspaceProfileStore graphite(root);
         graphite.data.theme = theme;
         graphite.save();
-        expect(raven::WorkspaceProfileStore(root).data.theme == theme, "Graphite theme did not survive reload");
+        expect(raven::WorkspaceProfileStore(root).data.theme == theme, "Wormhole theme did not survive reload");
     }
     {
         raven::WorkspaceProfileStore unknown(root);
-        unknown.data.theme = 21;
+        unknown.data.theme = 22;
         unknown.save();
         expect(raven::WorkspaceProfileStore(root).data.theme == 12, "unknown theme did not fall back to Earth Dark");
     }

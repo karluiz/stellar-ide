@@ -22,25 +22,25 @@
     <Shortcut Keys="Ctrl+," Action="settings.toggle"/>
     <Overlay>
     <VBox Name="app.shell">
-        <HeaderBar Title="" Height="60" Buttons="All">
-            <Overlay Width="36" Height="34">
-                <Button Name="sidebar.left" Text="" Width="36" Height="34" Style="Flat" Class="header-action" OnClicked="sidebar.left" Tooltip="Show or fold navigation (Ctrl+B)" AccessibleName="Navigation" AccessibleDescription="Show or fold workspace navigation"/>
-                <Image Source="icons/files.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+        <HeaderBar Title="" Height="44" Buttons="All">
+            <Overlay Width="30" Height="28">
+                <Button Name="sidebar.left" Text="" Width="30" Height="28" Style="Flat" Class="header-action" OnClicked="sidebar.left" Tooltip="Show or fold navigation (Ctrl+B)" AccessibleName="Navigation" AccessibleDescription="Show or fold workspace navigation"/>
+                <Image Source="icons/files.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
             </Overlay>
-            <Label Text="STELLAR" TextSize="14" Slot.Padding="3,0,14,0"/>
-            <Button Name="workspace.name" Text="Workspace" Style="Flat" Class="header-action" OnClicked="workspace.open" Tooltip="Open a workspace"/>
+            <Label Text="STELLAR" TextSize="13" Slot.Padding="3,0,14,0" Slot.VAlign="Center"/>
+            <Button Name="workspace.name" Text="Workspace" Style="Flat" Class="header-action" Height="28" Slot.VAlign="Center" OnClicked="workspace.open" Tooltip="Open a workspace"/>
             <Label Name="workspace.separator" Text="/" Class="muted" Slot.Padding="6,0" Slot.VAlign="Center"/>
-            <Label Name="run.title" Text="New chat" TextSize="14" Slot.VAlign="Center"/>
+            <Label Name="run.title" Text="New chat" TextSize="13" Slot.VAlign="Center"/>
             <Label Name="run.state" Text="READY" Class="section" TextSize="11" Slot.VAlign="Center" Slot.Padding="14,0,0,0"/>
             <Label Name="run.timing" Text="00:00" Font="monospace" TextSize="11" Class="muted" Slot.VAlign="Center" Slot.Padding="8,0,0,0" Visibility="Collapsed"/>
-            <Button Name="run.retry" Text="Retry" Style="Flat" Class="header-action" OnClicked="run.retry" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
-            <Button Name="run.stop" Text="Stop" Style="Flat" Class="header-action" OnClicked="run.stop" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
-            <Button Text="New chat" Style="Flat" Class="header-action" OnClicked="thread.new" Tooltip="Start a new conversation (Ctrl+N)" Slot.HAlign="Right"/>
-            <Button Text="Activity" Style="Flat" Class="header-action" OnClicked="activity.open" Tooltip="Show live agent activity" Slot.HAlign="Right"/>
-            <Overlay Width="36" Height="34" Slot.HAlign="Right">
-                <Button Name="appearance.toggle" Text="" Width="36" Height="34" Style="Flat" Class="header-action" OnClicked="appearance.toggle" Tooltip="Switch to light theme" AccessibleName="Switch to light theme"/>
-                <Image Name="appearance.sun" Source="icons/sun.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
-                <Image Name="appearance.moon" Source="icons/moon.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center" Visibility="Collapsed"/>
+            <Button Name="run.retry" Text="Retry" Style="Flat" Class="header-action" Height="28" Slot.VAlign="Center" OnClicked="run.retry" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
+            <Button Name="run.stop" Text="Stop" Style="Flat" Class="header-action" Height="28" Slot.VAlign="Center" OnClicked="run.stop" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
+            <Button Text="New chat" Style="Flat" Class="header-action" Height="28" Slot.VAlign="Center" OnClicked="thread.new" Tooltip="Start a new conversation (Ctrl+N)" Slot.HAlign="Right"/>
+            <Button Text="Activity" Style="Flat" Class="header-action" Height="28" Slot.VAlign="Center" OnClicked="activity.open" Tooltip="Show live agent activity" Slot.HAlign="Right"/>
+            <Overlay Width="30" Height="28" Slot.HAlign="Right">
+                <Button Name="appearance.toggle" Text="" Width="30" Height="28" Style="Flat" Class="header-action" OnClicked="appearance.toggle" Tooltip="Switch to light theme" AccessibleName="Switch to light theme"/>
+                <Image Name="appearance.sun" Source="icons/sun.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                <Image Name="appearance.moon" Source="icons/moon.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center" Visibility="Collapsed"/>
             </Overlay>
         </HeaderBar>
 
@@ -364,7 +364,6 @@
                                                 <Label Text="Restyle the workspace immediately." Class="muted" TextSize="11" Wrap="true"/>
                                             </VBox>
                                             <Button Name="settings.appearance.toggle" Text="Switch to light" OnClicked="appearance.toggle" Slot.VAlign="Center"/>
-                                            <Button Name="settings.theme.graphite" Text="Graphite" OnClicked="theme.graphite" Tooltip="Neutral gray theme with a blue accent" Slot.VAlign="Center"/>
                                             <Button Name="settings.theme.gallery" Text="Choose a world" OnClicked="theme.browser" Slot.VAlign="Center"/>
                                         </HBox>
                                         <HBox Spacing="10">

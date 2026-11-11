@@ -118,7 +118,7 @@ spacing:
   transcript-y: "30px"
   row-height: "36px"
   control-height: "34px"
-  header-height: "60px"
+  header-height: "44px"
   splitter: "3px"
   composer-editor: "88px"
   editor-inset: "0px 14px 14px 14px"
@@ -331,7 +331,7 @@ Glass variants inherit their family's dark palette and reveal a restrained plane
 
 ## Layout
 
-The native window opens at 1600×960 with a minimum size of 1100×680 and starts at 115% interface scale. A unified black 60px header contains navigation, STELLAR, a workspace selector that also opens workspaces, run context, New chat, Activity, the paired appearance toggle, conditional Retry/Stop, elapsed time, and run state. Workspace names and run titles are shortened with full tooltips so they cannot collide with run controls. Above 150% interface zoom, contextual text hides to preserve the actions. A compact status strip spans the bottom with textual feedback and the current-theme button. The world selector fills the window when open.
+The native window opens at 1600×960 with a minimum size of 1100×680 and starts at 115% interface scale. A unified 44px header contains navigation, STELLAR, a workspace selector that also opens workspaces, run context, New chat, Activity, the paired appearance toggle, conditional Retry/Stop, elapsed time, and run state. Workspace names and run titles are shortened with full tooltips so they cannot collide with run controls. Above 150% interface zoom, contextual text hides to preserve the actions. A compact status strip spans the bottom with textual feedback and the current-theme button. The world selector fills the window when open.
 
 Between them, one splitter defines up to three resizable columns with 3px splitter targets. At startup, the left share is calculated from the framebuffer's logical width and current UI scale to fit navigation at its 240px minimum rather than expanding toward the 310px maximum on wide displays. The contextual right column starts folded, leaving the navigation and current task as the initial two-column composition.
 
@@ -365,8 +365,11 @@ Every control is 30px: buttons, text inputs, combo boxes, and icon buttons (`Con
 ### Pane limits
 The navigation sidebar stays between 240 and 310px and the right panel between 300 and 380px, both while dragging and when the window grows; the center takes the rest and never drops below 420px.
 
-### Graphite
-A neutral finish alongside the planet worlds, in dark and light: gray surfaces, one blue accent (#4C9AFF dark, #0A6CDB light), and no tinted chrome, for people who want the quiet look of a terminal. Chosen from Settings → Appearance → Graphite or the command palette; the sun/moon toggle switches between its two finishes, and its status chip is a plain accent dot.
+### Wormhole
+The sixth world, after Gargantua: the neutral one. Graphite surfaces, one blue accent (#4C9AFF dark, #0A6CDB light), and no tinted chrome, in Dark, Light and Glass like every world. Its art in the gallery is the wormhole itself, rendered by the planet shader as a glass sphere that lenses the galaxy on its far side: the bend grows toward the rim, a thin Einstein ring wraps the edge, and the image swirls slowly around the darker throat. Wormhole Light keeps the lens darker than its surroundings so it still reads as glass.
+
+### Header
+The unified header is 44px. Its icon buttons are 30×28px with 16px icons and its text actions 28px, so it stays a thin strip above the work.
 
 ### Sidebar grid
 One left edge for everything in the sidebar: an 8px outer gutter and a 10px inner inset put section labels, destination icons, the list heading, the search text and chat titles all at 18px. Destinations are 32px rows with 2px gaps; the list heading's Archived toggle and archive icon are 28px, 11px text, right-aligned. The chat search is a plain 30px field with no external magnifier.

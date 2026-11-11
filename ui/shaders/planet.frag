@@ -213,8 +213,71 @@ vec4 gargantua(RavenEffect fx) {
     return vec4(clamp(color / max(alpha, 0.0001), 0.0, 1.0), clamp(alpha * edge, 0.0, 1.0));
 }
 
+// Stars on the far side: one per cell of a direction grid, a few of them bright.
+vec3 far_stars(vec3 dir, float scale) {
+    vec3 cell = floor(dir * scale);
+    float h = hash3(cell);
+    if (h < 0.965) return vec3(0.0);
+    vec3 center = (cell + 0.5 + (vec3(hash3(cell + 3.1), hash3(cell + 7.7), hash3(cell + 1.3)) - 0.5) * 0.6) / scale;
+    float d = length(normalize(center) - dir) * scale;
+    float core = exp(-d * d * 9.0) * (h > 0.993 ? 1.6 : 0.8);
+    vec3 tint = mix(vec3(0.75, 0.85, 1.0), vec3(1.0, 0.92, 0.80), hash3(cell + 5.0));
+    return tint * core;
+}
+
+// The galaxy seen through the throat: a dust lane, cool nebulae and two layers of stars.
+vec3 far_sky(vec3 dir, float time, float light) {
+    float band = exp(-pow(dir.y * 3.2 + 0.35 * sin(dir.x * 2.0), 2.0));
+    float dust = fbm3(dir * 3.4 + vec3(0.0, 0.0, time * 0.01));
+    float nebula = fbm3(dir * 1.8 + vec3(9.0, -4.0, 2.0));
+    vec3 deep = mix(vec3(0.010, 0.014, 0.024), vec3(0.20, 0.24, 0.32), light);
+    vec3 color = deep;
+    color += vec3(0.16, 0.30, 0.62) * smoothstep(0.45, 0.80, nebula) * 0.55;
+    color += mix(vec3(0.42, 0.48, 0.60), vec3(0.95, 0.88, 0.78), dust) * band * (0.35 + dust * 0.45);
+    color *= 1.0 - smoothstep(0.55, 0.75, dust) * band * 0.55;
+    color += far_stars(dir, 46.0) + far_stars(dir.zxy, 90.0) * 0.6;
+    return color;
+}
+
+// The wormhole: a sphere that works as a lens. Each point on it looks through the throat along a
+// bent ray; toward the rim the bend passes 180 degrees, so a mirrored Einstein ring wraps the edge.
+vec4 wormhole(RavenEffect fx) {
+    float light = fx.params.y;
+    vec2 canvas = fx.uv * 2.0 - 1.0;
+    vec2 p = canvas / 0.82;
+    float radius = length(p);
+    vec3 halo = mix(vec3(0.30, 0.60, 1.0), vec3(0.04, 0.42, 0.86), light);
+    if (radius > 1.0) {
+        float glow = exp(-(radius - 1.0) * 12.0) * mix(0.30, 0.16, light);
+        return vec4(halo, glow);
+    }
+    float z = sqrt(max(0.0, 1.0 - radius * radius));
+    vec3 normal = vec3(p, z);
+    // Bend grows sharply toward the rim; the image slowly swirls around the throat.
+    float bend = 3.6 * pow(radius, 2.2) + 0.25 * radius;
+    float swirl = fx.time * 0.06 + 0.35 / (0.25 + radius);
+    float phi = atan(p.y, p.x) + swirl;
+    vec3 dir = vec3(sin(bend) * cos(phi), sin(bend) * sin(phi) * 0.85 + 0.15 * cos(bend), cos(bend));
+    dir = rotate_y(normalize(dir), fx.time * 0.035);
+    vec3 color = far_sky(dir, fx.time, light);
+    // The Einstein ring where the bend reaches half a turn.
+    float ring_radius = pow((3.14159 - 0.25) / 3.6, 1.0 / 2.2);
+    float ring = exp(-pow((radius - ring_radius) / 0.014, 2.0));
+    color += mix(vec3(0.70, 0.84, 1.0), vec3(0.20, 0.50, 0.95), light) * ring * 0.42;
+    // Glass: a soft key highlight, a fresnel rim, and the throat darkened at the center.
+    vec3 light_dir = normalize(vec3(-0.52, -0.60, 0.72));
+    vec3 half_dir = normalize(light_dir + vec3(0.0, 0.0, 1.0));
+    float glint = pow(max(0.0, dot(normal, half_dir)), 90.0) * 0.55 + pow(max(0.0, dot(normal, half_dir)), 10.0) * 0.05;
+    float fresnel = pow(1.0 - z, 3.0);
+    color *= 0.55 + 0.45 * smoothstep(0.0, 0.55, radius);
+    color += vec3(1.0) * glint + halo * fresnel * 0.40;
+    float edge = 1.0 - smoothstep(0.995, 1.005, radius);
+    return vec4(clamp(color, 0.0, 1.0), edge);
+}
+
 vec4 raven_effect(RavenEffect fx) {
     int family = int(fx.params.x + 0.5);
     if (family == 4) return gargantua(fx);
+    if (family == 5) return wormhole(fx);
     return planet(fx, family);
 }

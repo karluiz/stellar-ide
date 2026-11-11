@@ -60,7 +60,8 @@ std::string theme_filename(const std::string& name) {
         {"MannPlanetGlass", "mann-planet-glass.xml"}, {"EdmundsPlanet", "edmunds-planet.xml"},
         {"EdmundsPlanetDark", "edmunds-planet-dark.xml"}, {"EdmundsPlanetGlass", "edmunds-planet-glass.xml"},
         {"Gargantua", "gargantua.xml"}, {"GargantuaLight", "gargantua-light.xml"},
-        {"GargantuaGlass", "gargantua-glass.xml"}
+        {"GargantuaGlass", "gargantua-glass.xml"}, {"Wormhole", "wormhole.xml"},
+        {"WormholeLight", "wormhole-light.xml"}, {"WormholeGlass", "wormhole-glass.xml"}
     };
     for (const auto& [theme, file] : files) if (name == theme) return file;
     return {};
@@ -252,15 +253,49 @@ void gargantua(RPainter* painter, float cx, float cy, float radius, float time, 
 int family_for_theme(int index) {
     return index >= 12 && index <= 14 ? 0 : index == 3 || index == 8 || index == 15 ? 1 :
         index == 4 || index == 9 || index == 16 ? 2 : index == 5 || index == 10 || index == 17 ? 3 :
-        index == 6 || index == 11 || index == 18 ? 4 : 5;
+        index == 6 || index == 11 || index == 18 ? 4 : index >= 19 && index <= 21 ? 5 : 6;
+}
+
+// The wormhole: a dark glass sphere that bends the starfield behind it into rings around a still
+// core, with the accent on its rim. In daylight it is a silver lens.
+void wormhole(RPainter* painter, float cx, float cy, float radius, float time, bool light) {
+    circle(painter, cx, cy, radius * 1.18f, rgb(light ? 0x8E99A8 : 0x4C9AFF, light ? 0.10f : 0.07f));
+    circle(painter, cx + 2.0f, cy + 3.0f, radius + 2.0f, rgb(light ? 0x56606C : 0x000000, 0.24f));
+    // A radial falloff toward the throat: lighter glass at the edge, darkest at the center.
+    const Color edge = rgb(light ? 0xE4E8EE : 0x1C2433);
+    const Color throat = rgb(light ? 0x8A93A0 : 0x040507);
+    constexpr int steps = 14;
+    for (int k = 0; k < steps; ++k) {
+        const float t = static_cast<float>(k) / static_cast<float>(steps - 1);
+        const float eased = t * t;
+        circle(painter, cx, cy, radius * (1.0f - 0.82f * t),
+               {edge.r + (throat.r - edge.r) * eased, edge.g + (throat.g - edge.g) * eased,
+                edge.b + (throat.b - edge.b) * eased, 1.0f});
+    }
+    // Lensed rings drift slowly; inner rings turn faster, like light falling toward the throat.
+    for (int ring = 0; ring < 4; ++ring) {
+        const float r = radius * (0.34f + 0.18f * static_cast<float>(ring));
+        ellipse(painter, cx, cy, r, r * 0.92f, time * (0.12f - 0.025f * static_cast<float>(ring)), 0.7f,
+                rgb(light ? 0x5C6674 : 0x8FB4F0, (light ? 0.26f : 0.22f) - 0.03f * static_cast<float>(ring)));
+    }
+    // The starfield behind, bent into orbits: evenly spread, faster near the center.
+    for (int i = 0; i < 30; ++i) {
+        const float band = 0.28f + 0.64f * std::fmod(static_cast<float>(i) * 0.618034f, 1.0f);
+        const float angle = static_cast<float>(i) * 2.39996323f + time * 0.16f / band;
+        const auto star = rotated(cx, cy, std::cos(angle) * radius * band, std::sin(angle) * radius * band * 0.92f, 0.0f);
+        circle(painter, star.x, star.y, std::max(0.4f, radius * (i % 6 == 0 ? 0.02f : 0.011f)),
+               rgb(light ? 0x2F3742 : 0xE6EEF8, (light ? 0.45f : 0.70f) * (0.45f + 0.55f * band)));
+    }
+    ellipse(painter, cx, cy, radius, radius, 0.0f, 1.2f, rgb(light ? 0x0A6CDB : 0x4C9AFF, 0.60f));
+    ellipse(painter, cx, cy, radius * 0.985f, radius * 0.985f, -0.6f, 1.6f, rgb(0xFFFFFF, light ? 0.30f : 0.10f), true);
 }
 
 void paint_planet(RPainter* painter, int index, float cx, float cy, float radius, float time, Rid texture,
                   Rid shader, bool animate) {
     const int family = family_for_theme(index);
-    const bool light = index == 1 || index == 4 || index == 5 || index == 7 || index == 8 || index == 11 || index == 13;
+    const bool light = index == 1 || index == 4 || index == 5 || index == 7 || index == 8 || index == 11 || index == 13 || index == 20;
     const float size = radius * 2.44f;
-    if (family >= 0 && family < 5 && Rshader_is_valid(shader)) {
+    if (family >= 0 && family < 6 && Rshader_is_valid(shader)) {
         RShaderLook look;
         Rshader_look_init(&look);
         look.params[0] = static_cast<float>(family);
@@ -289,13 +324,14 @@ void paint_planet(RPainter* painter, int index, float cx, float cy, float radius
     case 2: mann(painter, cx, cy, radius, time, light); break;
     case 3: edmunds(painter, cx, cy, radius, time, light); break;
     case 4: gargantua(painter, cx, cy, radius, time, light); break;
+    case 5: wormhole(painter, cx, cy, radius, time, light); break;
     default: sphere(painter, cx, cy, radius, rgb(0x799CA4), !light); break;
     }
 }
 
 void paint_scene(RPainter* painter, int index, float x, float y, float width, float height,
                  float time, float hover, Rid texture, Rid shader) {
-    const bool light = index == 1 || index == 4 || index == 5 || index == 7 || index == 8 || index == 11 || index == 13;
+    const bool light = index == 1 || index == 4 || index == 5 || index == 7 || index == 8 || index == 11 || index == 13 || index == 20;
     sky(painter, x, y, width, height, !light, time);
     if (height > 42.0f) {
         circle(painter, x + width * 0.50f, y + height * 0.56f, std::min(width, height) * 0.43f,
@@ -307,7 +343,7 @@ void paint_scene(RPainter* painter, int index, float x, float y, float width, fl
 
 void paint_workspace(RPainter* painter, int index, const ThemePreviewPalette& palette,
                      float x, float y, float width, float height, float time, Rid texture, Rid shader, bool animate) {
-    const bool glass = index >= 14 && index <= 18;
+    const bool glass = (index >= 14 && index <= 18) || index == 21;
     const auto window = palette_color(palette, "Window", 0x071411);
     const auto panel = palette_color(palette, "Panel", 0x0D211C);
     const auto input = palette_color(palette, "Input", 0x123028);
@@ -465,11 +501,11 @@ void paint_workspace(RPainter* painter, int index, const ThemePreviewPalette& pa
     label(composer_x + composer_width * 0.035f, composer_y + content_height * 0.098f, small, "≡  ↶", muted);
 
     label(x + width * 0.040f, y + height - status_height * 0.68f, tiny, "Workspace ready · 2 agents", muted);
-    static const char* names[] = {"Earth", "Miller's Planet", "Mann's Planet", "Edmunds' Planet", "Gargantua"};
+    static const char* names[] = {"Earth", "Miller's Planet", "Mann's Planet", "Edmunds' Planet", "Gargantua", "Wormhole"};
     static const char* finishes[] = {"Dark", "Light", "Glass"};
     const int family = family_for_theme(index);
-    const int finish = index >= 14 ? 2 : (index == 1 || index == 4 || index == 5 || index == 7 || index == 8 || index == 11 || index == 13) ? 1 : 0;
-    if (family >= 0 && family < 5) {
+    const int finish = index >= 19 ? index - 19 : index >= 14 ? 2 : (index == 1 || index == 4 || index == 5 || index == 7 || index == 8 || index == 11 || index == 13) ? 1 : 0;
+    if (family >= 0 && family < 6) {
         label(x + width * 0.76f, y + height - status_height * 0.68f, tiny, names[family], link);
         label(x + width * 0.93f, y + height - status_height * 0.68f, tiny, finishes[finish], muted);
     }
@@ -483,9 +519,9 @@ struct CardRect {
 };
 
 float wrapped_relative(int family, double position) {
-    float relative = std::remainder(static_cast<float>(family) - static_cast<float>(position), 5.0f);
-    if (relative > 2.5f) relative -= 5.0f;
-    if (relative < -2.5f) relative += 5.0f;
+    float relative = std::remainder(static_cast<float>(family) - static_cast<float>(position), 6.0f);
+    if (relative > 3.0f) relative -= 6.0f;
+    if (relative < -3.0f) relative += 6.0f;
     return relative;
 }
 
@@ -507,7 +543,8 @@ void ThemeGallery::load_palettes(const std::filesystem::path& theme_directory) {
         {6, "gargantua.xml"}, {8, "miller-planet-light.xml"}, {9, "mann-planet-dark.xml"},
         {10, "edmunds-planet-dark.xml"}, {11, "gargantua-light.xml"}, {12, "earth-planet.xml"},
         {13, "earth-planet-light.xml"}, {14, "earth-planet-glass.xml"}, {15, "miller-planet-glass.xml"},
-        {16, "mann-planet-glass.xml"}, {17, "edmunds-planet-glass.xml"}, {18, "gargantua-glass.xml"}
+        {16, "mann-planet-glass.xml"}, {17, "edmunds-planet-glass.xml"}, {18, "gargantua-glass.xml"},
+        {19, "wormhole.xml"}, {20, "wormhole-light.xml"}, {21, "wormhole-glass.xml"}
     };
     for (const auto& [index, file] : files) palettes_[index] = read_palette(theme_directory / file);
     auto shader_path = theme_directory.parent_path() / "shaders" / "planet.spv";
@@ -537,9 +574,9 @@ bool ThemeGallery::advance(double delta, bool reduce_motion) {
 }
 
 void ThemeGallery::set_family(int family, bool animate) {
-    family = std::clamp(family, 0, 4);
+    family = std::clamp(family, 0, 5);
     const int difference = family - family_;
-    const int wrapped = (difference + 7) % 5 - 2;
+    const int wrapped = (difference + 9) % 6 - 3;
     target_ += wrapped;
     family_ = family;
     if (!animate) position_ = target_;
@@ -549,7 +586,7 @@ void ThemeGallery::set_finish(int finish) { finish_ = std::clamp(finish, 0, 2); 
 
 int ThemeGallery::move(int delta, bool animate) {
     target_ += delta;
-    family_ = (family_ + delta % 5 + 5) % 5;
+    family_ = (family_ + delta % 6 + 6) % 6;
     if (!animate) position_ = target_;
     return family_;
 }
@@ -560,7 +597,7 @@ int ThemeGallery::hit_direction(float x, float y) const {
     if (width_ <= 0.0f || height_ <= 0.0f) return 0;
     int direction = 0;
     float nearest = 0.25f;
-    for (int family = 0; family < 5; ++family) {
+    for (int family = 0; family < 6; ++family) {
         const float relative = wrapped_relative(family, position_);
         const auto rect = card_rect(width_, height_, relative);
         const float distance = std::abs(relative);
@@ -604,13 +641,8 @@ int ThemeGallery::event(Rid widget, const REvent* event) {
 void ThemeGallery::paint(Rid widget, RPainter* painter, float width, float height) const {
     const int index = static_cast<int>(reinterpret_cast<intptr_t>(Rwidget_get_user_handle(widget))) - 1;
     // Graphite is not a planet world: its chip is a plain accent dot.
-    if (index == 19 || index == 20) {
-        const float radius = std::min(width, height) * 0.3f;
-        circle(painter, width * 0.5f, height * 0.5f, radius, rgb(index == 19 ? 0x4C9AFF : 0x0A6CDB));
-        return;
-    }
-    static RSpring hover_springs[19];
-    const float hover = index >= 0 && index < 19 ? Rdraw_spring(painter, &hover_springs[index], Rwidget_is_hovered(widget) ? 1.0f : 0.0f, R_MOTION_SMOOTH) : 0.0f;
+    static RSpring hover_springs[22];
+    const float hover = index >= 0 && index < 22 ? Rdraw_spring(painter, &hover_springs[index], Rwidget_is_hovered(widget) ? 1.0f : 0.0f, R_MOTION_SMOOTH) : 0.0f;
     paint_scene(painter, index, 0.0f, 0.0f, width, height, static_cast<float>(time_), hover,
                 planet_textures_[std::clamp(family_for_theme(index), 0, 4)], planet_shader_);
 }
@@ -618,16 +650,16 @@ void ThemeGallery::paint(Rid widget, RPainter* painter, float width, float heigh
 void ThemeGallery::paint_carousel(Rid widget, RPainter* painter, float width, float height) {
     width_ = width;
     height_ = height;
-    static const int indices[5][3] = {
-        {12, 13, 14}, {3, 8, 15}, {9, 4, 16}, {10, 5, 17}, {6, 11, 18}
+    static const int indices[6][3] = {
+        {12, 13, 14}, {3, 8, 15}, {9, 4, 16}, {10, 5, 17}, {6, 11, 18}, {19, 20, 21}
     };
     struct Card {
         int family;
         float relative;
     };
-    Card cards[5];
-    for (int family = 0; family < 5; ++family) cards[family] = {family, wrapped_relative(family, position_)};
-    std::sort(cards, cards + 5, [](const Card& left, const Card& right) {
+    Card cards[6];
+    for (int family = 0; family < 6; ++family) cards[family] = {family, wrapped_relative(family, position_)};
+    std::sort(cards, cards + 6, [](const Card& left, const Card& right) {
         return std::abs(left.relative) > std::abs(right.relative);
     });
     float accent[4];
