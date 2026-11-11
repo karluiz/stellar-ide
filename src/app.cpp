@@ -1821,10 +1821,11 @@ void App::change_effort(int index) {
 void App::change_harness(int index) {
     const auto selected = index == 1 ? Harness::KimiCode : Harness::ClaudeCode;
     if (selected == harness_) return;
-    if (lead_process_.running() || wiki_process_.running() || proposal_) {
+    // A pending knowledge proposal belongs to the workspace and survives a harness change.
+    if (lead_process_.running() || wiki_process_.running()) {
         Rcombo_box_set_selected(id("harness"), static_cast<int>(harness_));
         Rcombo_box_set_selected(id("settings.harness"), static_cast<int>(harness_));
-        set_status("Finish the run and review the pending knowledge proposal before switching harness");
+        set_status("Finish the current run before switching harness");
         return;
     }
     harness_ = selected;
@@ -1870,7 +1871,7 @@ void App::open_settings() {
     settings_return_more_tab_ = current_more;
     set_sidebar_visibility(false, false);
     Rcombo_box_set_selected(id("settings.harness"), static_cast<int>(harness_));
-    Rwidget_set_enabled(id("settings.harness"), !lead_process_.running() && !wiki_process_.running() && !proposal_);
+    Rwidget_set_enabled(id("settings.harness"), !lead_process_.running() && !wiki_process_.running());
     Rlabel_set_text(id("settings.interface.zoom"),
         ("Interface zoom · " + std::to_string(static_cast<int>(interface_zoom_ * 100 + 0.5f)) + "%").c_str());
     Rlabel_set_text(id("settings.editor.zoom"),
@@ -3934,7 +3935,7 @@ void App::refresh_missions() {
     Rwidget_set_visibility(id("mission.diff"), mission ? R_VISIBLE : R_COLLAPSED);
     Rwidget_set_enabled(id("mission.repo"), active_mission_id_.empty() && !repositories_.empty());
     Rwidget_set_enabled(id("mission.title"), active_mission_id_.empty() && !repositories_.empty());
-    Rwidget_set_enabled(id("mission.create"), active_mission_id_.empty() && !repositories_.empty() && !running && !proposal_ && run_mode_ == RunMode::Build);
+    Rwidget_set_enabled(id("mission.create"), active_mission_id_.empty() && !repositories_.empty() && !running && run_mode_ == RunMode::Build);
     Rwidget_set_enabled(id("mission.review"), mission && !running);
     Rwidget_set_enabled(id("mission.apply"), mission && mission->status != "applied" && !running);
     Rwidget_set_enabled(id("mission.apply_hunk"), mission && mission->status != "applied" && !running && !mission_hunk_ids_.empty());
@@ -3952,8 +3953,8 @@ void App::create_mission() {
         set_status("Finish or return from the current mission first");
         return;
     }
-    if (lead_process_.running() || wiki_process_.running() || proposal_) {
-        set_status("Finish active work and review pending knowledge before creating a mission");
+    if (lead_process_.running() || wiki_process_.running()) {
+        set_status("Finish the current run before creating a mission");
         return;
     }
     if (run_mode_ != RunMode::Build) {
