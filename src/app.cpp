@@ -1325,7 +1325,14 @@ void App::save_thread() {
     thread.transcript = transcript_text_;
     thread.harness = harness_;
     thread.updated_at = std::time(nullptr);
-    if (const auto* saved = thread_store_.find(current_thread_id_)) thread.archived = saved->archived;
+    if (const auto* saved = thread_store_.find(current_thread_id_)) {
+        thread.archived = saved->archived;
+        // Saving on switch, close, or restore is not activity: keep the time of the last real change
+        // so recency order and the "5m" age in the chat list stay truthful.
+        const bool unchanged = saved->messages.size() == thread_messages_.size() && saved->title == thread.title &&
+            saved->session_id == thread.session_id && saved->transcript == thread.transcript;
+        if (unchanged) thread.updated_at = saved->updated_at;
+    }
     thread.messages = thread_messages_;
     thread_store_.upsert(std::move(thread));
     thread_store_.save();
