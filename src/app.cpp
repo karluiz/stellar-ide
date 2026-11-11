@@ -4327,11 +4327,12 @@ void App::refresh_knowledge() {
         Rlist_view_add_item(id("knowledge.results"), text.c_str());
     }
     const auto stats = workspace_.knowledge().stats();
-    Rlabel_set_text(id("knowledge.stats"), (std::to_string(stats.entities) + " entities · " +
-        std::to_string(stats.relations) + " relations · " + std::to_string(stats.episodes) + " episodes · " +
-        std::to_string(stats.staged) + " staged").c_str());
-    Rlabel_set_text(id("memory.stats"), (std::to_string(stats.episodes) + " episodes · " +
-        std::to_string(stats.entities - stats.episodes) + " entities · " + std::to_string(stats.relations) + " relations").c_str());
+    // Episodes are stored as entities; both views count them once, as episodes.
+    const auto entities = stats.entities - std::min(stats.entities, stats.episodes);
+    const auto entity_count = std::to_string(entities) + (entities == 1 ? " entity" : " entities");
+    const auto counts = counted(stats.episodes, "episode") + " · " + entity_count + " · " + counted(stats.relations, "relation");
+    Rlabel_set_text(id("knowledge.stats"), (counts + (stats.staged > 0 ? " · " + std::to_string(stats.staged) + " staged" : "")).c_str());
+    Rlabel_set_text(id("memory.stats"), counts.c_str());
     Rlabel_set_text(id("knowledge.detail"), knowledge_records_.empty()
         ? "No matching graph records. Queue a fact with `raven-ide-knowledge propose`."
         : "Select an entity or relation to inspect its provenance and symbolic context.");
