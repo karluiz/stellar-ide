@@ -1463,6 +1463,8 @@ void App::reset_session() {
     add_message("READY",
         "Describe a change or ask about this workspace. Stellar will inspect the code, implement what is needed, run relevant checks, and report the result.");
     Rlabel_set_text(id("run.title"), "New chat");
+    // An empty conversation has not run yet; open_thread sets the restored state afterwards.
+    set_run_state("READY");
     Rlabel_set_text(id("run.subtitle"), (std::string("Lead agent: orchestrator · ") + harness_name()).c_str());
     Rwidget_set_enabled(id("harness"), R_TRUE);
     Rwidget_set_enabled(id("run.mode"), R_TRUE); Rwidget_set_enabled(id("model.select"), R_TRUE); Rwidget_set_enabled(id("effort.select"), R_TRUE);
