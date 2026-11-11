@@ -65,6 +65,10 @@ int main() {
         stored.recurrence.enabled = true;
         store.save_workflow(stored);
         expect(store.load_workflows().size() == 1, "workflow did not persist");
+        auto claude_workflow = store.create_workflow("claude");
+        expect(claude_workflow.default_harness == "claude", "a new workflow ignored the requested default harness");
+        expect(store.load_workflows().size() == 2, "the second workflow did not persist");
+        std::filesystem::remove(store.workflows_root() / claude_workflow.path);
         auto run = store.create_run(stored, "Implement durable workflows");
         auto& research = raven::endurance_result(run, "research");
         research.status = "succeeded";

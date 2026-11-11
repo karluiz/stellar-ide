@@ -108,7 +108,7 @@ void App::load_endurance() {
         });
     endurance_.load();
     endurance_workflows_ = endurance_store_.load_workflows();
-    if (endurance_workflows_.empty()) endurance_workflows_.push_back(endurance_store_.create_workflow());
+    if (endurance_workflows_.empty()) endurance_workflows_.push_back(endurance_store_.create_workflow(harness_ == Harness::KimiCode ? "kimi" : "claude"));
     refresh_endurance_workflows(0);
     refresh_endurance_runs();
 

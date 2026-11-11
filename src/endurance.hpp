@@ -104,7 +104,8 @@ public:
     const std::filesystem::path& runs_root() const { return runs_root_; }
     std::vector<EnduranceWorkflow> load_workflows() const;
     void save_workflow(const EnduranceWorkflow& workflow) const;
-    EnduranceWorkflow create_workflow();
+    // New workflows default to the harness the user is working with ("claude" or "kimi").
+    EnduranceWorkflow create_workflow(const std::string& default_harness = "kimi");
     EnduranceWorkflow duplicate_workflow(const EnduranceWorkflow& workflow);
 
     EnduranceRun create_run(const EnduranceWorkflow& workflow, const std::string& input, bool scheduled = false) const;

@@ -4952,7 +4952,7 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "endurance.open") app.open_endurance();
     else if (name == "endurance.workflow") app.select_endurance_workflow(Rcombo_box_get_selected(sender));
     else if (name == "endurance.new") {
-        app.endurance_store_.create_workflow();
+        app.endurance_store_.create_workflow(app.harness_ == Harness::KimiCode ? "kimi" : "claude");
         app.refresh_endurance_workflows(static_cast<int>(app.endurance_workflows_.size()));
     }
     else if (name == "endurance.duplicate") {

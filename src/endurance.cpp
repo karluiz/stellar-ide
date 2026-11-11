@@ -475,8 +475,9 @@ void EnduranceStore::save_workflow(const EnduranceWorkflow& workflow) const {
     write_file(workflows_root_ / workflow.path, endurance_workflow_yaml(workflow));
 }
 
-EnduranceWorkflow EnduranceStore::create_workflow() {
+EnduranceWorkflow EnduranceStore::create_workflow(const std::string& default_harness) {
     auto workflow = endurance_default_workflow();
+    if (default_harness == "claude" || default_harness == "kimi") workflow.default_harness = default_harness;
     int suffix = 1;
     do { workflow.path = "mission-" + std::to_string(suffix++) + ".yaml"; } while (fs::exists(workflows_root_ / workflow.path));
     save_workflow(workflow);
