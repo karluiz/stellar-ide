@@ -144,6 +144,7 @@ constexpr unsigned long kFlagOption = 1UL << 19;
 constexpr unsigned long kFlagCommand = 1UL << 20;
 constexpr unsigned short kKeyCodeQ = 12;
 constexpr unsigned short kKeyCodeH = 4;
+constexpr unsigned short kKeyCodeM = 46;
 
 IMP original_key_down = nullptr;
 IMP original_key_up = nullptr;
@@ -276,6 +277,11 @@ void key_down(id self, SEL selector, id event) {
             if (delegate) send<BOOL, id>(delegate, "windowShouldClose:", window);
             return;
         }
+        if (key_code == kKeyCodeM) {
+            // Cmd+M minimises, as in every macOS app; Ctrl+M still opens Memory Universe.
+            if (const id window = send<id>(self, "window")) send<void, id>(window, "miniaturize:", static_cast<id>(nullptr));
+            return;
+        }
         if (key_code == kKeyCodeH) {
             send<void, id>(send<id>(reinterpret_cast<id>(objc_getClass("NSApplication")), "sharedApplication"),
                 "hide:", static_cast<id>(nullptr));
@@ -373,6 +379,11 @@ void fit_main_window_to_display() {
         frame.origin.x = visible.origin.x + (visible.size.width - frame.size.width) / 2;
         frame.origin.y = visible.origin.y + (visible.size.height - frame.size.height) / 2;
         send<void, CGRect, BOOL>(window, "setFrame:display:", frame, YES);
+        // The custom header's minimise button and Cmd+M call -miniaturize:, which AppKit ignores
+        // for windows without the miniaturizable style; borderless windows lack it by default.
+        constexpr unsigned long kStyleMaskMiniaturizable = 1UL << 2;
+        const auto style = send<unsigned long>(window, "styleMask");
+        if (!(style & kStyleMaskMiniaturizable)) send<void, unsigned long>(window, "setStyleMask:", style | kStyleMaskMiniaturizable);
         send<void, id>(window, "makeKeyAndOrderFront:", static_cast<id>(nullptr));
         // AppKit only promotes a view to first responder on a mouse click, so without this the
         // opening screen and the composer ignore the keyboard until the user clicks somewhere.
