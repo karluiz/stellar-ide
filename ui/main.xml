@@ -249,7 +249,7 @@
                                 <HBox Slot.Fill="1">
                                     <VBox Name="endurance.run.history" Width="230">
                                         <Label Text="Run history" Class="section" Slot.Padding="14,14,14,8"/>
-                                        <ListView Name="endurance.run.list" Slot.Fill="1" OnActivated="endurance.run.open" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Endurance run history"/>
+                                        <ListView Name="endurance.run.list" Class="nav-list" Slot.Fill="1" OnActivated="endurance.run.open" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Endurance run history"/>
                                     </VBox>
                                     <VBox Slot.Fill="1">
                                         <ComboBox Name="endurance.run.select" OnChanged="endurance.run.select" Visibility="Collapsed" Slot.Padding="12,10,12,0" AccessibleName="Select Endurance run"/>

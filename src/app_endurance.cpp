@@ -679,8 +679,11 @@ void App::refresh_endurance_run_details() {
     float center_x = 0.0f, center_y = 0.0f, center_width = 0.0f, center_height = 0.0f;
     Rwidget_get_rect(id("center.workspace"), &center_x, &center_y, &center_width, &center_height);
     const bool compact = center_width < 650.0f;
-    Rwidget_set_visibility(id("endurance.run.history"), compact ? R_COLLAPSED : R_VISIBLE);
-    Rwidget_set_visibility(id("endurance.run.select"), compact ? R_VISIBLE : R_COLLAPSED);
+    // With no runs there is nothing to pick: the empty-state message takes the full width instead of
+    // sitting beside an empty history column.
+    const bool has_runs = !endurance_run_rows_.empty();
+    Rwidget_set_visibility(id("endurance.run.history"), compact || !has_runs ? R_COLLAPSED : R_VISIBLE);
+    Rwidget_set_visibility(id("endurance.run.select"), compact && has_runs ? R_VISIBLE : R_COLLAPSED);
     const auto* run = selected_endurance_run();
     Rwidget_clear_children(id("endurance.run.steps"));
     if (!run) {
