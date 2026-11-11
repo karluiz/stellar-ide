@@ -21,7 +21,7 @@
     <Shortcut Keys="Ctrl+Shift+B" Action="sidebar.right"/>
     <Shortcut Keys="Ctrl+," Action="settings.toggle"/>
     <Overlay>
-    <VBox>
+    <VBox Name="app.shell">
         <HeaderBar Title="" Height="60" Buttons="All">
             <Overlay Width="36" Height="34">
                 <Button Name="sidebar.left" Text="" Width="36" Height="34" Style="Flat" Class="header-action" OnClicked="sidebar.left" Tooltip="Show or fold navigation (Ctrl+B)" AccessibleName="Navigation" AccessibleDescription="Show or fold workspace navigation"/>
@@ -31,6 +31,10 @@
             <Button Name="workspace.name" Text="Workspace" Style="Flat" Class="header-action" OnClicked="workspace.open" Tooltip="Open a workspace"/>
             <Label Name="workspace.separator" Text="/" Class="muted" Slot.Padding="6,0" Slot.VAlign="Center"/>
             <Label Name="run.title" Text="New chat" TextSize="14" Slot.VAlign="Center"/>
+            <Label Name="run.state" Text="READY" Class="section" TextSize="11" Slot.VAlign="Center" Slot.Padding="14,0,0,0"/>
+            <Label Name="run.timing" Text="00:00" Font="monospace" TextSize="11" Class="muted" Slot.VAlign="Center" Slot.Padding="8,0,0,0" Visibility="Collapsed"/>
+            <Button Name="run.retry" Text="Retry" Style="Flat" Class="header-action" OnClicked="run.retry" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
+            <Button Name="run.stop" Text="Stop" Style="Flat" Class="header-action" OnClicked="run.stop" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
             <Button Text="New chat" Style="Flat" Class="header-action" OnClicked="thread.new" Tooltip="Start a new conversation (Ctrl+N)" Slot.HAlign="Right"/>
             <Button Text="Activity" Style="Flat" Class="header-action" OnClicked="activity.open" Tooltip="Show live agent activity" Slot.HAlign="Right"/>
             <Overlay Width="36" Height="34" Slot.HAlign="Right">
@@ -38,10 +42,6 @@
                 <Image Name="appearance.sun" Source="icons/sun.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
                 <Image Name="appearance.moon" Source="icons/moon.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center" Visibility="Collapsed"/>
             </Overlay>
-            <Button Name="run.retry" Text="Retry" Style="Flat" Class="header-action" OnClicked="run.retry" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
-            <Button Name="run.stop" Text="Stop" Style="Flat" Class="header-action" OnClicked="run.stop" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
-            <Label Name="run.timing" Text="00:00" Font="monospace" TextSize="10" MinWidth="48" TextAlign="Right" Slot.HAlign="Right" Slot.VAlign="Center" Visibility="Collapsed"/>
-            <Label Name="run.state" Text="READY" Font="monospace" TextSize="10" MinWidth="60" TextAlign="Right" Slot.HAlign="Right" Slot.VAlign="Center" Slot.Padding="6,0"/>
         </HeaderBar>
 
         <Splitter Name="workspace.splitter" Slot.Fill="1" MinPaneSize="300">
@@ -74,37 +74,32 @@
                         <Label Text="Worktrees" Slot.HAlign="Left" Slot.VAlign="Center"/>
                     </Button>
                 </VBox>
-                <HBox Name="navigation.search.row" Spacing="8" Slot.Padding="14,6,14,8">
+                <!-- One heading row for the list below, above its search field: chats, agents, or notes. -->
+                <HBox Name="navigation.list.header" Slot.Padding="16,10,12,2" Spacing="4">
+                    <Label Name="threads.section" Text="Recent chats" Class="section" Slot.Fill="1" Slot.VAlign="Center"/>
+                    <Button Name="threads.view" Text="Archived" Style="Flat" OnClicked="thread.view" Tooltip="Show archived conversations"/>
+                    <Overlay Name="threads.archive.slot" Width="36" Height="34">
+                        <Button Name="threads.archive" Text="" Width="36" Height="34" Style="Flat" OnClicked="thread.archive" Tooltip="Archive selected conversation" AccessibleName="Archive selected conversation"/>
+                        <Image Source="icons/archive.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                    </Overlay>
+                    <Button Name="agents.new" Text="New" Style="Flat" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)" Visibility="Collapsed"/>
+                    <Button Name="notes.new" Text="New" Style="Flat" OnClicked="wiki.new" Tooltip="Create a Markdown note (Ctrl+Shift+N)" Visibility="Collapsed"/>
+                </HBox>
+                <HBox Name="navigation.search.row" Spacing="8" Slot.Padding="14,4,14,6">
                     <Image Source="icons/search.png" Width="16" Height="16" TintText="true" AccessibleHidden="true" Slot.VAlign="Center"/>
                     <TextInput Name="navigation.search" Placeholder="Search chats…" OnChanged="navigation.search" Tooltip="Filter the current list" Slot.Fill="1"/>
                 </HBox>
                 <Switcher Name="left.tabs" Slot.Fill="1">
                     <VBox>
-                        <HBox Slot.Padding="16,10,12,4" Spacing="4">
-                            <Label Name="threads.section" Text="Recent chats" Class="section" Slot.Fill="1" Slot.VAlign="Center"/>
-                            <Button Name="threads.view" Text="Archived" Style="Flat" OnClicked="thread.view" Tooltip="Show archived conversations"/>
-                            <Overlay Width="36" Height="34">
-                                <Button Name="threads.archive" Text="" Width="36" Height="34" Style="Flat" OnClicked="thread.archive" Tooltip="Archive selected conversation" AccessibleName="Archive selected conversation"/>
-                                <Image Source="icons/archive.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
-                            </Overlay>
-                        </HBox>
                         <ListView Name="threads" Class="nav-list" Slot.Fill="1" OnActivated="thread.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
                     </VBox>
                     <VBox>
                         <FileBrowser Name="workspace.files" Slot.Fill="1" Slot.Padding="10,8,10,12" Controls="false" Places="false" ShowHidden="false"/>
                     </VBox>
                     <VBox>
-                        <HBox Slot.Padding="16,10,12,4">
-                            <Label Text="Agent definitions" Class="section" Slot.Fill="1"/>
-                            <Button Text="New" Style="Flat" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)"/>
-                        </HBox>
                         <ListView Name="agents" Class="nav-list" Slot.Fill="1" OnActivated="agent.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
                     </VBox>
                     <VBox>
-                        <HBox Slot.Padding="16,10,12,4">
-                            <Label Text="Workspace notes" Class="section" Slot.Fill="1"/>
-                            <Button Text="New" Style="Flat" OnClicked="wiki.new" Tooltip="Create a Markdown note (Ctrl+Shift+N)"/>
-                        </HBox>
                         <ListView Name="wiki" Class="nav-list" Slot.Fill="1" OnActivated="wiki.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
                     </VBox>
                 </Switcher>

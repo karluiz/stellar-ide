@@ -21,6 +21,7 @@ struct WorkspaceProfile {
     bool vector_recall = true;
     bool watch_checks = false;
     bool opening_sound = true;
+    bool opening_seen = false;
     std::map<std::string, std::string> shortcuts;
 };
 

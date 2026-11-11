@@ -46,6 +46,29 @@ std::string shortened(const std::string& value, size_t length) {
 }
 
 // "1 file", "3 files": status and review copy never shows a parenthesised plural.
+// A readable conversation title from a prompt: first sentence of the first line, collapsed
+// whitespace, at most six words, capitalised, without trailing punctuation.
+std::string conversation_title(const std::string& prompt) {
+    auto line = prompt.substr(0, prompt.find('\n'));
+    std::string collapsed;
+    for (const char c : line) {
+        const bool space = c == ' ' || c == '\t' || c == '\r';
+        if (space && (collapsed.empty() || collapsed.back() == ' ')) continue;
+        collapsed.push_back(space ? ' ' : c);
+    }
+    for (const char* stop : {". ", "? ", "! ", ": "}) {
+        const auto end = collapsed.find(stop);
+        if (end != std::string::npos && end >= 12) collapsed.resize(end);
+    }
+    std::string title;
+    int words = 0;
+    std::istringstream stream(collapsed);
+    for (std::string word; stream >> word && words < 6; ++words) title += (title.empty() ? "" : " ") + word;
+    while (!title.empty() && std::string(".,;:!?-").find(title.back()) != std::string::npos) title.pop_back();
+    if (!title.empty() && title[0] >= 'a' && title[0] <= 'z') title[0] = static_cast<char>(title[0] - 'a' + 'A');
+    return title.empty() ? "New conversation" : title;
+}
+
 std::string counted(size_t count, const char* noun) {
     return std::to_string(count) + " " + noun + (count == 1 ? "" : "s");
 }
@@ -622,8 +645,14 @@ bool App::create() {
 
     Rwindow_set_title(window_, ("Stellar — " + workspace_.name()).c_str());
     Rwindow_show(window_);
-    splash_.begin();
-    Rwidget_focus(id("splash.skip"));
+    // The opening plays on a workspace's first launch; afterwards Stellar opens straight to work.
+    if (opening_seen_) {
+        Rwidget_set_visibility(id("splash.container"), R_COLLAPSED);
+        Rwidget_focus(id("composer"));
+    } else {
+        splash_.begin();
+        Rwidget_focus(id("splash.skip"));
+    }
     return true;
 }
 
@@ -642,6 +671,7 @@ void App::set_run_state(const char* state) {
         if (std::strcmp(header, state) == 0) lead = label;
     }
     Rlabel_set_text(id("activity.lead"), lead);
+    refresh_threads();
 }
 
 std::string App::workspace_summary() const {
@@ -660,6 +690,10 @@ void App::dismiss_splash() {
     Rwidget_set_opacity(id("splash.container"), 1.0f);
     Rwidget_set_visibility(id("splash.container"), R_COLLAPSED);
     Rwidget_focus(id("composer"));
+    if (!opening_seen_) {
+        opening_seen_ = true;
+        save_profile();
+    }
 }
 
 void App::toggle_splash_sound() {
@@ -1174,7 +1208,8 @@ void App::refresh_threads() {
     const auto query = lowercase(Rtext_input_get_text(id("navigation.search")));
     thread_rows_.clear();
     Rlist_view_clear_items(id("threads"));
-    Rlabel_set_text(id("threads.section"), show_archived_ ? "Archived chats" : "Recent chats");
+    // The heading is shared with Agents and Notes; it only names chats while chats are shown.
+    if (active_view(id("left.tabs")) == 0) Rlabel_set_text(id("threads.section"), show_archived_ ? "Archived chats" : "Recent chats");
     Rbutton_set_text(id("threads.view"), show_archived_ ? "Active" : "Archived");
     Rwidget_set_tooltip(id("threads.view"), show_archived_ ? "Show active conversations" : "Show archived conversations");
     Rbutton_set_text(id("threads.archive"), "");
@@ -1187,8 +1222,18 @@ void App::refresh_threads() {
         if (!query.empty() && lowercase(thread.title).find(query) == std::string::npos) continue;
         if (thread.id == current_thread_id_) selected = static_cast<int>(thread_rows_.size());
         thread_rows_.push_back(thread.id);
-        // The sidebar is narrow and the list clips without an ellipsis, so rows carry a short title.
-        Rlist_view_add_item(id("threads"), shortened(thread.title, 26).c_str());
+        // Rows carry a short title plus the conversation's state or age, so a running or failed chat
+        // can be told apart without opening it. The sidebar clips without an ellipsis.
+        std::string suffix;
+        if (thread.id == current_thread_id_ && (lead_process_.running() || wiki_process_.running())) suffix = "running";
+        else if (thread.id == current_thread_id_ && last_run_failed_) suffix = "failed";
+        else if (thread.updated_at > 0) {
+            const auto age = std::max<std::int64_t>(0, static_cast<std::int64_t>(std::time(nullptr)) - thread.updated_at);
+            suffix = age < 60 ? "now" : age < 3600 ? std::to_string(age / 60) + "m"
+                : age < 86400 ? std::to_string(age / 3600) + "h" : std::to_string(age / 86400) + "d";
+        }
+        const size_t width = suffix.empty() ? 26 : 26 - std::min<size_t>(suffix.size() + 3, 12);
+        Rlist_view_add_item(id("threads"), (shortened(thread.title, width) + (suffix.empty() ? "" : " · " + suffix)).c_str());
     }
     if (selected < 0 && show_archived_ && !thread_rows_.empty()) selected = 0;
     Rlist_view_set_selected(id("threads"), selected);
@@ -1235,6 +1280,26 @@ void App::archive_selected_thread() {
     }
     refresh_threads();
     set_status("Conversation archived · open Archived to restore it");
+}
+
+// Replaces an automatic title with the one the knowledge curator proposed. A title the user has
+// already changed is left alone: only titles still equal to the prompt-derived one are replaced.
+void App::apply_agent_title(const std::string& proposed) {
+    auto title = proposed;
+    while (!title.empty() && (title.back() == '.' || title.back() == ' ' || title.back() == '"')) title.pop_back();
+    while (!title.empty() && (title.front() == '"' || title.front() == ' ')) title.erase(0, 1);
+    if (title.empty() || thread_messages_.empty()) return;
+    const auto first = std::find_if(thread_messages_.begin(), thread_messages_.end(), [](const auto& message) { return message.user; });
+    if (first == thread_messages_.end() || run_title_ != shortened(conversation_title(first->text), 48)) return;
+    run_title_ = shortened(title, 48);
+    Rlabel_set_text(id("run.title"), shortened(run_title_, 36).c_str());
+    Rwidget_set_tooltip(id("run.title"), run_title_.c_str());
+    save_thread();
+    try {
+        // Re-stage the episode under the new name; the curator result below reads staged writes.
+        workspace_.stage_run_episode(session_id_, run_title_, harness_name(), transcript_text_, "completed");
+    } catch (const std::exception&) {
+    }
 }
 
 void App::save_thread() {
@@ -1831,6 +1896,7 @@ void App::load_profile() {
     vector_recall_ = profile.vector_recall;
     watch_checks_ = profile.watch_checks;
     opening_sound_ = profile.opening_sound;
+    opening_seen_ = profile.opening_seen;
 }
 
 void App::apply_profile() {
@@ -1877,6 +1943,7 @@ void App::save_profile() {
     profile.vector_recall = vector_recall_;
     profile.watch_checks = watch_checks_;
     profile.opening_sound = opening_sound_;
+    profile.opening_seen = opening_seen_;
     try {
         profile_store_.save();
     } catch (const std::exception& error) {
@@ -2062,7 +2129,17 @@ void App::refresh_navigation() {
     const bool resources_visible = center == 0 || center == 1 || (center == 3 && more == 0) || knowledge_context;
     Rwidget_set_visibility(id("left.tabs"), resources_visible ? R_VISIBLE : R_COLLAPSED);
     Rwidget_set_visibility(id("navigation.bottom.spacer"), resources_visible ? R_COLLAPSED : R_VISIBLE);
-    Rwidget_set_visibility(id("navigation.search.row"), resources_visible && left != 1 ? R_VISIBLE : R_COLLAPSED);
+    const bool list_visible = resources_visible && left != 1;
+    Rwidget_set_visibility(id("navigation.search.row"), list_visible ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("navigation.list.header"), list_visible ? R_VISIBLE : R_COLLAPSED);
+    const bool chats = left == 0;
+    Rwidget_set_visibility(id("threads.view"), chats ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("threads.archive.slot"), chats ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("agents.new"), left == 2 ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("notes.new"), left == 3 ? R_VISIBLE : R_COLLAPSED);
+    if (left == 2) Rlabel_set_text(id("threads.section"), "Agent definitions");
+    else if (left == 3) Rlabel_set_text(id("threads.section"), "Workspace notes");
+    else Rlabel_set_text(id("threads.section"), show_archived_ ? "Archived chats" : "Recent chats");
     const char* placeholders[] = {"Search chats…", "", "Search agents…", "Search notes…"};
     Rtext_input_set_placeholder(id("navigation.search"), placeholders[std::clamp(left, 0, 3)]);
 
@@ -2368,14 +2445,13 @@ void App::update_queue() {
     const bool wiki_running = wiki_process_.running();
     const bool busy = lead_running || wiki_running;
     Rwidget_set_visibility(id("queue.bar"), queued_prompt_.empty() ? R_COLLAPSED : R_VISIBLE);
-    Rwidget_set_visibility(id("queue.review"), proposal_ && !queued_prompt_.empty() ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("queue.review"), R_COLLAPSED);
     Rwidget_set_visibility(id("tesseract.queue.bar"), queued_tesseract_ && !queued_prompt_.empty() ? R_VISIBLE : R_COLLAPSED);
     if (!queued_prompt_.empty()) {
         Rlabel_set_text(id("queue.prompt"), shortened(queued_prompt_, 180).c_str());
         Rlabel_set_text(id("tesseract.queue.prompt"), shortened(queued_prompt_, 100).c_str());
         std::string state = "Follow-up queued";
-        if (proposal_) state = "Review or discard the Wiki proposal to continue";
-        else if (last_run_failed_) state = "Previous run failed · follow-up paused";
+        if (last_run_failed_) state = "Previous run failed · follow-up paused";
         else if (wiki_running) state = "Knowledge review in progress · your follow-up is saved";
         else if (lead_running) state = run_mode_ == RunMode::Build
             ? "Waiting for the current run and knowledge review"
@@ -2404,7 +2480,7 @@ void App::cancel_queued() {
 }
 
 void App::maybe_start_queued() {
-    if (queued_prompt_.empty() || lead_process_.running() || wiki_process_.running() || proposal_ || last_run_failed_) return;
+    if (queued_prompt_.empty() || lead_process_.running() || wiki_process_.running() || last_run_failed_) return;
     const auto prompt = queued_prompt_;
     tesseract_context_override_ = queued_tesseract_context_;
     queued_prompt_.clear();
@@ -2652,11 +2728,8 @@ void App::start_run() {
             : "Follow-up queued · waiting for the current run");
         return;
     }
-    if (proposal_) {
-        set_status("Review or discard the pending wiki proposal before starting another run");
-        open_proposal();
-        return;
-    }
+    // A pending knowledge proposal stays available in Activity and Review; the next run's
+    // curator folds its own findings into it instead of the proposal blocking new work.
     if (!flush_autosave()) {
         set_status("Resolve the autosave error before starting the agent");
         return;
@@ -2677,7 +2750,7 @@ void App::start_run() {
     run_elapsed_seconds_ = 0.0;
     displayed_elapsed_seconds_ = -1;
     if (session_id_.empty() || tesseract) {
-        run_title_ = shortened(prompt.substr(0, prompt.find('\n')), 48);
+        run_title_ = shortened(conversation_title(prompt), 48);
         Rlabel_set_text(id("run.title"), shortened(run_title_, 36).c_str());
         Rwidget_set_tooltip(id("run.title"), run_title_.c_str());
     }
@@ -3123,12 +3196,20 @@ void App::start_wiki_curator() {
         "Use the supplied existing notes. Return no edits when the run contains no settled knowledge worth keeping. "
         "Each edit must be a complete replacement Markdown file with a wiki-relative path (do not prefix it with wiki/). "
         "Also return a graph array of typed upsert_entity or relate operations with provenance and confidence; use an empty array when no graph change is needed. "
-        "Do not write files yourself. Return only JSON with summary, edits, and graph.\n\nEXISTING WIKI FILES:\n");
+        "Also return title: a plain 2 to 5 word title for this conversation, in the user's language, with no quotes or final period. "
+        "Do not write files yourself. Return only JSON with title, summary, edits, and graph.\n\nEXISTING WIKI FILES:\n");
     size_t wiki_budget = 40'000;
     for (const auto& note : notes_) {
         const auto path = std::filesystem::relative(note.path, workspace_.wiki_root()).generic_string();
-        const auto available = std::min(wiki_budget, note.content.size());
-        prompt += "\n--- " + path + " ---\n" + note.content.substr(0, available) + "\n";
+        // A note with an unreviewed edit is shown as that edit, so this run builds on it.
+        const std::string* content = &note.content;
+        if (proposal_) {
+            for (const auto& edit : proposal_->edits) {
+                if (edit.path == path) content = &edit.after;
+            }
+        }
+        const auto available = std::min(wiki_budget, content->size());
+        prompt += "\n--- " + path + " ---\n" + content->substr(0, available) + "\n";
         wiki_budget -= available;
         if (wiki_budget == 0) break;
     }
@@ -3201,13 +3282,29 @@ void App::handle_wiki_event(const ClaudeEvent& event) {
             throw std::runtime_error("curator did not return a JSON object");
         }
         const auto data = nlohmann::json::parse(payload.substr(begin, end - begin + 1));
+        apply_agent_title(data.value("title", ""));
         std::vector<std::pair<std::string, std::string>> edits;
         for (const auto& edit : data.at("edits")) edits.emplace_back(edit.at("path"), edit.at("content"));
+        // Unreviewed edits from an earlier run stay in the proposal unless this run replaced the note.
+        if (proposal_) {
+            for (const auto& earlier : proposal_->edits) {
+                const bool replaced = std::any_of(edits.begin(), edits.end(), [&](const auto& edit) { return edit.first == earlier.path; });
+                if (!replaced) edits.emplace_back(earlier.path, earlier.after);
+            }
+        }
         std::map<std::string, GraphOperation> unique_operations;
+        int skipped_operations = 0;
         if (data.contains("graph")) {
             for (const auto& item : data["graph"]) {
-                auto operation = KnowledgeGraph::from_json(item.dump());
-                unique_operations[operation.id] = std::move(operation);
+                // One malformed operation (for example an id with a path in it) drops only itself;
+                // the rest of the review still reaches the user.
+                try {
+                    auto operation = KnowledgeGraph::from_json(item.dump());
+                    KnowledgeGraph::validate(operation);
+                    unique_operations[operation.id] = std::move(operation);
+                } catch (const std::exception&) {
+                    ++skipped_operations;
+                }
             }
         }
         for (const auto& operation : workspace_.knowledge().staged()) unique_operations[operation.id] = operation;
@@ -3221,9 +3318,9 @@ void App::handle_wiki_event(const ClaudeEvent& event) {
         Rlabel_set_text(id("proposal.summary"), proposal_->summary.c_str());
         Rwidget_set_visibility(id("proposal.bar"), R_VISIBLE);
         update_queue();
-        set_status(queued_prompt_.empty()
-            ? "Knowledge review ready · review or discard the proposal"
-            : "Follow-up paused · review or discard the knowledge proposal to continue");
+        set_status(skipped_operations > 0
+            ? "Knowledge review ready · " + counted(static_cast<size_t>(skipped_operations), "invalid graph operation") + " left out"
+            : "Knowledge review ready · review it from Activity whenever you like");
         notify_event("Stellar · Knowledge review ready", proposal_->summary, false, "knowledge", "proposal");
     } catch (const std::exception& error) {
         set_status(std::string("Run complete · invalid wiki proposal: ") + error.what());
@@ -3238,6 +3335,48 @@ void App::pump() {
     pump_endurance();
     maybe_start_queued();
     update_reading_column();
+    sync_accessibility();
+    sync_file_browser_path();
+}
+
+// Raven exposes every child of a Switcher and everything under an overlay to screen readers. Only
+// the page on screen is exposed: inactive pages are hidden, and the workspace is hidden while the
+// opening or the world gallery covers it.
+void App::sync_accessibility() {
+    for (const char* name : {"left.tabs", "center.tabs", "more.tabs", "right.tabs"}) {
+        const auto switcher = id(name);
+        if (!Rwidget_is_valid(switcher)) continue;
+        const int active = Rswitcher_get_index(switcher);
+        const int count = Rwidget_get_child_count(switcher);
+        for (int index = 0; index < count; ++index) Rwidget_set_accessible_hidden(Rwidget_get_child(switcher, index), index != active);
+    }
+    const bool covered = splash_.active() || Rwidget_get_visibility(id("theme.gallery")) == R_VISIBLE;
+    Rwidget_set_accessible_hidden(id("app.shell"), covered);
+}
+
+// The file tree's path field shows the folder relative to the workspace (read-only), and the tree
+// cannot leave the workspace through its Up button.
+void App::sync_file_browser_path() {
+    const auto browser = id("workspace.files");
+    if (!Rwidget_is_valid(browser) || Rwidget_get_child_count(browser) == 0) return;
+    const char* current = Rfile_browser_get_directory(browser);
+    if (!current) return;
+    std::error_code error;
+    const auto root = std::filesystem::weakly_canonical(workspace_.root(), error);
+    auto directory = std::filesystem::weakly_canonical(current, error);
+    auto relative = std::filesystem::relative(directory, root, error).generic_string();
+    if (error || relative.rfind("..", 0) == 0) {
+        Rfile_browser_set_directory(browser, root.string().c_str());
+        directory = root;
+        relative = ".";
+    }
+    const auto label = workspace_.name() + (relative == "." ? "" : "/" + relative);
+    const auto path_field = Rwidget_get_child(browser, 0);
+    if (Rwidget_get_type(path_field) != R_WIDGET_TEXT_INPUT) return;
+    const char* shown = Rtext_input_get_text(path_field);
+    if (shown && label == shown) return;
+    Rtext_input_set_read_only(path_field, R_TRUE);
+    Rtext_input_set_text(path_field, label.c_str());
 }
 
 // Centers the transcript, queue bar and composer in the 860px reading column. A filling slot in a

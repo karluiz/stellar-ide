@@ -62,7 +62,7 @@ std::string verification_command_kind(const std::string& command) {
     if (std::regex_search(value, tests)) return "test";
     if (value.find("cmake --build") != std::string::npos) return "build";
     static const std::regex builds(
-        R"((^|[\s;&|])(cmake\s+--build|ninja|make|g\+\+|clang\+\+|cargo\s+build|go\s+build|npm\s+run\s+build|pnpm\s+run\s+build|yarn\s+build|tsc|dotnet\s+build|mvn\s+package)(?=\s|$))",
+        R"((^|[\s;&|])(cmake\s+--build|ninja|make|g\+\+|clang\+\+|gcc|clang|cc|cargo\s+build|go\s+build|npm\s+run\s+build|pnpm\s+run\s+build|yarn\s+build|tsc|dotnet\s+build|mvn\s+package)(?=\s|$))",
         std::regex::icase);
     if (std::regex_search(value, builds)) return "build";
     return {};

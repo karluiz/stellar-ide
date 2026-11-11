@@ -357,6 +357,7 @@ std::string wiki_schema() {
     schema["additionalProperties"] = false;
     schema["required"] = {"summary", "edits", "graph"};
     schema["properties"]["summary"] = {{"type", "string"}};
+    schema["properties"]["title"] = {{"type", "string"}};
     schema["properties"]["edits"] = {
         {"type", "array"},
         {"items", {
@@ -504,7 +505,10 @@ bool ClaudeProcess::start(const RunOptions& options, std::string& error) {
         arguments = {
             "claude", "-p", "--output-format", "stream-json", "--verbose",
             "--include-partial-messages", "--forward-subagent-text", "--prompt-suggestions", "false",
-            "--permission-prompts", "none"
+            "--permission-prompts", "none",
+            // Project and local settings only: a run follows the workspace, not the personal
+            // CLAUDE.md, plugins and MCP servers of whoever launched Stellar.
+            "--setting-sources", "project,local"
         };
         if (!options.model.empty()) arguments.insert(arguments.end(), {"--model", options.model});
         if (!options.effort.empty()) arguments.insert(arguments.end(), {"--effort", options.effort});

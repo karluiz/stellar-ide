@@ -49,6 +49,9 @@ public:
     void pump();
     void update_reading_column();
     void set_run_state(const char* state);
+    void apply_agent_title(const std::string& proposed);
+    void sync_accessibility();
+    void sync_file_browser_path();
     std::string workspace_summary() const;
     Rid window() const;
     bool has_animation_frames() const;
@@ -92,6 +95,7 @@ private:
     SplashScreen splash_;
     OpeningAudio opening_audio_;
     bool opening_sound_ = true;
+    bool opening_seen_ = false;
     bool demo_;
     Rid window_ = R_INVALID_ID;
     Rid current_message_ = R_INVALID_ID;

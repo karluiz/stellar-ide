@@ -64,6 +64,7 @@ void WorkspaceProfileStore::load() {
     data.vector_recall = root.value("vector_recall", data.vector_recall);
     data.watch_checks = root.value("watch_checks", data.watch_checks);
     data.opening_sound = root.value("opening_sound", data.opening_sound);
+    data.opening_seen = root.value("opening_seen", data.opening_seen);
     if (root.contains("shortcuts")) {
         if (!root["shortcuts"].is_object()) throw std::runtime_error("Invalid custom shortcuts");
         for (const auto& [action, combination] : root["shortcuts"].items()) {
@@ -84,7 +85,7 @@ void WorkspaceProfileStore::save() const {
         {"kimi_model", data.kimi_model}, {"kimi_effort", data.kimi_effort},
         {"left_sidebar", data.left_sidebar}, {"right_sidebar", data.right_sidebar},
         {"vector_recall", data.vector_recall}, {"watch_checks", data.watch_checks},
-        {"opening_sound", data.opening_sound}, {"shortcuts", shortcuts}
+        {"opening_sound", data.opening_sound}, {"opening_seen", data.opening_seen}, {"shortcuts", shortcuts}
     };
     write_text(path_, root.dump(2) + "\n");
 }
