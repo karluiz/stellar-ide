@@ -3,8 +3,10 @@
 #include <Raven.h>
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <cerrno>
+#include <cctype>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
@@ -25,6 +27,17 @@ using json = nlohmann::json;
 
 std::string string_at(const json& value, const char* key) {
     return value.is_object() && value.contains(key) && value[key].is_string() ? value[key].get<std::string>() : "";
+}
+
+std::string image_mime_type(const std::filesystem::path& path) {
+    auto extension = path.extension().string();
+    std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    if (extension == ".jpg" || extension == ".jpeg") return "image/jpeg";
+    if (extension == ".bmp") return "image/bmp";
+    if (extension == ".tga") return "image/tga";
+    return "image/png";
 }
 
 std::uint64_t token_at(const json& value, const char* key) {
@@ -145,6 +158,22 @@ json claude_agent_definition(const AgentDefinition& agent) {
 }
 
 } // namespace
+
+std::string base64_encode(std::string_view data) {
+    static constexpr char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string result;
+    result.reserve((data.size() + 2) / 3 * 4);
+    for (size_t i = 0; i < data.size(); i += 3) {
+        const auto a = static_cast<unsigned char>(data[i]);
+        const auto b = i + 1 < data.size() ? static_cast<unsigned char>(data[i + 1]) : 0;
+        const auto c = i + 2 < data.size() ? static_cast<unsigned char>(data[i + 2]) : 0;
+        result.push_back(alphabet[a >> 2]);
+        result.push_back(alphabet[((a & 0x03) << 4) | (b >> 4)]);
+        result.push_back(i + 1 < data.size() ? alphabet[((b & 0x0f) << 2) | (c >> 6)] : '=');
+        result.push_back(i + 2 < data.size() ? alphabet[c & 0x3f] : '=');
+    }
+    return result;
+}
 
 std::vector<ClaudeEvent> ClaudeEventParser::parse(const std::string& line) const {
     std::vector<ClaudeEvent> events;
@@ -573,13 +602,14 @@ bool ClaudeProcess::start(const RunOptions& options, std::string& error) {
 bool ClaudeProcess::run_kimi_acp(int output_fd, int input_fd, const RunOptions& options) {
     KimiAcpEventParser parser;
     std::string buffer;
+    std::string diagnostics;
     auto fail = [&](const std::string& text) {
         ClaudeEvent event;
         event.kind = EventKind::RunFinished;
         event.session_id = options.session_id;
         event.is_error = true;
         event.detail = "acp_error";
-        event.text = text;
+        event.text = diagnostics.empty() ? text : text + "\n" + diagnostics;
         impl_->push(std::move(event));
         return true;
     };
@@ -615,6 +645,11 @@ bool ClaudeProcess::run_kimi_acp(int output_fd, int input_fd, const RunOptions& 
             try {
                 input = json::parse(line);
             } catch (const std::exception&) {
+                if (!line.empty()) {
+                    if (!diagnostics.empty()) diagnostics += "\n";
+                    diagnostics += line;
+                    if (diagnostics.size() > 8192) diagnostics.erase(0, diagnostics.size() - 8192);
+                }
                 continue;
             }
             if (string_at(input, "method") == "session/request_permission" && input.contains("id")) {
@@ -693,6 +728,21 @@ bool ClaudeProcess::run_kimi_acp(int output_fd, int input_fd, const RunOptions& 
     };
     if (!set_config(3, "model", options.model) || !set_config(4, "thinking", options.effort)) return true;
     json prompt_blocks = json::array({{{"type", "text"}, {"text", options.prompt}}});
+    for (const auto& path : options.image_links) {
+        std::error_code error;
+        const auto size = std::filesystem::file_size(path, error);
+        if (error || size == 0 || size > 20 * 1024 * 1024) {
+            prompt_blocks.push_back({{"type", "resource_link"}, {"uri", path.string()}, {"name", path.filename().string()}});
+            continue;
+        }
+        std::ifstream input(path, std::ios::binary);
+        const std::string data{std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+        if ((input.good() || input.eof()) && data.size() == size) {
+            prompt_blocks.push_back({{"type", "image"}, {"data", base64_encode(data)}, {"mimeType", image_mime_type(path)}});
+        } else {
+            prompt_blocks.push_back({{"type", "resource_link"}, {"uri", path.string()}, {"name", path.filename().string()}});
+        }
+    }
     for (const auto& path : options.resource_links) {
         std::error_code error;
         const auto size = std::filesystem::file_size(path, error);

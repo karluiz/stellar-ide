@@ -210,7 +210,7 @@ void EnduranceController::finish_process(const std::string& id, bool failed, con
 }
 
 void EnduranceController::schedule_ready() {
-    if (!active_run_ || active_run_->status == "stopped" || active_run_->status == "succeeded") return;
+    if (!active_run_ || active_run_->status == "stopped" || active_run_->status == "succeeded" || active_run_->status == "failed") return;
     for (const auto& current : active_run_->snapshot.steps) {
         auto& result = endurance_result(*active_run_, current.id);
         if (result.status != "ready") continue;

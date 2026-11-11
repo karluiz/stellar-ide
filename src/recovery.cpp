@@ -35,7 +35,7 @@ void RecoveryStore::save() const {
             {"saved_content", editor.saved_content}});
     }
     const nlohmann::json data = {{"version", 1}, {"draft", draft_}, {"editors", std::move(editors)}};
-    write_file(path_, data.dump(2) + "\n");
+    write_file(path_, data.dump(2, ' ', false, nlohmann::json::error_handler_t::replace) + "\n");
 }
 
 void RecoveryStore::set_draft(const std::string& text) {

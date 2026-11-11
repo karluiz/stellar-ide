@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace raven {
@@ -80,5 +81,6 @@ private:
 
 std::string read_file(const std::filesystem::path& path);
 void write_file(const std::filesystem::path& path, const std::string& content);
+bool is_valid_utf8(std::string_view text);
 
 } // namespace raven

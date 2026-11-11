@@ -17,12 +17,10 @@ struct WorkspaceProfile {
     std::string kimi_model;
     std::string kimi_effort;
     bool left_sidebar = true;
-    bool right_sidebar = true;
+    bool right_sidebar = false;
     bool vector_recall = true;
     bool watch_checks = false;
-    bool do_not_disturb = false;
     bool opening_sound = true;
-    std::map<std::string, bool> notification_mutes;
     std::map<std::string, std::string> shortcuts;
 };
 

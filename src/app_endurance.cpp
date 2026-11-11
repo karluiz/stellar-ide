@@ -68,8 +68,9 @@ const EnduranceRun* App::selected_endurance_run() const {
 
 void App::open_endurance() {
     dismiss_splash();
-    Rtab_view_set_active(id("center.tabs"), 2);
-    Rtab_view_set_active(id("endurance.views"), 0);
+    set_sidebar_visibility(false, false);
+    set_active_view(id("center.tabs"), 2);
+    set_active_view(id("endurance.views"), 0);
     rebuild_endurance_graph();
     endurance_graph_sync_pending_ = true;
     Rwidget_focus(id("endurance.graph"));
@@ -116,11 +117,12 @@ void App::load_endurance() {
     Rnode_graph_set_selection_callback(graph, [](Rid, int node, void* user) {
         auto& app = *static_cast<App*>(user);
         for (const auto& [step, candidate] : app.endurance_nodes_) if (candidate == node) app.select_endurance_step(step);
+        app.show_context(4);
     }, this);
     Rnode_graph_set_activated_callback(graph, [](Rid, int node, void* user) {
         auto& app = *static_cast<App*>(user);
         for (const auto& [step, candidate] : app.endurance_nodes_) if (candidate == node) app.select_endurance_step(step);
-        Rtab_view_set_active(app.id("right.tabs"), 4);
+        app.show_context(4);
     }, this);
     Rnode_graph_set_moved_callback(graph, [](Rid, int node, void* user) {
         auto& app = *static_cast<App*>(user);
@@ -224,7 +226,7 @@ void App::select_endurance_workflow(int index) {
     update_endurance_schedule_controls();
     rebuild_endurance_graph();
     if (!workflow->steps.empty()) select_endurance_step(workflow->steps.front().id);
-    Rtab_view_set_active(id("right.tabs"), 0);
+    set_active_view(id("right.tabs"), 0);
     endurance_loading_ = false;
 }
 
@@ -463,7 +465,7 @@ void App::add_endurance_step() {
     save_endurance_workflow();
     rebuild_endurance_graph();
     select_endurance_step(step.id);
-    Rtab_view_set_active(id("right.tabs"), 4);
+    show_context(4);
 }
 
 void App::duplicate_endurance_step() {
@@ -605,7 +607,7 @@ void App::start_endurance_run() {
     if (!workflow) return;
     if (endurance_.busy()) {
         set_status("Finish or stop the active Endurance run before starting another");
-        Rtab_view_set_active(id("endurance.views"), 2);
+        set_active_view(id("endurance.views"), 2);
         return;
     }
     std::string error;
@@ -614,7 +616,7 @@ void App::start_endurance_run() {
         return;
     }
     endurance_run_index_ = 0;
-    Rtab_view_set_active(id("endurance.views"), 2);
+    set_active_view(id("endurance.views"), 2);
     refresh_endurance_runs();
     set_status("Endurance started · " + workflow->name);
 }
@@ -633,7 +635,7 @@ void App::resume_endurance_run() {
         set_status(error);
         return;
     }
-    Rtab_view_set_active(id("endurance.views"), 2);
+    set_active_view(id("endurance.views"), 2);
     refresh_endurance_runs();
     set_status("Endurance resumed");
 }

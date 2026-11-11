@@ -297,14 +297,17 @@ const std::vector<PaletteCommand>& palette_commands() {
         {"Compact conversation", "Keep task and recent messages for the next session", "context.compact"},
         {"Recall prompts", "Reuse and pin saved prompts", "recall.open"},
         {"Review code changes", "Open checkpoints and verification", "checkpoint.review"},
-        {"Isolated missions", "Create, review, and apply Git worktrees", "mission.open"},
+        {"Worktrees", "Create, review, and apply isolated Git tasks", "mission.open"},
         {"Memory Universe", "Inspect reviewed episodic memory", "memory.open"},
-        {"Endurance", "Orchestrate recurring multi-agent workflows", "endurance.open"},
-        {"Knowledge graph", "Inspect entities and relations", "knowledge.open_tab"},
+        {"Tesseract UI", "Create and refine interfaces with the agent", "tesseract.open"},
+        {"Workflows · Endurance", "Orchestrate recurring multi-agent workflows", "endurance.open"},
+        {"Knowledge", "Inspect notes, entities, relations, and memory", "knowledge.open_tab"},
+        {"Activity", "Inspect live agent work and run details", "activity.open"},
+        {"Alerts", "Open notification history", "alerts.view"},
         {"Choose your world", "Open the planet theme gallery", "theme.browser"},
         {"Settings", "Appearance, harness, zoom, and keyboard", "settings.toggle"},
-        {"Show or fold Files", "Toggle the left sidebar", "sidebar.left"},
-        {"Show or fold Panels", "Toggle the right sidebar", "sidebar.right"},
+        {"Show or fold navigation", "Toggle the left sidebar", "sidebar.left"},
+        {"Show or fold context panel", "Toggle the right sidebar", "sidebar.right"},
         {"Stop current run", "Cancel active work and queued follow-up", "run.stop"},
         {"Retry last run", "Repeat the previous prompt", "run.retry"}
     };
@@ -330,6 +333,8 @@ App::~App() {
     Rset_frame_callback(nullptr, nullptr);
     lead_process_.stop();
     wiki_process_.stop();
+    if (Rtexture_is_valid(composer_texture_)) Rtexture_destroy(composer_texture_);
+    if (Rtexture_is_valid(tesseract_texture_)) Rtexture_destroy(tesseract_texture_);
 }
 
 Rid App::id(const char* name) const { return Rwidget_find(window_, name); }
@@ -343,21 +348,22 @@ bool App::create() {
         "wiki.new", "wiki.open", "wiki.save", "proposal.open", "proposal.accept",
         "proposal.discard", "checkpoint.review", "checkpoint.history_changed", "checkpoint.file_changed", "checkpoint.open", "checkpoint.restore", "checkpoint.restore_hunk",
         "verification.open", "verification.open_diagnostic", "verification.rerun", "verification.watch",
-        "graph.fit", "graph.toggle", "file.save", "wiki.view", "wiki.preview", "harness.changed", "run.mode.changed", "model.changed", "effort.changed", "context.clear", "context.remove", "context.compact", "composer.focus",
+        "graph.fit", "graph.toggle", "file.save", "wiki.view", "wiki.preview", "harness.changed", "run.mode.changed", "model.changed", "effort.changed", "context.clear", "context.remove", "context.compact", "composer.focus", "composer.image.remove", "tesseract.image.remove",
         "palette.commands", "palette.files", "palette.search", "palette.changed", "palette.open", "palette.close",
         "recall.open", "recall.close", "recall.changed", "recall.use", "recall.pin", "recall.erase",
         "knowledge.search", "knowledge.open", "knowledge.open_tab", "navigation.search", "code.save", "sidebar.left", "sidebar.right",
+        "nav.chat", "nav.canvas", "nav.workflows", "nav.files", "nav.agents", "nav.review", "nav.knowledge", "nav.worktrees", "nav.settings", "activity.open", "alerts.view", "context.close",
         "mission.create", "mission.review", "mission.apply", "mission.apply_hunk", "mission.discard", "mission.return", "mission.open",
         "settings.toggle", "settings.close", "settings.harness.changed", "settings.vector", "appearance.toggle",
         "settings.interface.decrease", "settings.interface.reset", "settings.interface.increase",
         "settings.editor.decrease", "settings.editor.reset", "settings.editor.increase",
-        "alerts.open", "alerts.clear", "alerts.dnd", "settings.notifications.run", "settings.notifications.verification",
-        "settings.notifications.knowledge", "settings.notifications.mission", "settings.notifications.autosave",
+        "alerts.open", "alerts.clear",
         "shortcut.changed", "shortcut.rebind", "shortcut.reset",
         "theme.earth", "theme.earth.light", "theme.earth.glass", "theme.miller", "theme.miller.light", "theme.miller.glass", "theme.mann", "theme.mann.dark", "theme.mann.glass",
         "theme.edmunds", "theme.edmunds.dark", "theme.edmunds.glass", "theme.gargantua", "theme.gargantua.light", "theme.gargantua.glass",
         "theme.browser", "theme.gallery.close", "theme.gallery.previous", "theme.gallery.next",
         "theme.gallery.dark", "theme.gallery.light", "theme.gallery.glass", "memory.open", "memory.fit", "memory.forget", "splash.skip", "splash.sound",
+        "tesseract.open", "tesseract.fit", "tesseract.zoom.in", "tesseract.zoom.out", "tesseract.selection.clear",
         "endurance.open", "endurance.workflow", "endurance.new", "endurance.duplicate", "endurance.validate", "endurance.run", "endurance.view",
         "endurance.recurrence.toggle", "endurance.schedule.enabled", "endurance.schedule.frequency", "endurance.schedule.save",
         "endurance.graph.fit", "endurance.graph.layout", "endurance.step.add", "endurance.step.duplicate", "endurance.step.delete", "endurance.step.changed",
@@ -439,6 +445,49 @@ bool App::create() {
     Rwidget_set_focusable(memory_canvas, R_TRUE);
     Rwidget_set_accessible_name(memory_canvas, "Memory Universe");
     Rwidget_set_accessible_description(memory_canvas, "Reviewed memories as planets. Drag to pan, scroll to zoom, arrow keys to navigate, zero to fit, and select a planet for details.");
+    const auto tesseract_canvas = id("tesseract.canvas");
+    Rcustom_set_paint_callback(tesseract_canvas, [](Rid widget, RPainter* painter, float width, float height, void* user) {
+        static_cast<App*>(user)->tesseract_.paint(widget, painter, width, height);
+    }, this);
+    Rwidget_set_event_callback(tesseract_canvas, [](Rid widget, const REvent* event, void* user) -> int {
+        auto& app = *static_cast<App*>(user);
+        if (event->type == R_EVENT_MOUSE_DOWN && Rwidget_get_visibility(app.id("tesseract.inline.editor")) == R_VISIBLE) {
+            app.finish_tesseract_text_edit(true);
+        }
+        const int handled = app.tesseract_.event(widget, event);
+        if (app.tesseract_.consume_text_edit_request()) app.begin_tesseract_text_edit();
+        if (event->type == R_EVENT_MOUSE_UP || event->type == R_EVENT_KEY_DOWN) app.refresh_tesseract_chrome();
+        return handled;
+    }, this);
+    Rwidget_set_focusable(tesseract_canvas, R_TRUE);
+    Rtext_input_set_committed_callback(id("tesseract.inline.editor"), [](Rid, const char*, void* user) {
+        static_cast<App*>(user)->finish_tesseract_text_edit(true);
+    }, this);
+    Rwidget_set_event_callback(id("tesseract.inline.editor"), [](Rid, const REvent* event, void* user) -> int {
+        auto& app = *static_cast<App*>(user);
+        if (event->type == R_EVENT_KEY_DOWN && event->key == R_KEY_ESCAPE) {
+            app.finish_tesseract_text_edit(false);
+            return R_TRUE;
+        }
+        if (event->type == R_EVENT_FOCUS_LOST && Rwidget_get_visibility(app.id("tesseract.inline.editor")) == R_VISIBLE) {
+            app.finish_tesseract_text_edit(true);
+            return R_TRUE;
+        }
+        return R_FALSE;
+    }, this);
+    Rwidget_set_color(id("tesseract.composer"), R_COLOR_FOCUS, 0.0f, 0.0f, 0.0f, 0.0f);
+    Rwidget_set_event_callback(id("tesseract.composer"), [](Rid, const REvent* event, void* user) -> int {
+        auto& app = *static_cast<App*>(user);
+        if (event->type == R_EVENT_KEY_DOWN && (event->key == R_KEY_ENTER || event->key == R_KEY_KP_ENTER) &&
+            !(event->modifiers & R_MOD_SHIFT)) {
+            app.start_run();
+            return R_TRUE;
+        }
+        return R_FALSE;
+    }, this);
+    Rbutton_set_clicked_callback(id("tesseract.send"), [](Rid, void* user) {
+        static_cast<App*>(user)->start_run();
+    }, this);
     Rtext_input_set_changed_callback(id("navigation.search"), [](Rid, const char*, void* user) {
         static_cast<App*>(user)->refresh_lists();
     }, this);
@@ -477,7 +526,7 @@ bool App::create() {
         auto& app = *static_cast<App*>(user);
         if (event->type == R_EVENT_FOCUS_GAINED || event->type == R_EVENT_FOCUS_LOST) app.update_composer_focus();
         if (event->type == R_EVENT_KEY_DOWN && (event->key == R_KEY_ENTER || event->key == R_KEY_KP_ENTER) &&
-            (event->modifiers & R_MOD_CTRL)) {
+            !(event->modifiers & R_MOD_SHIFT)) {
             app.start_run();
             return R_TRUE;
         }
@@ -528,6 +577,8 @@ bool App::create() {
         refresh_workspace();
         seed_recall();
         load_endurance();
+        tesseract_.open(workspace_.root() / ".stellar" / "tesseract.json");
+        refresh_tesseract_chrome();
         apply_profile();
         reset_session();
         if (demo_) load_demo();
@@ -594,7 +645,7 @@ void App::refresh_workspace() {
     repositories_ = workspace_.repositories();
     agents_ = workspace_.agents();
     notes_ = workspace_.wiki_notes();
-    Rlabel_set_text(id("workspace.name"), shortened(workspace_.name(), 18).c_str());
+    Rbutton_set_text(id("workspace.name"), shortened(workspace_.name(), 18).c_str());
     Rwidget_set_tooltip(id("workspace.name"), workspace_.root().c_str());
     Rfile_browser_set_directory(id("workspace.files"), workspace_.root().c_str());
     thread_store_ = ThreadStore(workspace_.root());
@@ -720,6 +771,106 @@ void App::update_context_summary() {
     Rwidget_set_enabled(id("context.compact"), thread_messages_.size() > 4);
 }
 
+// Image bytes stay outside text editors and recovery JSON.
+std::optional<App::ImageAttachment>& App::image_for(bool tesseract) {
+    return tesseract ? tesseract_image_ : composer_image_;
+}
+
+Rid& App::texture_for(bool tesseract) {
+    return tesseract ? tesseract_texture_ : composer_texture_;
+}
+
+void App::refresh_image_attachment(bool tesseract) {
+    const std::string prefix = tesseract ? "tesseract.image" : "composer.image";
+    auto& attachment = image_for(tesseract);
+    auto& texture = texture_for(tesseract);
+    if (Rtexture_is_valid(texture)) Rtexture_destroy(texture);
+    texture = R_INVALID_ID;
+    Rwidget_set_visibility(id((prefix + ".bar").c_str()), attachment ? R_VISIBLE : R_COLLAPSED);
+    if (attachment) {
+        texture = Rtexture_create_from_file_async(attachment->path.string().c_str());
+        Rimage_set_texture(id((prefix + ".preview").c_str()), texture);
+        const auto kilobytes = std::max<std::uintmax_t>(1, (attachment->bytes + 1023) / 1024);
+        Rlabel_set_text(id((prefix + ".details").c_str()),
+            (std::to_string(attachment->width) + " × " + std::to_string(attachment->height) + " · " +
+             std::to_string(kilobytes) + " KB").c_str());
+    } else {
+        Rimage_set_texture(id((prefix + ".preview").c_str()), R_INVALID_ID);
+    }
+    if (tesseract) {
+        Rslot_set_position(id("tesseract.composer.shell"), 0, attachment ? -258.0f : -182.0f);
+        Rslot_set_size(id("tesseract.composer.shell"), 0, attachment ? 236.0f : 160.0f);
+    }
+}
+
+bool App::paste_image(bool tesseract) {
+    size_t size = 0;
+    auto* data = Rclipboard_get_image(&size);
+    if (!data) return false;
+    if (size > 20 * 1024 * 1024) {
+        Rmemory_free(data);
+        set_status("Image is too large · paste an image smaller than 20 MB");
+        return true;
+    }
+    int width = 0;
+    int height = 0;
+    auto* pixels = Rimage_decode(data, size, &width, &height);
+    if (!pixels || width <= 0 || height <= 0 || static_cast<std::uint64_t>(width) * static_cast<std::uint64_t>(height) > 40'000'000) {
+        Rpixels_free(pixels);
+        Rmemory_free(data);
+        set_status("Clipboard image is not a supported PNG, JPEG, BMP, or TGA image");
+        return true;
+    }
+    Rpixels_free(pixels);
+
+    std::string extension = ".png";
+    std::string mime_type = "image/png";
+    if (size >= 3 && static_cast<unsigned char>(data[0]) == 0xff && static_cast<unsigned char>(data[1]) == 0xd8 &&
+        static_cast<unsigned char>(data[2]) == 0xff) {
+        extension = ".jpg";
+        mime_type = "image/jpeg";
+    } else if (size >= 2 && data[0] == 'B' && data[1] == 'M') {
+        extension = ".bmp";
+        mime_type = "image/bmp";
+    } else if (!(size >= 8 && static_cast<unsigned char>(data[0]) == 0x89 &&
+                 std::string_view(reinterpret_cast<const char*>(data) + 1, 3) == "PNG")) {
+        extension = ".tga";
+        mime_type = "image/tga";
+    }
+    static std::uint64_t sequence = 0;
+    const auto stamp = std::chrono::system_clock::now().time_since_epoch().count();
+    const auto path = workspace_.root() / ".stellar" / "attachments" /
+        ("pasted-" + std::to_string(stamp) + "-" + std::to_string(++sequence) + extension);
+    try {
+        write_file(path, std::string(reinterpret_cast<const char*>(data), size));
+    } catch (const std::exception& error) {
+        Rmemory_free(data);
+        set_status(std::string("Could not save pasted image · ") + error.what());
+        return true;
+    }
+    Rmemory_free(data);
+    image_for(tesseract) = ImageAttachment{path, mime_type, width, height, size};
+    refresh_image_attachment(tesseract);
+    set_status("Image attached · add a prompt or send it as is");
+    return true;
+}
+
+void App::remove_image(bool tesseract) {
+    image_for(tesseract).reset();
+    refresh_image_attachment(tesseract);
+    Rwidget_focus(id(tesseract ? "tesseract.composer" : "composer"));
+    set_status("Image attachment removed");
+}
+
+void App::clear_images() {
+    composer_image_.reset();
+    tesseract_image_.reset();
+    queued_image_.reset();
+    last_image_.reset();
+    refresh_image_attachment(false);
+    refresh_image_attachment(true);
+}
+
 void App::clear_context() {
     Rtext_editor_set_text(id("composer"), composer_index_.strip_mentions(Rtext_editor_get_text(id("composer"))).c_str());
     Rwindow_close_popups(window_);
@@ -772,11 +923,15 @@ void App::seed_recall() {
 }
 
 void App::open_recall() {
+    if (active_view(id("center.tabs")) == 5) {
+        set_status("Recall is available in Agent · Tesseract keeps its own UI-creation flow");
+        return;
+    }
     Rwidget_set_visibility(id("run.setup"), R_COLLAPSED);
     Rwidget_set_visibility(id("command.palette"), R_COLLAPSED);
     Rwidget_set_visibility(id("theme.gallery"), R_COLLAPSED);
     Rwindow_close_popups(window_);
-    Rtab_view_set_active(id("center.tabs"), 0);
+    set_active_view(id("center.tabs"), 0);
     Rtext_input_set_text(id("recall.search"), "");
     refresh_recall();
     Rwidget_set_visibility(id("recall.palette"), R_VISIBLE);
@@ -849,7 +1004,7 @@ void App::erase_recall() {
 }
 
 void App::open_palette(PaletteMode mode) {
-    palette_return_tab_ = Rtab_view_get_active(id("center.tabs"));
+    palette_return_tab_ = active_view(id("center.tabs"));
     palette_mode_ = mode;
     palette_search_pending_ = false;
     Rwidget_set_visibility(id("run.setup"), R_COLLAPSED);
@@ -876,8 +1031,9 @@ void App::close_palette() {
     case 1: Rwidget_focus(id("code.editor")); break;
     case 2: Rwidget_focus(id("graph")); break;
     case 4: Rwidget_focus(id("proposal.diff")); break;
+    case 5: Rwidget_focus(id("tesseract.composer")); break;
     case 3:
-        switch (Rtab_view_get_active(id("more.tabs"))) {
+        switch (active_view(id("more.tabs"))) {
         case 0: Rwidget_focus(id("agent.editor")); break;
         case 1: Rwidget_focus(id("settings.close")); break;
         case 2: Rwidget_focus(id("memory.canvas")); break;
@@ -977,7 +1133,7 @@ void App::refresh_threads() {
     const auto query = lowercase(Rtext_input_get_text(id("navigation.search")));
     thread_rows_.clear();
     Rlist_view_clear_items(id("threads"));
-    Rlabel_set_text(id("threads.section"), show_archived_ ? "Archived chats" : "Conversations");
+    Rlabel_set_text(id("threads.section"), show_archived_ ? "Archived chats" : "Recent chats");
     Rbutton_set_text(id("threads.view"), show_archived_ ? "Active" : "Archived");
     Rwidget_set_tooltip(id("threads.view"), show_archived_ ? "Show active conversations" : "Show archived conversations");
     Rbutton_set_text(id("threads.archive"), "");
@@ -1032,7 +1188,7 @@ void App::archive_selected_thread() {
         thread_messages_.clear();
         recovery_store_.clear_draft();
         reset_session();
-        Rtab_view_set_active(id("center.tabs"), 0);
+        set_active_view(id("center.tabs"), 0);
         Rwidget_focus(id("composer"));
     }
     refresh_threads();
@@ -1071,10 +1227,10 @@ void App::new_thread() {
     reset_session();
     show_archived_ = false;
     refresh_threads();
-    Rtab_view_set_active(id("left.tabs"), 0);
-    Rtab_view_set_active(id("center.tabs"), 0);
+    set_active_view(id("left.tabs"), 0);
+    set_active_view(id("center.tabs"), 0);
     Rwidget_focus(id("composer"));
-    set_status("New chat · previous conversations are saved in Threads");
+    set_status("New chat · previous conversations are saved in Recent chats");
 }
 
 void App::open_thread(const std::string& thread_id) {
@@ -1108,7 +1264,7 @@ void App::open_thread(const std::string& thread_id) {
     Rlabel_set_text(id("run.subtitle"), ("Orchestrator · " + std::string(harness_name()) + " · resumable session").c_str());
     Rlabel_set_text(id("run.state"), thread_messages_.empty() ? "READY" : "COMPLETE");
     refresh_threads();
-    Rtab_view_set_active(id("center.tabs"), 0);
+    set_active_view(id("center.tabs"), 0);
     if (!checkpoint_store_.checkpoints().empty() && checkpoint_store_.checkpoints().front().status == "interrupted") {
         for (auto it = thread_messages_.rbegin(); it != thread_messages_.rend(); ++it) {
             if (it->user) {
@@ -1126,7 +1282,13 @@ void App::open_thread(const std::string& thread_id) {
 void App::reset_session() {
     lead_process_.stop();
     wiki_process_.stop();
+    clear_images();
     queued_prompt_.clear();
+    queued_tesseract_ = false;
+    queued_tesseract_context_.clear();
+    run_tesseract_ = false;
+    run_tesseract_context_.clear();
+    tesseract_context_override_.reset();
     last_prompt_.clear();
     last_run_failed_ = false;
     run_elapsed_seconds_ = 0.0;
@@ -1156,7 +1318,7 @@ void App::reset_session() {
     Rwidget_clear_children(id("transcript"));
     add_message("READY",
         "Describe a change or ask about this workspace. Stellar will inspect the code, implement what is needed, run relevant checks, and report the result.");
-    Rlabel_set_text(id("run.title"), "New agent run");
+    Rlabel_set_text(id("run.title"), "New chat");
     Rlabel_set_text(id("run.subtitle"), (std::string("Lead agent: orchestrator · ") + harness_name()).c_str());
     Rwidget_set_enabled(id("harness"), R_TRUE);
     Rwidget_set_enabled(id("run.mode"), R_TRUE); Rwidget_set_enabled(id("model.select"), R_TRUE); Rwidget_set_enabled(id("effort.select"), R_TRUE);
@@ -1416,6 +1578,8 @@ void App::select_theme(int index) {
         Rnode_graph_set_node_active_color(graph, node, accent[0], accent[1], accent[2]);
     }
     Rwidget_invalidate(id("memory.canvas"));
+    Rwidget_invalidate(id("tesseract.canvas"));
+    refresh_navigation();
     save_profile();
 }
 
@@ -1554,32 +1718,34 @@ void App::change_run_mode(int index) {
 }
 
 void App::open_settings() {
-    const auto current = Rtab_view_get_active(id("center.tabs"));
-    const auto current_more = Rtab_view_get_active(id("more.tabs"));
+    const auto current = active_view(id("center.tabs"));
+    const auto current_more = active_view(id("more.tabs"));
     if (current == 3 && current_more == 1) return;
     settings_return_tab_ = current;
     settings_return_more_tab_ = current_more;
+    set_sidebar_visibility(false, false);
     Rcombo_box_set_selected(id("settings.harness"), static_cast<int>(harness_));
     Rwidget_set_enabled(id("settings.harness"), !lead_process_.running() && !wiki_process_.running() && !proposal_);
     Rlabel_set_text(id("settings.interface.zoom"),
         ("Interface zoom · " + std::to_string(static_cast<int>(interface_zoom_ * 100 + 0.5f)) + "%").c_str());
     Rlabel_set_text(id("settings.editor.zoom"),
         ("Editor zoom · " + std::to_string(static_cast<int>(editor_zoom_ * 100 + 0.5f)) + "%").c_str());
-    Rtab_view_set_active(id("more.tabs"), 1);
-    Rtab_view_set_active(id("center.tabs"), 3);
+    set_active_view(id("more.tabs"), 1);
+    set_active_view(id("center.tabs"), 3);
     Rwidget_focus(id("settings.close"));
     set_status("Settings · changes apply immediately");
 }
 
 void App::close_settings() {
-    if (Rtab_view_get_active(id("center.tabs")) != 3 || Rtab_view_get_active(id("more.tabs")) != 1) return;
-    const auto destination = settings_return_tab_ >= 0 && settings_return_tab_ <= 4 ? settings_return_tab_ : 0;
-    Rtab_view_set_active(id("center.tabs"), destination);
-    if (destination == 3) Rtab_view_set_active(id("more.tabs"), settings_return_more_tab_);
+    if (active_view(id("center.tabs")) != 3 || active_view(id("more.tabs")) != 1) return;
+    const auto destination = settings_return_tab_ >= 0 && settings_return_tab_ <= 5 ? settings_return_tab_ : 0;
+    set_active_view(id("center.tabs"), destination);
+    if (destination == 3) set_active_view(id("more.tabs"), settings_return_more_tab_);
     if (destination == 0) Rwidget_focus(id("composer"));
     else if (destination == 1) Rwidget_focus(id("code.editor"));
     else if (destination == 2) Rwidget_focus(id("graph"));
     else if (destination == 4) Rwidget_focus(id("proposal.diff"));
+    else if (destination == 5) Rwidget_focus(id("tesseract.composer"));
     else if (destination == 3 && settings_return_more_tab_ == 0) Rwidget_focus(id("agent.editor"));
     else if (destination == 3 && settings_return_more_tab_ == 2) Rwidget_focus(id("memory.canvas"));
     else if (destination == 3 && settings_return_more_tab_ == 3) Rwidget_focus(id("mission.list"));
@@ -1587,7 +1753,7 @@ void App::close_settings() {
 }
 
 void App::toggle_settings() {
-    if (Rtab_view_get_active(id("center.tabs")) == 3 && Rtab_view_get_active(id("more.tabs")) == 1) close_settings();
+    if (active_view(id("center.tabs")) == 3 && active_view(id("more.tabs")) == 1) close_settings();
     else open_settings();
 }
 
@@ -1617,26 +1783,30 @@ void App::load_profile() {
     right_sidebar_visible_ = profile.right_sidebar;
     vector_recall_ = profile.vector_recall;
     watch_checks_ = profile.watch_checks;
-    do_not_disturb_ = profile.do_not_disturb;
     opening_sound_ = profile.opening_sound;
-    notification_mutes_ = profile.notification_mutes;
 }
 
 void App::apply_profile() {
-    Rexpander_set_expanded(id("settings.notifications.expander"), R_TRUE);
     Rexpander_set_expanded(id("settings.keyboard.expander"), R_TRUE);
     Rset_ui_scale(interface_zoom_);
-    static const char* editors[] = {"composer", "code.editor", "agent.editor", "note.editor", "proposal.diff", "checkpoint.diff", "verification.detail"};
+    int framebuffer_width = 0, framebuffer_height = 0;
+    Rwindow_get_framebuffer_size(window_, &framebuffer_width, &framebuffer_height);
+    const float window_scale = Rwindow_get_scale(window_);
+    const float logical_width = window_scale > 0.0f ? framebuffer_width / window_scale - 3.0f : 0.0f;
+    if (logical_width > 240.0f) {
+        left_sidebar_share_ = 240.0f / logical_width;
+        center_workspace_share_ = 1.0f - left_sidebar_share_ - (right_sidebar_visible_ ? right_sidebar_share_ : 0.0f);
+        Rslot_set_fill(id("left.sidebar"), left_sidebar_share_);
+        Rslot_set_fill(id("center.workspace"), center_workspace_share_);
+        Rslot_set_fill(id("right.sidebar"), right_sidebar_share_);
+    }
+    static const char* editors[] = {"composer", "tesseract.composer", "code.editor", "agent.editor", "note.editor", "proposal.diff", "checkpoint.diff", "verification.detail"};
     for (const auto* editor : editors) Rtext_editor_set_zoom(id(editor), editor_zoom_);
     Rcombo_box_set_selected(id("harness"), static_cast<int>(harness_));
     Rcombo_box_set_selected(id("settings.harness"), static_cast<int>(harness_));
     Rcombo_box_set_selected(id("run.mode"), static_cast<int>(run_mode_));
     refresh_model_controls();
     Rcheckbox_set_checked(id("settings.vector"), vector_recall_);
-    for (const auto* kind : {"run", "verification", "knowledge", "mission", "autosave"}) {
-        const auto control = "settings.notifications." + std::string(kind);
-        Rcheckbox_set_checked(id(control.c_str()), !notification_mutes_[kind]);
-    }
     select_watch_checks(watch_checks_);
     select_theme(theme_index_);
     set_sidebar_visibility(true, left_sidebar_visible_);
@@ -1644,7 +1814,6 @@ void App::apply_profile() {
     apply_custom_shortcuts();
     refresh_shortcut_editor();
     refresh_notifications();
-    Rexpander_set_expanded(id("settings.notifications.expander"), R_FALSE);
     Rexpander_set_expanded(id("settings.keyboard.expander"), R_FALSE);
     update_interface_density();
 }
@@ -1660,9 +1829,7 @@ void App::save_profile() {
     profile.right_sidebar = right_sidebar_visible_;
     profile.vector_recall = vector_recall_;
     profile.watch_checks = watch_checks_;
-    profile.do_not_disturb = do_not_disturb_;
     profile.opening_sound = opening_sound_;
-    profile.notification_mutes = notification_mutes_;
     try {
         profile_store_.save();
     } catch (const std::exception& error) {
@@ -1787,6 +1954,84 @@ bool App::suppress_replaced_shortcut(const REvent* event) const {
     return false;
 }
 
+int App::active_view(Rid view) const {
+    return Rwidget_get_type(view) == R_WIDGET_SWITCHER ? Rswitcher_get_index(view) : Rtab_view_get_active(view);
+}
+
+void App::set_active_view(Rid view, int index) {
+    if (Rwidget_get_type(view) == R_WIDGET_SWITCHER) Rswitcher_set_index(view, index);
+    else Rtab_view_set_active(view, index);
+    refresh_navigation();
+}
+
+void App::refresh_navigation() {
+    if (!Ris_running() || !Rwindow_is_valid(window_) || !Rwidget_is_valid(id("nav.chat"))) return;
+    const int center = active_view(id("center.tabs"));
+    const int more = active_view(id("more.tabs"));
+    const int left = active_view(id("left.tabs"));
+    const int context = active_view(id("right.tabs"));
+    const bool knowledge_context = right_sidebar_visible_ && left == 3 && (context == 1 || context == 2);
+    std::string selected = "chat";
+    if (center == 5) selected = "canvas";
+    else if (center == 2) selected = "workflows";
+    else if (center == 4) selected = "review";
+    else if (center == 1 || left == 1) selected = "files";
+    else if (left == 3) selected = "knowledge";
+    else if (left == 2) selected = "agents";
+    if (center == 3) {
+        if (more == 0) selected = "agents";
+        else if (more == 1) selected = "settings";
+        else if (more == 2) selected = "knowledge";
+        else if (more == 3) selected = "worktrees";
+    }
+    if (knowledge_context) selected = "knowledge";
+
+    const auto content = Rwindow_get_content(window_);
+    float selection[4], hovered[4], pressed[4], text[4];
+    Rwidget_get_color(content, R_COLOR_SELECTION, &selection[0], &selection[1], &selection[2], &selection[3]);
+    Rwidget_get_color(content, R_COLOR_ROW_HOVERED, &hovered[0], &hovered[1], &hovered[2], &hovered[3]);
+    Rwidget_get_color(content, R_COLOR_CONTROL_PRESSED, &pressed[0], &pressed[1], &pressed[2], &pressed[3]);
+    Rwidget_get_color(content, R_COLOR_TEXT, &text[0], &text[1], &text[2], &text[3]);
+    static const char* names[] = {"chat", "canvas", "workflows", "files", "agents", "review", "knowledge", "worktrees", "settings"};
+    for (const auto* name : names) {
+        const auto button = id((std::string("nav.") + name).c_str());
+        const bool active = selected == name;
+        Rwidget_set_color(button, R_COLOR_CONTROL, active ? selection[0] : 0.0f, active ? selection[1] : 0.0f,
+                          active ? selection[2] : 0.0f, active ? selection[3] : 0.0f);
+        Rwidget_set_color(button, R_COLOR_CONTROL_HOVERED, hovered[0], hovered[1], hovered[2], hovered[3]);
+        Rwidget_set_color(button, R_COLOR_CONTROL_PRESSED, pressed[0], pressed[1], pressed[2], pressed[3]);
+        Rwidget_set_color(button, R_COLOR_CONTROL_BORDER, 0.0f, 0.0f, 0.0f, 0.0f);
+        Rwidget_set_color(button, R_COLOR_TEXT, text[0], text[1], text[2], text[3]);
+        Rwidget_set_metric(button, R_METRIC_BORDER_WIDTH, 0.0f);
+        Rwidget_set_metric(button, R_METRIC_CORNER_RADIUS, 8.0f);
+        Rwidget_set_metric(button, R_METRIC_PADDING_X, 12.0f);
+    }
+    const bool resources_visible = center == 0 || center == 1 || (center == 3 && more == 0) || knowledge_context;
+    Rwidget_set_visibility(id("left.tabs"), resources_visible ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("navigation.bottom.spacer"), resources_visible ? R_COLLAPSED : R_VISIBLE);
+    Rwidget_set_visibility(id("navigation.search.row"), resources_visible && left != 1 ? R_VISIBLE : R_COLLAPSED);
+    const char* placeholders[] = {"Search chats…", "", "Search agents…", "Search notes…"};
+    Rtext_input_set_placeholder(id("navigation.search"), placeholders[std::clamp(left, 0, 3)]);
+}
+
+void App::show_context(int index) {
+    static const char* titles[] = {"Activity", "Notes", "Knowledge", "Alerts", "Workflow step"};
+    static const char* subtitles[] = {
+        "Live agent work and run details",
+        "Workspace Markdown and backlinks",
+        "Reviewed entities, relations, and memory",
+        "Run results and workspace events",
+        "Edit the selected step"
+    };
+    const int selected = std::clamp(index, 0, 4);
+    set_active_view(id("right.tabs"), selected);
+    Rlabel_set_text(id("context.title"), titles[selected]);
+    Rlabel_set_text(id("context.subtitle"), subtitles[selected]);
+    Rwidget_set_visibility(id("context.alerts"), selected == 3 ? R_COLLAPSED : R_VISIBLE);
+    set_sidebar_visibility(false, true);
+    refresh_navigation();
+}
+
 void App::set_sidebar_visibility(bool left, bool visible) {
     auto& current = left ? left_sidebar_visible_ : right_sidebar_visible_;
     auto& target_share = left ? left_sidebar_share_ : right_sidebar_share_;
@@ -1821,13 +2066,14 @@ void App::set_sidebar_visibility(bool left, bool visible) {
 
     current = visible;
     Rwidget_set_visibility(target, expected);
+    refresh_navigation();
 }
 
 void App::toggle_sidebar(bool left) {
     auto& visible = left ? left_sidebar_visible_ : right_sidebar_visible_;
     set_sidebar_visibility(left, !visible);
     save_profile();
-    set_status(std::string(left ? "Files" : "Panels") + (visible ? " shown" : " folded"));
+    set_status(std::string(left ? "Navigation" : "Context panel") + (visible ? " shown" : " folded"));
 }
 
 void App::update_interface_density() {
@@ -1958,7 +2204,9 @@ void App::add_tool_activity(const ClaudeEvent& event) {
         Rlabel_set_markdown(target, linked ? R_TRUE : R_FALSE);
         Rlabel_set_text(target, activity_detail(workspace_.root(), display).c_str());
         if (linked) Rwidget_set_tooltip(target, "Open in Editor");
-        update_activity_summary(std::string(action) + " · " + shortened(detail, 56));
+        const auto current = std::string(action) + " · " + shortened(detail, 56);
+        update_activity_summary(current);
+        set_current_action(current);
         return;
     }
 
@@ -2021,8 +2269,10 @@ void App::update_queue() {
     const bool busy = lead_running || wiki_running;
     Rwidget_set_visibility(id("queue.bar"), queued_prompt_.empty() ? R_COLLAPSED : R_VISIBLE);
     Rwidget_set_visibility(id("queue.review"), proposal_ && !queued_prompt_.empty() ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("tesseract.queue.bar"), queued_tesseract_ && !queued_prompt_.empty() ? R_VISIBLE : R_COLLAPSED);
     if (!queued_prompt_.empty()) {
         Rlabel_set_text(id("queue.prompt"), shortened(queued_prompt_, 180).c_str());
+        Rlabel_set_text(id("tesseract.queue.prompt"), shortened(queued_prompt_, 100).c_str());
         std::string state = "Follow-up queued";
         if (proposal_) state = "Review or discard the Wiki proposal to continue";
         else if (last_run_failed_) state = "Previous run failed · follow-up paused";
@@ -2031,26 +2281,40 @@ void App::update_queue() {
             ? "Waiting for the current run and knowledge review"
             : "Waiting for the current run";
         Rlabel_set_text(id("queue.state"), state.c_str());
+        Rlabel_set_text(id("tesseract.queue.state"), state.c_str());
     }
     Rwidget_set_enabled(id("run.send"), R_TRUE);
-    Rwidget_set_tooltip(id("run.send"), busy ? "Queue a follow-up (Ctrl+Enter)" : "Send to lead (Ctrl+Enter)");
+    Rwidget_set_tooltip(id("run.send"), busy ? "Queue a follow-up (Enter)" : "Send to lead (Enter)");
     Rwidget_set_accessible_name(id("run.send"), busy ? "Queue a follow-up" : "Send to lead");
+    Rwidget_set_enabled(id("tesseract.send"), R_TRUE);
+    Rwidget_set_tooltip(id("tesseract.send"), busy ? "Queue a UI refinement (Enter)" : "Create with agent (Enter)");
+    Rwidget_set_accessible_name(id("tesseract.send"), busy ? "Queue a UI refinement" : "Create with agent");
+    refresh_tesseract_chrome();
 }
 
 void App::cancel_queued() {
     if (queued_prompt_.empty()) return;
     queued_prompt_.clear();
+    queued_image_.reset();
+    queued_tesseract_context_.clear();
     update_queue();
-    Rwidget_focus(id("composer"));
+    set_active_view(id("center.tabs"), queued_tesseract_ ? 5 : 0);
+    Rwidget_focus(id(queued_tesseract_ ? "tesseract.composer" : "composer"));
     set_status("Queued follow-up cancelled");
 }
 
 void App::maybe_start_queued() {
     if (queued_prompt_.empty() || lead_process_.running() || wiki_process_.running() || proposal_ || last_run_failed_) return;
     const auto prompt = queued_prompt_;
+    tesseract_context_override_ = queued_tesseract_context_;
     queued_prompt_.clear();
+    queued_tesseract_context_.clear();
     update_queue();
-    Rtext_editor_set_text(id("composer"), prompt.c_str());
+    set_active_view(id("center.tabs"), queued_tesseract_ ? 5 : 0);
+    Rtext_editor_set_text(id(queued_tesseract_ ? "tesseract.composer" : "composer"), prompt.c_str());
+    image_for(queued_tesseract_) = queued_image_;
+    queued_image_.reset();
+    refresh_image_attachment(queued_tesseract_);
     start_run();
 }
 
@@ -2063,7 +2327,11 @@ void App::retry_run() {
         set_status("There is no previous prompt to retry");
         return;
     }
-    Rtext_editor_set_text(id("composer"), last_prompt_.c_str());
+    tesseract_context_override_ = run_tesseract_context_;
+    set_active_view(id("center.tabs"), run_tesseract_ ? 5 : 0);
+    Rtext_editor_set_text(id(run_tesseract_ ? "tesseract.composer" : "composer"), last_prompt_.c_str());
+    image_for(run_tesseract_) = last_image_;
+    refresh_image_attachment(run_tesseract_);
     start_run();
 }
 
@@ -2087,12 +2355,14 @@ void App::update_run_timer() {
         ? std::to_string(minutes / 60) + ":" + two((minutes % 60)) + ":" + two(seconds % 60)
         : two(minutes) + ":" + two(seconds % 60);
     Rlabel_set_text(id("run.timing"), duration.c_str());
+    Rlabel_set_text(id("tesseract.activity.time"), duration.c_str());
     Rwidget_set_visibility(id("run.timing"), seconds > 0 || running ? R_VISIBLE : R_COLLAPSED);
     Rlabel_set_text(id("activity.action"), (current_action_ + (seconds > 0 || running ? " · " + duration : "")).c_str());
+    refresh_tesseract_chrome();
 }
 
 bool App::has_run_timers() const {
-    return lead_process_.running() || wiki_process_.running() || endurance_.busy() || endurance_yaml_pending_ || endurance_graph_sync_pending_ ||
+    return active_view(id("center.tabs")) == 5 || lead_process_.running() || wiki_process_.running() || endurance_.busy() || endurance_yaml_pending_ || endurance_graph_sync_pending_ ||
         code_autosave_pending_ || agent_autosave_pending_ || note_autosave_pending_ || palette_search_pending_ ||
         verification_rerun_running_ || watch_due_pending_ || recovery_save_pending_ ||
         std::any_of(endurance_workflows_.begin(), endurance_workflows_.end(), [](const auto& workflow) { return workflow.recurrence.enabled; });
@@ -2106,10 +2376,6 @@ void App::notify_event(const std::string& title, const std::string& body, bool e
     } catch (const std::exception& exception) {
         set_status(std::string("Notification history could not be saved · ") + exception.what());
     }
-    if (do_not_disturb_ || notification_mutes_[kind]) return;
-    const auto command = std::string("notify-send --app-name=Stellar --icon=raven-ide") +
-        (error ? " --urgency=critical" : "") + " " + shell_quote(title) + " " + shell_quote(body) + " >/dev/null 2>&1 &";
-    std::system(command.c_str());
 }
 
 void App::refresh_notifications() {
@@ -2125,16 +2391,12 @@ void App::refresh_notifications() {
         Rlist_view_add_item(id("alerts.list"), (entry->kind + " · " + entry->title).c_str());
     }
     Rwidget_set_enabled(id("alerts.clear"), !entries.empty());
-    Rcheckbox_set_checked(id("alerts.dnd"), do_not_disturb_);
-    if (Rexpander_is_expanded(id("settings.notifications.expander"))) {
-        Rcheckbox_set_checked(id("settings.notifications.dnd"), do_not_disturb_);
-    }
     if (selected >= 0) Rlist_view_set_selected(id("alerts.list"), selected);
     else {
         Rlist_view_set_selected(id("alerts.list"), -1);
         Rwidget_set_enabled(id("alerts.open"), false);
-        Rlabel_set_text(id("alerts.detail"), entries.empty() ? "No notifications yet. Muted and Do Not Disturb events still appear here." :
-            "Select a notification to inspect it and open its destination.");
+        Rlabel_set_text(id("alerts.detail"), entries.empty() ? "No run or workflow events yet." :
+            "Select an event to inspect it and open its destination.");
     }
 }
 
@@ -2157,15 +2419,15 @@ void App::open_notification() {
         open_verification(0);
     } else if (entry->action == "proposal") open_proposal();
     else if (entry->action == "endurance" && !entry->target.empty()) {
-        Rtab_view_set_active(id("center.tabs"), 2);
-        Rtab_view_set_active(id("endurance.views"), 2);
+        set_active_view(id("center.tabs"), 2);
+        set_active_view(id("endurance.views"), 2);
         refresh_endurance_runs();
         const auto found = std::find(endurance_run_rows_.begin(), endurance_run_rows_.end(), entry->target);
         if (found != endurance_run_rows_.end()) open_endurance_run(static_cast<int>(found - endurance_run_rows_.begin()));
     }
     else if (entry->action == "mission" && !entry->target.empty()) review_mission(entry->target);
-    else if (entry->action == "editor") Rtab_view_set_active(id("center.tabs"), 1);
-    else Rtab_view_set_active(id("center.tabs"), 0);
+    else if (entry->action == "editor") set_active_view(id("center.tabs"), 1);
+    else set_active_view(id("center.tabs"), 0);
     set_status("Opened notification · " + entry->title);
 }
 
@@ -2173,22 +2435,6 @@ void App::clear_notifications() {
     notification_store_.clear();
     refresh_notifications();
     set_status("Notification history cleared");
-}
-
-void App::toggle_do_not_disturb() {
-    Rcheckbox_set_checked(id("alerts.dnd"), do_not_disturb_);
-    if (Rexpander_is_expanded(id("settings.notifications.expander"))) {
-        Rcheckbox_set_checked(id("settings.notifications.dnd"), do_not_disturb_);
-    }
-    save_profile();
-    set_status(do_not_disturb_ ? "Do Not Disturb enabled · Alerts history continues" : "Do Not Disturb disabled");
-}
-
-void App::toggle_notification_kind(const std::string& kind) {
-    const auto control = "settings.notifications." + kind;
-    notification_mutes_[kind] = !Rcheckbox_is_checked(id(control.c_str()));
-    save_profile();
-    set_status((notification_mutes_[kind] ? "Desktop alerts muted · " : "Desktop alerts enabled · ") + kind);
 }
 
 void App::notify_autosave_error(const std::string& error) {
@@ -2249,19 +2495,39 @@ void App::notify_run_finished(bool error) {
 
 void App::start_with_prompt(const std::string& prompt) {
     dismiss_splash();
-    Rtab_view_set_active(id("center.tabs"), 0);
+    set_active_view(id("center.tabs"), 0);
     Rtext_editor_set_text(id("composer"), prompt.c_str());
     start_run();
 }
 
 void App::start_run() {
-    std::string prompt = Rtext_editor_get_text(id("composer"));
+    struct ContextOverrideGuard {
+        std::optional<std::string>& value;
+        ~ContextOverrideGuard() { value.reset(); }
+    } context_override_guard{tesseract_context_override_};
+    const bool tesseract = active_view(id("center.tabs")) == 5;
+    if (tesseract) finish_tesseract_text_edit(true);
+    const Rid active_composer = id(tesseract ? "tesseract.composer" : "composer");
+    auto& attachment = image_for(tesseract);
+    std::string prompt = Rtext_editor_get_text(active_composer);
     if (prompt.find_first_not_of(" \t\r\n") == std::string::npos) {
-        set_status("Write a task for the lead agent first");
-        Rwidget_focus(id("composer"));
-        return;
+        if (attachment) {
+            prompt = tesseract ? "Create an interface using the attached reference image." : "Inspect the attached image and describe what you see.";
+        } else {
+            set_status(tesseract ? "Describe the interface you want the agent to create" : "Write a task or attach an image first");
+            Rwidget_focus(active_composer);
+            return;
+        }
     }
     Rwidget_set_visibility(id("run.setup"), R_COLLAPSED);
+    if (tesseract && run_mode_ != RunMode::Build) {
+        set_status("Tesseract requires Build mode to create and edit its document");
+        return;
+    }
+    if (tesseract && prompt.front() == '/') {
+        set_status("Slash commands belong to Agent · describe the UI in plain language for Tesseract");
+        return;
+    }
     if (prompt.front() == '/' && run_mode_ != RunMode::Build) {
         set_status("Slash commands require Build mode");
         return;
@@ -2272,7 +2538,12 @@ void App::start_run() {
             return;
         }
         queued_prompt_ = prompt;
-        Rtext_editor_set_text(id("composer"), "");
+        queued_image_ = attachment;
+        queued_tesseract_ = tesseract;
+        queued_tesseract_context_ = tesseract ? tesseract_.selection_context() : "";
+        Rtext_editor_set_text(active_composer, "");
+        attachment.reset();
+        refresh_image_attachment(tesseract);
         update_context_summary();
         Rwindow_close_popups(window_);
         update_queue();
@@ -2291,13 +2562,21 @@ void App::start_run() {
         return;
     }
 
+    run_tesseract_ = tesseract;
+    if (tesseract_context_override_) {
+        run_tesseract_context_ = std::move(*tesseract_context_override_);
+        tesseract_context_override_.reset();
+    } else {
+        run_tesseract_context_ = tesseract ? tesseract_.selection_context() : "";
+    }
     last_prompt_ = prompt;
+    last_image_ = attachment;
     last_run_failed_ = false;
     Rwidget_set_visibility(id("run.retry"), R_COLLAPSED);
     run_started_ = std::chrono::steady_clock::now();
     run_elapsed_seconds_ = 0.0;
     displayed_elapsed_seconds_ = -1;
-    if (session_id_.empty()) {
+    if (session_id_.empty() || tesseract) {
         run_title_ = shortened(prompt.substr(0, prompt.find('\n')), 72);
         Rlabel_set_text(id("run.title"), shortened(run_title_, 36).c_str());
         Rwidget_set_tooltip(id("run.title"), run_title_.c_str());
@@ -2310,13 +2589,21 @@ void App::start_run() {
             checkpoint_error = error.what();
         }
     }
-    add_message("YOU", prompt, true);
+    auto displayed_prompt = prompt;
+    if (attachment) {
+        displayed_prompt += "\n\nImage attached · " + attachment->path.filename().string() + " · " +
+            std::to_string(attachment->width) + " × " + std::to_string(attachment->height);
+    }
+    add_message("YOU", displayed_prompt, true);
     Rwindow_close_popups(window_);
     transcript_text_ += "\n\nUSER:\n" + prompt;
-    thread_messages_.push_back({"YOU", prompt, true});
+    if (attachment) transcript_text_ += "\nAttached image: " + attachment->path.string();
+    thread_messages_.push_back({"YOU", displayed_prompt, true});
     save_thread();
     recovery_store_.clear_draft();
-    Rtext_editor_set_text(id("composer"), "");
+    Rtext_editor_set_text(active_composer, "");
+    attachment.reset();
+    refresh_image_attachment(tesseract);
     update_context_summary();
     current_message_ = R_INVALID_ID;
     pending_message_ = R_INVALID_ID;
@@ -2357,7 +2644,13 @@ void App::start_run() {
         ? RAVEN_IDE_INSTALLED_KNOWLEDGE_BIN : RAVEN_IDE_KNOWLEDGE_BIN;
     const auto tool = shell_quote(knowledge_binary) + " --workspace " + shell_quote(workspace_.root().string());
     options.read_only = run_mode_ != RunMode::Build;
-    if (!prompt.empty() && prompt.front() == '/') {
+    if (run_tesseract_) {
+        options.prompt = tesseract_.agent_guide(run_tesseract_context_);
+        if (const auto knowledge = workspace_.knowledge_context(prompt, vector_recall_); !knowledge.empty()) {
+            options.prompt += "\n\nRELEVANT GRAPH CONTEXT (with provenance and inference):\n" + knowledge;
+        }
+        options.prompt += "\n\nUSER TASK:\n" + prompt;
+    } else if (!prompt.empty() && prompt.front() == '/') {
         options.prompt = prompt;
     } else {
         if (run_mode_ == RunMode::Build) {
@@ -2381,6 +2674,11 @@ void App::start_run() {
         options.prompt += "\nUSER TASK:\n" + prompt;
     }
     options.resource_links = composer_index_.mentions(prompt);
+    if (last_image_) options.image_links.push_back(last_image_->path);
+    for (const auto& path : options.image_links) {
+        options.prompt += "\nAttached image: " + path.string() +
+            "\nInspect this image as visual context for the user request. Use the image content already supplied by the client, or Read this file if needed.";
+    }
     if (harness_ == Harness::ClaudeCode) {
         for (const auto& path : options.resource_links) {
             options.prompt += "\nReferenced workspace file: @" +
@@ -2430,6 +2728,7 @@ void App::stop_run() {
     Rnode_graph_set_flow_visible(id("graph"), R_FALSE);
     Rwidget_set_visibility(id("run.stop"), R_COLLAPSED);
     queued_prompt_.clear();
+    queued_image_.reset();
     last_run_failed_ = false;
     update_queue();
     Rwidget_set_enabled(id("harness"), R_TRUE);
@@ -2828,8 +3127,8 @@ void App::handle_wiki_event(const ClaudeEvent& event) {
         Rwidget_set_visibility(id("proposal.bar"), R_VISIBLE);
         update_queue();
         set_status(queued_prompt_.empty()
-            ? "Wiki review ready · review or discard the proposal"
-            : "Follow-up paused · review or discard the Wiki proposal to continue");
+            ? "Knowledge review ready · review or discard the proposal"
+            : "Follow-up paused · review or discard the knowledge proposal to continue");
         notify_event("Stellar · Knowledge review ready", proposal_->summary, false, "knowledge", "proposal");
     } catch (const std::exception& error) {
         set_status(std::string("Run complete · invalid wiki proposal: ") + error.what());
@@ -2930,7 +3229,7 @@ void App::open_checkpoint(const std::string& checkpoint_id) {
         Rwidget_set_enabled(id("checkpoint.restore"), R_FALSE);
         Rwidget_set_enabled(id("checkpoint.restore_hunk"), R_FALSE);
         open_verification(-1);
-        Rtab_view_set_active(id("checkpoint.content.tabs"), 0);
+        set_active_view(id("checkpoint.content.tabs"), 0);
         return;
     }
 
@@ -2967,7 +3266,7 @@ void App::open_checkpoint(const std::string& checkpoint_id) {
 }
 
 void App::show_checkpoint_diff(int index) {
-    Rtab_view_set_active(id("checkpoint.content.tabs"), 0);
+    set_active_view(id("checkpoint.content.tabs"), 0);
     const auto* checkpoint = checkpoint_store_.find(selected_checkpoint_id_);
     Rcombo_box_clear_items(id("checkpoint.hunks"));
     checkpoint_hunk_ids_.clear();
@@ -3024,7 +3323,7 @@ void App::open_verification(int index) {
         Rtext_editor_set_text(id("verification.detail"), "No build or test commands were recorded for this task.");
         Rwidget_set_enabled(id("verification.diagnostics"), R_FALSE);
         Rwidget_set_enabled(id("verification.open_diagnostic"), R_FALSE);
-        Rtab_view_set_active(id("checkpoint.content.tabs"), 1);
+        set_active_view(id("checkpoint.content.tabs"), 1);
         return;
     }
 
@@ -3044,7 +3343,7 @@ void App::open_verification(int index) {
     Rwidget_set_visibility(id("verification.diagnostics.row"), verification_diagnostics_.empty() ? R_COLLAPSED : R_VISIBLE);
     Rwidget_set_enabled(id("verification.diagnostics"), !verification_diagnostics_.empty());
     Rwidget_set_enabled(id("verification.open_diagnostic"), !verification_diagnostics_.empty());
-    Rtab_view_set_active(id("checkpoint.content.tabs"), 1);
+    set_active_view(id("checkpoint.content.tabs"), 1);
 }
 
 void App::open_diagnostic() {
@@ -3249,6 +3548,9 @@ void App::open_workspace_path(const std::filesystem::path& path) {
         recall_store_ = RecallStore(workspace_.root());
         refresh_workspace();
         seed_recall();
+        tesseract_.open(workspace_.root() / ".stellar" / "tesseract.json");
+        Rwidget_invalidate(id("tesseract.canvas"));
+        refresh_tesseract_chrome();
         load_profile();
         apply_profile();
         reset_session();
@@ -3376,8 +3678,8 @@ void App::review_mission(const std::string& mission_id) {
             }
         }
         Rcombo_box_set_selected(id("mission.hunks"), mission_hunk_ids_.empty() ? -1 : 0);
-        Rtab_view_set_active(id("more.tabs"), 3);
-        Rtab_view_set_active(id("center.tabs"), 3);
+        set_active_view(id("more.tabs"), 3);
+        set_active_view(id("center.tabs"), 3);
         refresh_missions();
     } catch (const std::exception& error) {
         set_status(error.what());
@@ -3505,7 +3807,7 @@ void App::open_code_file(const std::filesystem::path& path, int line) {
         code_autosave_pending_ = false;
         Rlabel_set_text(id("code.title"), candidate.filename().c_str());
         Rlabel_set_text(id("code.path"), std::filesystem::relative(candidate, root).c_str());
-        Rtab_view_set_active(id("center.tabs"), 1);
+        set_active_view(id("center.tabs"), 1);
         Rwidget_focus(id("code.editor"));
         if (line > 0) {
             Rtext_editor_set_cursor(id("code.editor"), line - 1, 0);
@@ -3701,8 +4003,8 @@ void App::new_agent() {
         refresh_lists();
         const auto found = std::find_if(agents_.begin(), agents_.end(), [&](const auto& item) { return item.path == agent.path; });
         open_agent(static_cast<int>(found - agents_.begin()));
-        Rtab_view_set_active(id("more.tabs"), 0);
-        Rtab_view_set_active(id("center.tabs"), 3);
+        set_active_view(id("more.tabs"), 0);
+        set_active_view(id("center.tabs"), 3);
         Rwidget_focus(id("agent.editor"));
         set_status("Created " + agent.path.filename().string() + " · describe the agent · changes autosave");
     } catch (const std::exception& error) {
@@ -3763,10 +4065,113 @@ void App::refresh_knowledge() {
 void App::open_memory() {
     dismiss_splash();
     refresh_knowledge();
-    Rtab_view_set_active(id("more.tabs"), 2);
-    Rtab_view_set_active(id("center.tabs"), 3);
+    set_sidebar_visibility(false, false);
+    set_active_view(id("left.tabs"), 3);
+    set_active_view(id("more.tabs"), 2);
+    set_active_view(id("center.tabs"), 3);
     Rwidget_focus(id("memory.canvas"));
     set_status("Memory Universe · reviewed episodes, entities, and relations");
+}
+
+void App::open_tesseract() {
+    dismiss_splash();
+    set_sidebar_visibility(false, false);
+    set_active_view(id("center.tabs"), 5);
+    if (tesseract_.reload_if_changed()) Rwidget_invalidate(id("tesseract.canvas"));
+    tesseract_.fit();
+    Rwidget_invalidate(id("tesseract.canvas"));
+    refresh_tesseract_chrome();
+    Rwidget_focus(id("tesseract.composer"));
+    set_status("Tesseract · describe an interface and watch it take shape");
+}
+
+void App::start_tesseract_with_prompt(const std::string& prompt) {
+    open_tesseract();
+    Rtext_editor_set_text(id("tesseract.composer"), prompt.c_str());
+    start_run();
+}
+
+void App::begin_tesseract_text_edit() {
+    const auto* selected = tesseract_.find(tesseract_.selected_id());
+    if (!selected || selected->kind != TesseractNodeKind::Text) return;
+    const auto editor = id("tesseract.inline.editor");
+    const auto bounds = tesseract_.screen_bounds(selected->id);
+    Rslot_set_position(editor, bounds.x, bounds.y);
+    Rslot_set_size(editor, std::clamp(bounds.width, 120.0f, 520.0f), std::clamp(bounds.height, 34.0f, 120.0f));
+    Rtext_input_set_text(editor, selected->content.c_str());
+    Rwidget_set_visibility(editor, R_VISIBLE);
+    Rwidget_focus(editor);
+    Rtext_input_select_all(editor);
+}
+
+void App::finish_tesseract_text_edit(bool commit) {
+    const auto editor = id("tesseract.inline.editor");
+    if (Rwidget_get_visibility(editor) != R_VISIBLE) return;
+    const std::string text = Rtext_input_get_text(editor);
+    Rwidget_set_visibility(editor, R_COLLAPSED);
+    if (commit) {
+        set_status(tesseract_.update_selected_text(text) ? "Text updated · .stellar/tesseract.json saved" : "Text could not be saved");
+    } else {
+        set_status("Text edit cancelled");
+    }
+    Rwidget_invalidate(id("tesseract.canvas"));
+    Rwidget_focus(id("tesseract.canvas"));
+    refresh_tesseract_chrome();
+}
+
+void App::refresh_tesseract_chrome() {
+    Rlabel_set_text(id("tesseract.zoom"), (std::to_string(static_cast<int>(tesseract_.zoom_percent() + 0.5f)) + "%").c_str());
+    const auto* selected = tesseract_.find(tesseract_.selected_id());
+    const bool queued = queued_tesseract_ && !queued_prompt_.empty();
+    const bool busy = lead_process_.running() || wiki_process_.running();
+    const bool activity = run_tesseract_ && !last_prompt_.empty();
+    Rwidget_set_accessible_name(id("tesseract.send"), busy ? "Queue a UI refinement" : selected ? "Refine selected element with agent" : "Create with agent");
+    Rwidget_set_tooltip(id("tesseract.send"), busy ? "Queue a UI refinement (Enter)" : selected ? "Refine selected element with agent (Enter)" : "Create with agent (Enter)");
+    const auto inline_editor = id("tesseract.inline.editor");
+    if (Rwidget_get_visibility(inline_editor) == R_VISIBLE) {
+        if (!selected || selected->kind != TesseractNodeKind::Text) {
+            Rwidget_set_visibility(inline_editor, R_COLLAPSED);
+        } else {
+            const auto bounds = tesseract_.screen_bounds(selected->id);
+            Rslot_set_position(inline_editor, bounds.x, bounds.y);
+            Rslot_set_size(inline_editor, std::clamp(bounds.width, 120.0f, 520.0f), std::clamp(bounds.height, 34.0f, 120.0f));
+        }
+    }
+    Rwidget_set_visibility(id("tesseract.activity.bar"), activity ? R_VISIBLE : R_COLLAPSED);
+    if (activity) {
+        std::string state = "Run complete";
+        if (last_run_failed_) state = "Creation failed";
+        else if (current_action_ == "Stopped") state = "Creation stopped";
+        else if (wiki_process_.running()) state = "Reviewing the result";
+        else if (lead_process_.running()) state = "Creating your interface";
+        else if (!tesseract_.empty()) state = "Interface ready";
+        std::string action = current_action_;
+        if (!busy && !last_run_failed_ && current_action_ != "Stopped" && !tesseract_.empty()) {
+            const auto frames = tesseract_.roots().size();
+            action = std::to_string(frames) + (frames == 1 ? " frame" : " frames") + " live · .stellar/tesseract.json";
+        }
+        auto prompt = last_prompt_;
+        std::replace(prompt.begin(), prompt.end(), '\n', ' ');
+        std::replace(prompt.begin(), prompt.end(), '\r', ' ');
+        std::replace(action.begin(), action.end(), '\n', ' ');
+        std::replace(action.begin(), action.end(), '\r', ' ');
+        Rlabel_set_text(id("tesseract.activity.state"), state.c_str());
+        Rlabel_set_text(id("tesseract.activity.action"), shortened(action, 88).c_str());
+        Rlabel_set_text(id("tesseract.activity.prompt"), ("“" + shortened(prompt, 96) + "”").c_str());
+        Rwidget_set_tooltip(id("tesseract.activity.action"), action.c_str());
+        Rwidget_set_tooltip(id("tesseract.activity.prompt"), prompt.c_str());
+    }
+    const float composer_height = 160.0f + (activity ? 60.0f : 0.0f) + (selected ? 26.0f : 0.0f) + (queued ? 38.0f : 0.0f);
+    Rslot_set_size(id("tesseract.composer.shell"), 0.0f, composer_height);
+    Rslot_set_position(id("tesseract.composer.shell"), 0.0f, -composer_height - 22.0f);
+    Rwidget_set_visibility(id("tesseract.selection.bar"), selected ? R_VISIBLE : R_COLLAPSED);
+    if (selected) {
+        Rlabel_set_text(id("tesseract.selection"), ("Selected " + selected->name).c_str());
+        Rwidget_set_tooltip(id("tesseract.selection"), (selected->id + " · Drag to move · Bottom-right handle to resize").c_str());
+        Rtext_editor_set_placeholder(id("tesseract.composer"), "Refine this element…");
+    } else {
+        Rtext_editor_set_placeholder(id("tesseract.composer"), "Describe an interface…");
+    }
 }
 
 void App::refresh_memory_details() {
@@ -3790,7 +4195,7 @@ void App::open_knowledge(int index) {
 }
 
 void App::forget_memory() {
-    const bool universe = Rtab_view_get_active(id("center.tabs")) == 3 && Rtab_view_get_active(id("more.tabs")) == 2;
+    const bool universe = active_view(id("center.tabs")) == 3 && active_view(id("more.tabs")) == 2;
     const auto memory_id = universe ? memory_.selected_id()
         : current_knowledge_ >= 0 && current_knowledge_ < static_cast<int>(knowledge_records_.size())
             ? knowledge_records_[current_knowledge_].id : std::string{};
@@ -3880,8 +4285,8 @@ void App::new_note() {
         const auto found = std::find_if(notes_.begin(), notes_.end(), [&](const auto& item) { return item.path == note.path; });
         open_note(static_cast<int>(found - notes_.begin()));
         set_sidebar_visibility(false, true);
-        Rtab_view_set_active(id("right.tabs"), 1);
-        Rtab_view_set_active(id("wiki.tabs"), 0);
+        show_context(1);
+        set_active_view(id("wiki.tabs"), 0);
         Rwidget_focus(id("note.editor"));
         set_status("Created " + note.path.filename().string());
     } catch (const std::exception& error) {
@@ -3901,9 +4306,10 @@ void App::update_preview() {
 
 void App::open_proposal() {
     if (!proposal_) {
-        set_status("There is no wiki proposal to review");
+        set_status("There is no knowledge proposal to review");
         return;
     }
+    set_sidebar_visibility(false, false);
     Rlabel_set_text(id("proposal.title"), proposal_->summary.c_str());
     std::string files;
     std::string differences;
@@ -3919,8 +4325,8 @@ void App::open_proposal() {
     }
     Rlabel_set_text(id("proposal.files"), files.c_str());
     Rtext_editor_set_text(id("proposal.diff"), differences.c_str());
-    Rtab_view_set_active(id("review.tabs"), 1);
-    Rtab_view_set_active(id("center.tabs"), 4);
+    set_active_view(id("review.tabs"), 1);
+    set_active_view(id("center.tabs"), 4);
 }
 
 void App::accept_proposal() {
@@ -3937,9 +4343,9 @@ void App::accept_proposal() {
         if (found != notes_.end()) {
             open_note(static_cast<int>(found - notes_.begin()));
             set_sidebar_visibility(false, true);
-            Rtab_view_set_active(id("right.tabs"), 1);
+            show_context(1);
         }
-        Rtab_view_set_active(id("center.tabs"), 0);
+        set_active_view(id("center.tabs"), 0);
         set_status("Wiki proposal accepted and written");
     } catch (const std::exception& error) {
         set_status(error.what());
@@ -3956,13 +4362,13 @@ void App::discard_proposal() {
     Rlabel_set_text(id("proposal.title"), "No pending proposal");
     Rlabel_set_text(id("proposal.files"), "");
     Rtext_editor_set_text(id("proposal.diff"), "");
-    Rtab_view_set_active(id("center.tabs"), 0);
+    set_active_view(id("center.tabs"), 0);
     set_status("Wiki proposal discarded · files were not changed");
 }
 
 void App::zoom_editors(float amount) {
     editor_zoom_ = amount == 0.0f ? 1.0f : std::clamp(editor_zoom_ + amount, 0.5f, 2.5f);
-    static const char* editors[] = {"composer", "code.editor", "agent.editor", "note.editor", "proposal.diff", "checkpoint.diff", "verification.detail"};
+    static const char* editors[] = {"composer", "tesseract.composer", "code.editor", "agent.editor", "note.editor", "proposal.diff", "checkpoint.diff", "verification.detail"};
     for (const auto* editor : editors) Rtext_editor_set_zoom(id(editor), editor_zoom_);
     const auto percent = std::to_string(static_cast<int>(editor_zoom_ * 100 + 0.5f));
     Rlabel_set_text(id("settings.editor.zoom"), ("Editor zoom · " + percent + "%").c_str());
@@ -3990,10 +4396,20 @@ int App::window_event(Rid window, const REvent* event, void* user) {
         if (activate || event->key == R_KEY_ESCAPE) app.dismiss_splash();
         return R_TRUE;
     }
+    if (event->key == R_KEY_V && (event->modifiers & R_MOD_CTRL) && !(event->modifiers & (R_MOD_ALT | R_MOD_SUPER))) {
+        const bool tesseract = Rwidget_is_focused(app.id("tesseract.composer"));
+        if ((tesseract || Rwidget_is_focused(app.id("composer"))) && app.paste_image(tesseract)) return R_TRUE;
+        const char* clipboard = Rclipboard_get_text();
+        if (clipboard && !is_valid_utf8(clipboard)) {
+            app.set_status("Clipboard does not contain plain text or a supported image");
+            return R_TRUE;
+        }
+    }
     if (app.capture_shortcut(event)) return R_TRUE;
     if (event->key == R_KEY_ESCAPE && Rwidget_get_visibility(app.id("run.setup")) == R_VISIBLE) {
         Rwidget_set_visibility(app.id("run.setup"), R_COLLAPSED);
-        Rwidget_focus(app.id("composer"));
+        app.set_active_view(app.id("center.tabs"), app.run_setup_return_tab_);
+        Rwidget_focus(app.id(app.run_setup_return_tab_ == 5 ? "tesseract.composer" : "composer"));
         return R_TRUE;
     }
     if (event->key == R_KEY_ESCAPE && Rwidget_get_visibility(app.id("recall.palette")) == R_VISIBLE) {
@@ -4023,7 +4439,7 @@ int App::window_event(Rid window, const REvent* event, void* user) {
             }
         }
     }
-    if (event->key == R_KEY_ESCAPE && Rtab_view_get_active(app.id("center.tabs")) == 3 && Rtab_view_get_active(app.id("more.tabs")) == 1) {
+    if (event->key == R_KEY_ESCAPE && app.active_view(app.id("center.tabs")) == 3 && app.active_view(app.id("more.tabs")) == 1) {
         app.close_settings();
         return R_TRUE;
     }
@@ -4061,17 +4477,25 @@ void App::action(Rid sender, const char* action_name, void* user) {
         Rwidget_set_visibility(app.id("command.palette"), R_COLLAPSED);
         Rwidget_set_visibility(app.id("theme.gallery"), R_COLLAPSED);
         Rwidget_set_visibility(app.id("run.setup"), open ? R_VISIBLE : R_COLLAPSED);
-        if (open) Rwidget_focus(app.id("model.select"));
-        else Rwidget_focus(app.id("composer"));
+        if (open) {
+            app.run_setup_return_tab_ = app.active_view(app.id("center.tabs"));
+            Rwidget_focus(app.id("model.select"));
+        } else {
+            app.set_active_view(app.id("center.tabs"), app.run_setup_return_tab_);
+            Rwidget_focus(app.id(app.run_setup_return_tab_ == 5 ? "tesseract.composer" : "composer"));
+        }
     }
     else if (name == "run.setup.close") {
         Rwidget_set_visibility(app.id("run.setup"), R_COLLAPSED);
-        Rwidget_focus(app.id("composer"));
+        app.set_active_view(app.id("center.tabs"), app.run_setup_return_tab_);
+        Rwidget_focus(app.id(app.run_setup_return_tab_ == 5 ? "tesseract.composer" : "composer"));
     }
     else if (name == "composer.focus") {
-        Rtab_view_set_active(app.id("center.tabs"), 0);
+        app.set_active_view(app.id("center.tabs"), 0);
         Rwidget_focus(app.id("composer"));
     }
+    else if (name == "composer.image.remove") app.remove_image(false);
+    else if (name == "tesseract.image.remove") app.remove_image(true);
     else if (name == "run.stop") app.stop_run();
     else if (name == "run.retry") app.retry_run();
     else if (name == "queue.cancel") app.cancel_queued();
@@ -4095,19 +4519,21 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "wiki.open") {
         const auto row = Rlist_view_get_selected(sender);
         if (row >= 0 && row < static_cast<int>(app.note_rows_.size())) {
-            app.set_sidebar_visibility(false, true);
+            app.set_active_view(app.id("left.tabs"), 3);
             app.open_note(app.note_rows_[row]);
+            app.show_context(1);
         }
     }
     else if (name == "proposal.open") app.open_proposal();
     else if (name == "proposal.accept") app.accept_proposal();
     else if (name == "proposal.discard") app.discard_proposal();
     else if (name == "checkpoint.review") {
+        app.set_sidebar_visibility(false, false);
         if (app.selected_checkpoint_id_.empty() && !app.checkpoint_store_.checkpoints().empty()) {
             app.open_checkpoint(app.checkpoint_store_.checkpoints().front().id);
         }
-        Rtab_view_set_active(app.id("review.tabs"), 0);
-        Rtab_view_set_active(app.id("center.tabs"), 4);
+        app.set_active_view(app.id("review.tabs"), 0);
+        app.set_active_view(app.id("center.tabs"), 4);
         if (const auto* checkpoint = app.checkpoint_store_.find(app.selected_checkpoint_id_)) {
             if (checkpoint->changes.empty() && !checkpoint->checks.empty()) {
                 app.open_verification(0);
@@ -4131,8 +4557,8 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "verification.watch") app.toggle_watch_checks();
     else if (name == "wiki.preview") {
         app.set_sidebar_visibility(false, true);
-        Rtab_view_set_active(app.id("right.tabs"), 1);
-        Rtab_view_set_active(app.id("wiki.tabs"), 1);
+        app.show_context(1);
+        app.set_active_view(app.id("wiki.tabs"), 1);
         app.update_preview();
     }
     else if (name == "harness.changed") app.change_harness(Rcombo_box_get_selected(sender));
@@ -4157,12 +4583,53 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "recall.use") app.use_recall();
     else if (name == "recall.pin") app.toggle_recall_pin();
     else if (name == "recall.erase") app.erase_recall();
+    else if (name == "nav.chat") {
+        app.set_active_view(app.id("left.tabs"), 0);
+        app.set_active_view(app.id("center.tabs"), 0);
+        Rwidget_focus(app.id("composer"));
+    }
+    else if (name == "nav.canvas") app.open_tesseract();
+    else if (name == "nav.workflows") app.open_endurance();
+    else if (name == "nav.files") {
+        app.set_active_view(app.id("left.tabs"), 1);
+        app.set_active_view(app.id("center.tabs"), 1);
+        Rwidget_focus(app.id("workspace.files"));
+    }
+    else if (name == "nav.agents") {
+        app.set_sidebar_visibility(false, false);
+        app.set_active_view(app.id("left.tabs"), 2);
+        app.set_active_view(app.id("more.tabs"), 0);
+        app.set_active_view(app.id("center.tabs"), 3);
+        Rwidget_focus(app.id("agent.editor"));
+    }
+    else if (name == "nav.review") {
+        app.set_sidebar_visibility(false, false);
+        app.set_active_view(app.id("center.tabs"), 4);
+    }
+    else if (name == "nav.knowledge") {
+        app.set_active_view(app.id("left.tabs"), 3);
+        app.refresh_knowledge();
+        app.show_context(2);
+    }
+    else if (name == "nav.worktrees") {
+        app.set_sidebar_visibility(false, false);
+        app.refresh_missions();
+        app.set_active_view(app.id("more.tabs"), 3);
+        app.set_active_view(app.id("center.tabs"), 3);
+    }
+    else if (name == "nav.settings") app.open_settings();
+    else if (name == "activity.open") {
+        if (app.right_sidebar_visible_ && app.active_view(app.id("right.tabs")) == 0) app.set_sidebar_visibility(false, false);
+        else app.show_context(0);
+    }
+    else if (name == "alerts.view") app.show_context(3);
+    else if (name == "context.close") app.set_sidebar_visibility(false, false);
     else if (name == "navigation.search") app.refresh_lists();
     else if (name == "knowledge.search") app.refresh_knowledge();
     else if (name == "knowledge.open_tab") {
-        app.set_sidebar_visibility(false, true);
+        app.set_active_view(app.id("left.tabs"), 3);
         app.refresh_knowledge();
-        Rtab_view_set_active(app.id("right.tabs"), 2);
+        app.show_context(2);
     }
     else if (name == "knowledge.open") app.open_knowledge(Rlist_view_get_selected(sender));
     else if (name == "memory.open") app.open_memory();
@@ -4172,10 +4639,27 @@ void App::action(Rid sender, const char* action_name, void* user) {
         Rwidget_focus(app.id("memory.canvas"));
     }
     else if (name == "memory.forget") app.forget_memory();
+    else if (name == "tesseract.open") app.open_tesseract();
+    else if (name == "tesseract.fit") {
+        app.tesseract_.fit();
+        Rwidget_invalidate(app.id("tesseract.canvas"));
+        app.refresh_tesseract_chrome();
+    }
+    else if (name == "tesseract.zoom.in" || name == "tesseract.zoom.out") {
+        app.tesseract_.zoom_by(name == "tesseract.zoom.in" ? 1.25f : 0.8f);
+        Rwidget_invalidate(app.id("tesseract.canvas"));
+        app.refresh_tesseract_chrome();
+    }
+    else if (name == "tesseract.selection.clear") {
+        app.finish_tesseract_text_edit(false);
+        app.tesseract_.clear_selection();
+        Rwidget_invalidate(app.id("tesseract.canvas"));
+        app.refresh_tesseract_chrome();
+    }
     else if (name == "mission.open") {
         app.refresh_missions();
-        Rtab_view_set_active(app.id("more.tabs"), 3);
-        Rtab_view_set_active(app.id("center.tabs"), 3);
+        app.set_active_view(app.id("more.tabs"), 3);
+        app.set_active_view(app.id("center.tabs"), 3);
     }
     else if (name == "mission.create") app.create_mission();
     else if (name == "mission.review") {
@@ -4205,7 +4689,7 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "endurance.validate") app.validate_endurance_yaml(true);
     else if (name == "endurance.run") app.start_endurance_run();
     else if (name == "endurance.view") {
-        if (Rtab_view_get_active(sender) == 2) app.refresh_endurance_runs();
+        if (app.active_view(sender) == 2) app.refresh_endurance_runs();
         app.rebuild_endurance_graph();
     }
     else if (name == "endurance.recurrence.toggle") app.toggle_endurance_recurrence();
@@ -4275,30 +4759,21 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "shortcut.reset") app.reset_shortcut();
     else if (name == "alerts.open") app.open_notification();
     else if (name == "alerts.clear") app.clear_notifications();
-    else if (name == "alerts.dnd") {
-        app.do_not_disturb_ = Rcheckbox_is_checked(sender);
-        app.toggle_do_not_disturb();
-    }
-    else if (name == "settings.notifications.run") app.toggle_notification_kind("run");
-    else if (name == "settings.notifications.verification") app.toggle_notification_kind("verification");
-    else if (name == "settings.notifications.knowledge") app.toggle_notification_kind("knowledge");
-    else if (name == "settings.notifications.mission") app.toggle_notification_kind("mission");
-    else if (name == "settings.notifications.autosave") app.toggle_notification_kind("autosave");
     else if (name == "sidebar.left") app.toggle_sidebar(true);
     else if (name == "sidebar.right") app.toggle_sidebar(false);
     else if (name == "graph.fit") Rnode_graph_frame_all(app.id("graph"));
     else if (name == "graph.toggle") {
-        Rtab_view_set_active(app.id("center.tabs"), 2);
-        Rtab_view_set_active(app.id("endurance.views"), 3);
+        app.set_active_view(app.id("center.tabs"), 2);
+        app.set_active_view(app.id("endurance.views"), 3);
         Rnode_graph_frame_all(app.id("graph"));
         Rwidget_focus(app.id("graph"));
     }
     else if (name == "code.save") app.save_code_file();
     else if (name == "file.save") {
-        if (Rtab_view_get_active(app.id("center.tabs")) == 1) app.save_code_file();
-        else if (Rtab_view_get_active(app.id("center.tabs")) == 2 && Rtab_view_get_active(app.id("endurance.views")) == 1) app.validate_endurance_yaml(true);
-        else if (Rtab_view_get_active(app.id("center.tabs")) == 3 && Rtab_view_get_active(app.id("more.tabs")) == 0) app.save_agent();
-        else if (app.right_sidebar_visible_ && Rtab_view_get_active(app.id("right.tabs")) == 1) app.save_note();
+        if (app.active_view(app.id("center.tabs")) == 1) app.save_code_file();
+        else if (app.active_view(app.id("center.tabs")) == 2 && app.active_view(app.id("endurance.views")) == 1) app.validate_endurance_yaml(true);
+        else if (app.active_view(app.id("center.tabs")) == 3 && app.active_view(app.id("more.tabs")) == 0) app.save_agent();
+        else if (app.right_sidebar_visible_ && app.active_view(app.id("right.tabs")) == 1) app.save_note();
     }
 }
 
@@ -4325,9 +4800,8 @@ void App::list_selection(Rid list, int index, void* user) {
     }
     else if (list == app.id("wiki")) {
         if (index < 0 || index >= static_cast<int>(app.note_rows_.size())) return;
-        app.set_sidebar_visibility(false, true);
         app.open_note(app.note_rows_[index]);
-        Rtab_view_set_active(app.id("right.tabs"), 1);
+        if (!app.right_sidebar_visible_ || app.active_view(app.id("right.tabs")) != 2) app.show_context(1);
     }
 }
 
@@ -4370,8 +4844,9 @@ bool App::has_animation_frames() const {
     if (splash_.active()) return splash_.animating();
     if (Raccessibility_get_reduce_motion()) return false;
     return Rwidget_get_visibility(id("theme.gallery")) == R_VISIBLE ||
-        (endurance_.busy() && Rtab_view_get_active(id("center.tabs")) == 2 && Rtab_view_get_active(id("endurance.views")) == 0) ||
-        (Rtab_view_get_active(id("center.tabs")) == 3 && Rtab_view_get_active(id("more.tabs")) == 2);
+        (endurance_.busy() && active_view(id("center.tabs")) == 2 && active_view(id("endurance.views")) == 0) ||
+        (active_view(id("center.tabs")) == 3 && active_view(id("more.tabs")) == 2) ||
+        (active_view(id("center.tabs")) == 5 && tesseract_.empty());
 }
 
 void App::frame(double delta, void* user) {
@@ -4382,12 +4857,16 @@ void App::frame(double delta, void* user) {
     app.pump_recovery();
     app.pump_palette();
     app.pump_verification();
+    if (app.active_view(app.id("center.tabs")) == 5) {
+        if (app.tesseract_.reload_if_changed()) Rwidget_invalidate(app.id("tesseract.canvas"));
+        app.refresh_tesseract_chrome();
+    }
     if (app.composer_completion_pending_) {
         app.composer_completion_pending_ = false;
         Rtext_editor_show_completions(app.id("composer"));
     }
     const bool reduce_motion = Raccessibility_get_reduce_motion();
-    const bool memory_active = !reduce_motion && Rtab_view_get_active(app.id("center.tabs")) == 3 && Rtab_view_get_active(app.id("more.tabs")) == 2;
+    const bool memory_active = !reduce_motion && app.active_view(app.id("center.tabs")) == 3 && app.active_view(app.id("more.tabs")) == 2;
     const bool gallery_active = !reduce_motion && Rwidget_get_visibility(app.id("theme.gallery")) == R_VISIBLE;
     bool redraw = false;
     if (app.splash_.active()) {
@@ -4405,6 +4884,9 @@ void App::frame(double delta, void* user) {
     }
     if (gallery_active) {
         redraw = app.theme_gallery_.advance(app.gallery_animation_active_ ? delta : 0.0, false) || redraw;
+    }
+    if (app.active_view(app.id("center.tabs")) == 5 && app.tesseract_.empty()) {
+        redraw = app.tesseract_.advance(delta, reduce_motion) || redraw;
     }
     app.memory_animation_active_ = memory_active;
     app.gallery_animation_active_ = gallery_active;

@@ -13,6 +13,7 @@
 #include "recovery.hpp"
 #include "splash.hpp"
 #include "theme_gallery.hpp"
+#include "tesseract.hpp"
 #include "threads.hpp"
 #include "workspace.hpp"
 
@@ -41,6 +42,8 @@ public:
     void start_with_prompt(const std::string& prompt);
     void open_endurance();
     void open_memory();
+    void open_tesseract();
+    void start_tesseract_with_prompt(const std::string& prompt);
     void start_endurance_with_task(const std::string& task);
     void open_code_file(const std::filesystem::path& path, int line = 0);
     void pump();
@@ -59,8 +62,6 @@ private:
     WorkspaceProfileStore profile_store_;
     bool capturing_shortcut_ = false;
     std::vector<std::string> notification_rows_;
-    bool do_not_disturb_ = false;
-    std::map<std::string, bool> notification_mutes_;
     bool recovery_save_pending_ = false;
     std::chrono::steady_clock::time_point recovery_save_due_;
     std::string active_mission_id_;
@@ -84,6 +85,7 @@ private:
     std::chrono::steady_clock::time_point endurance_yaml_due_;
     ComposerIndex composer_index_;
     ThemeGallery theme_gallery_;
+    TesseractCanvas tesseract_;
     SplashScreen splash_;
     OpeningAudio opening_audio_;
     bool opening_sound_ = true;
@@ -93,7 +95,20 @@ private:
     Rid pending_message_ = R_INVALID_ID;
     Rid activity_expander_ = R_INVALID_ID;
     Rid activity_rows_ = R_INVALID_ID;
+    struct ImageAttachment {
+        std::filesystem::path path;
+        std::string mime_type;
+        int width = 0;
+        int height = 0;
+        std::uintmax_t bytes = 0;
+    };
     std::string current_text_;
+    std::optional<ImageAttachment> composer_image_;
+    std::optional<ImageAttachment> tesseract_image_;
+    std::optional<ImageAttachment> queued_image_;
+    std::optional<ImageAttachment> last_image_;
+    Rid composer_texture_ = R_INVALID_ID;
+    Rid tesseract_texture_ = R_INVALID_ID;
     std::vector<std::string> context_attachment_paths_;
     std::map<std::string, Rid> tool_activity_status_;
     int activity_count_ = 0;
@@ -108,7 +123,7 @@ private:
     int settings_return_tab_ = 0;
     int settings_return_more_tab_ = 0;
     bool left_sidebar_visible_ = true;
-    bool right_sidebar_visible_ = true;
+    bool right_sidebar_visible_ = false;
     bool compact_interface_ = false;
     bool compact_restore_left_ = true;
     bool compact_restore_right_ = true;
@@ -122,6 +137,12 @@ private:
     Harness run_harness_ = Harness::ClaudeCode;
     enum class RunMode { Build, Ask, Review };
     RunMode run_mode_ = RunMode::Build;
+    bool run_tesseract_ = false;
+    bool queued_tesseract_ = false;
+    int run_setup_return_tab_ = 0;
+    std::string run_tesseract_context_;
+    std::string queued_tesseract_context_;
+    std::optional<std::string> tesseract_context_override_;
     std::string queued_prompt_;
     std::string last_prompt_;
     bool last_run_failed_ = false;
@@ -219,6 +240,12 @@ private:
     void complete_composer(const char* prefix);
     bool composer_token_complete() const;
     void update_context_summary();
+    bool paste_image(bool tesseract);
+    void remove_image(bool tesseract);
+    void clear_images();
+    void refresh_image_attachment(bool tesseract);
+    std::optional<ImageAttachment>& image_for(bool tesseract);
+    Rid& texture_for(bool tesseract);
     void clear_context();
     void remove_context_file();
     void compact_context();
@@ -252,6 +279,9 @@ private:
     void dismiss_splash();
     void toggle_splash_sound();
     void update_splash_sound_control();
+    void refresh_tesseract_chrome();
+    void begin_tesseract_text_edit();
+    void finish_tesseract_text_edit(bool commit);
     void load_endurance();
     void refresh_endurance_workflows(int selected = -1);
     void select_endurance_workflow(int index);
@@ -318,8 +348,6 @@ private:
     void select_notification(int index);
     void open_notification();
     void clear_notifications();
-    void toggle_do_not_disturb();
-    void toggle_notification_kind(const std::string& kind);
     void notify_autosave_error(const std::string& error);
     void notify_run_finished(bool error);
     void start_wiki_curator();
@@ -379,6 +407,10 @@ private:
     void pump_autosave();
     bool flush_autosave();
     bool can_discard_code();
+    int active_view(Rid view) const;
+    void set_active_view(Rid view, int index);
+    void refresh_navigation();
+    void show_context(int index);
     void set_sidebar_visibility(bool left, bool visible);
     void toggle_sidebar(bool left);
     void update_interface_density();

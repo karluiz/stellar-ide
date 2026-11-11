@@ -47,6 +47,7 @@ add_library(raven_ide_core
     src/recovery.cpp
     src/splash.cpp
     src/theme_gallery.cpp
+    src/tesseract.cpp
     src/threads.cpp
     src/verification.cpp
     src/workspace.cpp

@@ -24,24 +24,19 @@
     <VBox>
         <HeaderBar Title="" Height="60" Buttons="All">
             <Overlay Width="36" Height="34">
-                <Button Name="sidebar.left" Text="" Width="36" Height="34" Style="Flat" Class="header-action" OnClicked="sidebar.left" Tooltip="Show or fold Files (Ctrl+B)" AccessibleName="Files" AccessibleDescription="Show or fold the left file, agent, and wiki sidebar"/>
+                <Button Name="sidebar.left" Text="" Width="36" Height="34" Style="Flat" Class="header-action" OnClicked="sidebar.left" Tooltip="Show or fold navigation (Ctrl+B)" AccessibleName="Navigation" AccessibleDescription="Show or fold workspace navigation"/>
                 <Image Source="icons/files.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
             </Overlay>
-            <Label Text="STELLAR" TextSize="14" Slot.Padding="3,0,22,0"/>
-            <Button Text="Open" Style="Flat" Class="header-action" OnClicked="workspace.open" Tooltip="Open a workspace"/>
-            <Button Text="New chat" Style="Flat" Class="header-action" OnClicked="thread.new" Tooltip="Start a new conversation (Ctrl+N)"/>
-            <Separator Orientation="Vertical" Slot.Padding="8,7"/>
-            <Label Name="workspace.name" Text="Workspace" Class="muted" Slot.VAlign="Center"/>
-            <Label Name="workspace.separator" Text="/" Class="muted" Slot.Padding="10,0" Slot.VAlign="Center"/>
-            <Label Name="run.title" Text="New agent run" TextSize="14" Slot.VAlign="Center"/>
+            <Label Text="STELLAR" TextSize="14" Slot.Padding="3,0,14,0"/>
+            <Button Name="workspace.name" Text="Workspace" Style="Flat" Class="header-action" OnClicked="workspace.open" Tooltip="Open a workspace"/>
+            <Label Name="workspace.separator" Text="/" Class="muted" Slot.Padding="6,0" Slot.VAlign="Center"/>
+            <Label Name="run.title" Text="New chat" TextSize="14" Slot.VAlign="Center"/>
+            <Button Text="New chat" Style="Flat" Class="header-action" OnClicked="thread.new" Tooltip="Start a new conversation (Ctrl+N)" Slot.HAlign="Right"/>
+            <Button Text="Activity" Style="Flat" Class="header-action" OnClicked="activity.open" Tooltip="Show live agent activity" Slot.HAlign="Right"/>
             <Overlay Width="36" Height="34" Slot.HAlign="Right">
                 <Button Name="appearance.toggle" Text="" Width="36" Height="34" Style="Flat" Class="header-action" OnClicked="appearance.toggle" Tooltip="Switch to light theme" AccessibleName="Switch to light theme"/>
                 <Image Name="appearance.sun" Source="icons/sun.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
                 <Image Name="appearance.moon" Source="icons/moon.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center" Visibility="Collapsed"/>
-            </Overlay>
-            <Overlay Width="36" Height="34" Slot.HAlign="Right">
-                <Button Name="sidebar.right" Text="" Width="36" Height="34" Style="Flat" Class="header-action" OnClicked="sidebar.right" Tooltip="Show or fold Panels (Ctrl+Shift+B)" AccessibleName="Panels" AccessibleDescription="Show or fold the right activity, wiki, knowledge, and alerts sidebar"/>
-                <Image Source="icons/panels.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
             </Overlay>
             <Button Name="run.retry" Text="Retry" Style="Flat" Class="header-action" OnClicked="run.retry" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
             <Button Name="run.stop" Text="Stop" Style="Flat" Class="header-action" OnClicked="run.stop" Slot.HAlign="Right" Visibility="Collapsed" Appear="Fade"/>
@@ -50,46 +45,80 @@
         </HeaderBar>
 
         <Splitter Name="workspace.splitter" Slot.Fill="1" MinPaneSize="300">
-            <VBox Name="left.sidebar" Class="surface" Slot.Fill="0.21" MinWidth="260" MaxWidth="330" Appear="SlideRight">
-                <HBox Spacing="8" Slot.Padding="14,12,14,8">
+            <VBox Name="left.sidebar" Class="surface" Slot.Fill="0.21" MinWidth="240" MaxWidth="310" Appear="SlideRight">
+                <VBox Slot.Padding="12,14,12,8" Spacing="3">
+                    <Label Text="Work" Class="section" Slot.Padding="12,0,12,6"/>
+                    <Button Class="instant-hover" Name="nav.chat" Height="36" OnClicked="nav.chat" Tooltip="Chat with your lead agent">
+                        <Label Text="Chat" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                    </Button>
+                    <Button Class="instant-hover" Name="nav.canvas" Height="36" OnClicked="nav.canvas" Tooltip="Create and edit interfaces in Tesseract">
+                        <Label Text="Tesseract UI" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                    </Button>
+                    <Button Class="instant-hover" Name="nav.workflows" Height="36" OnClicked="nav.workflows" Tooltip="Build and run multi-agent workflows in Endurance">
+                        <Label Text="Workflows" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                    </Button>
+                    <Label Text="Workspace" Class="section" Slot.Padding="12,14,12,6"/>
+                    <Button Class="instant-hover" Name="nav.files" Height="36" OnClicked="nav.files" Tooltip="Browse and open workspace files">
+                        <Label Text="Files" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                    </Button>
+                    <Button Class="instant-hover" Name="nav.agents" Height="36" OnClicked="nav.agents" Tooltip="Edit shared agent definitions">
+                        <Label Text="Agents" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                    </Button>
+                    <Button Class="instant-hover" Name="nav.review" Height="36" OnClicked="nav.review" Tooltip="Review code and knowledge changes">
+                        <Label Text="Review" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                    </Button>
+                    <Button Class="instant-hover" Name="nav.knowledge" Height="36" OnClicked="nav.knowledge" Tooltip="Open notes, knowledge, and reviewed memory">
+                        <Label Text="Knowledge" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                    </Button>
+                    <Button Class="instant-hover" Name="nav.worktrees" Height="36" OnClicked="nav.worktrees" Tooltip="Run and review isolated Git tasks">
+                        <Label Text="Worktrees" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                    </Button>
+                </VBox>
+                <HBox Name="navigation.search.row" Spacing="8" Slot.Padding="14,6,14,8">
                     <Image Source="icons/search.png" Width="16" Height="16" TintText="true" AccessibleHidden="true" Slot.VAlign="Center"/>
-                    <TextInput Name="navigation.search" Placeholder="Search…" OnChanged="navigation.search" Tooltip="Filter conversations, agent definitions, and wiki notes" Slot.Fill="1"/>
+                    <TextInput Name="navigation.search" Placeholder="Search chats…" OnChanged="navigation.search" Tooltip="Filter the current list" Slot.Fill="1"/>
                 </HBox>
-                <TabView Name="left.tabs" Class="tabs" Slot.Fill="1">
-                    <VBox Slot.Title="Chats">
+                <Switcher Name="left.tabs" Slot.Fill="1">
+                    <VBox>
                         <HBox Slot.Padding="16,10,12,4" Spacing="4">
-                            <Label Name="threads.section" Text="Conversations" Class="section" Slot.Fill="1" Slot.VAlign="Center"/>
+                            <Label Name="threads.section" Text="Recent chats" Class="section" Slot.Fill="1" Slot.VAlign="Center"/>
                             <Button Name="threads.view" Text="Archived" Style="Flat" OnClicked="thread.view" Tooltip="Show archived conversations"/>
                             <Overlay Width="36" Height="34">
                                 <Button Name="threads.archive" Text="" Width="36" Height="34" Style="Flat" OnClicked="thread.archive" Tooltip="Archive selected conversation" AccessibleName="Archive selected conversation"/>
                                 <Image Source="icons/archive.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
                             </Overlay>
                         </HBox>
-                        <ListView Name="threads" Slot.Fill="1" OnActivated="thread.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="0"/>
+                        <ListView Name="threads" Slot.Fill="1" OnActivated="thread.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
                     </VBox>
-                    <VBox Slot.Title="Files">
+                    <VBox>
                         <FileBrowser Name="workspace.files" Slot.Fill="1" Slot.Padding="10,8,10,12" Controls="false" Places="false" ShowHidden="false"/>
                     </VBox>
-                    <VBox Slot.Title="Agents">
+                    <VBox>
                         <HBox Slot.Padding="16,10,12,4">
                             <Label Text="Agent definitions" Class="section" Slot.Fill="1"/>
                             <Button Text="New" Style="Flat" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)"/>
                         </HBox>
-                        <ListView Name="agents" Slot.Fill="1" OnActivated="agent.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="0"/>
+                        <ListView Name="agents" Slot.Fill="1" OnActivated="agent.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
                     </VBox>
-                    <VBox Slot.Title="Wiki">
+                    <VBox>
                         <HBox Slot.Padding="16,10,12,4">
                             <Label Text="Workspace notes" Class="section" Slot.Fill="1"/>
                             <Button Text="New" Style="Flat" OnClicked="wiki.new" Tooltip="Create a Markdown note (Ctrl+Shift+N)"/>
                         </HBox>
-                        <ListView Name="wiki" Slot.Fill="1" OnActivated="wiki.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="0"/>
+                        <ListView Name="wiki" Slot.Fill="1" OnActivated="wiki.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
                     </VBox>
-                </TabView>
+                </Switcher>
+                <Spacer Name="navigation.bottom.spacer" Slot.Fill="1"/>
+                <HBox Slot.Padding="12,8,12,12">
+                    <Button Class="instant-hover" Name="nav.settings" Height="36" OnClicked="nav.settings" Slot.Fill="1" Tooltip="Appearance, agent, and workspace preferences">
+                        <Label Text="Settings" Slot.HAlign="Left" Slot.VAlign="Center"/>
+                    </Button>
+                </HBox>
             </VBox>
 
             <VBox Name="center.workspace" Class="workspace" Slot.Fill="0.58" MinWidth="420">
                 <Label Name="run.subtitle" Text="Orchestrator · Claude Code" Visibility="Collapsed"/>
-                <TabView Name="center.tabs" Class="tabs" Slot.Fill="1">
+                <Switcher Name="center.tabs" Slot.Fill="1">
                     <VBox Class="workspace" Slot.Title="Agent">
                         <ScrollBox Name="transcript.scroll" Slot.Fill="1">
                             <HBox Slot.Padding="26,30">
@@ -111,7 +140,15 @@
                         <HBox Slot.Padding="24,6,24,22">
                             <Border Name="composer.shell" Class="composer" Padding="14" MaxWidth="860" Slot.Fill="1">
                                 <VBox Spacing="10">
-                                    <TextEditor Name="composer" Class="composer-input" Height="88" Wrap="true" Completion="true" AutoPairs="false" Placeholder="Describe a task · / skills · @ workspace files…"/>
+                                    <HBox Name="composer.image.bar" Spacing="12" Visibility="Collapsed" Appear="Fade">
+                                        <Image Name="composer.image.preview" Width="76" Height="60" Stretch="Cover" CornerRadius="10" AccessibleName="Pasted image preview"/>
+                                        <VBox Slot.Fill="1" Spacing="4" Slot.VAlign="Center">
+                                            <Label Text="Pasted image" TextSize="12"/>
+                                            <Label Name="composer.image.details" Class="muted" TextSize="11"/>
+                                        </VBox>
+                                        <Button Text="Remove" Style="Flat" OnClicked="composer.image.remove" Tooltip="Remove the pasted image" Slot.VAlign="Center"/>
+                                    </HBox>
+                                    <TextEditor Name="composer" Class="composer-input" Height="88" Wrap="true" Completion="true" AutoPairs="false" Placeholder="Describe a task · / skills · @ files · paste an image…"/>
                                     <HBox Name="context.bar" Spacing="8" Visibility="Collapsed" Appear="Fade">
                                         <Image Source="icons/files.png" Width="15" Height="15" TintText="true" AccessibleHidden="true" Slot.VAlign="Center"/>
                                         <ComboBox Name="context.files" Width="290" Tooltip="Attachment token estimate" AccessibleName="Attached files"/>
@@ -131,7 +168,7 @@
                                         <Button Name="context.compact" Text="Compact" Style="Flat" OnClicked="context.compact" Tooltip="Keep the task and recent messages for the next session" Visibility="Collapsed" Slot.VAlign="Center"/>
                                         <Spacer Slot.Fill="1"/>
                                         <Overlay Width="36" Height="34">
-                                            <Button Name="run.send" Text="" Width="36" Height="34" Style="Flat" Class="send-button" OnClicked="run.send" Tooltip="Send to lead (Ctrl+Enter)" AccessibleName="Send to lead"/>
+                                            <Button Name="run.send" Text="" Width="36" Height="34" Style="Flat" Class="send-button" OnClicked="run.send" Tooltip="Send to lead (Enter)" AccessibleName="Send to lead"/>
                                             <Image Source="icons/send.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
                                         </Overlay>
                                     </HBox>
@@ -217,7 +254,7 @@
                                 <HBox Slot.Fill="1">
                                     <VBox Name="endurance.run.history" Width="230">
                                         <Label Text="Run history" Class="section" Slot.Padding="14,14,14,8"/>
-                                        <ListView Name="endurance.run.list" Slot.Fill="1" OnActivated="endurance.run.open" Metric.BorderWidth="0" Metric.CornerRadius="0" AccessibleName="Endurance run history"/>
+                                        <ListView Name="endurance.run.list" Slot.Fill="1" OnActivated="endurance.run.open" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Endurance run history"/>
                                     </VBox>
                                     <VBox Slot.Fill="1">
                                         <ComboBox Name="endurance.run.select" OnChanged="endurance.run.select" Visibility="Collapsed" Slot.Padding="12,10,12,0" AccessibleName="Select Endurance run"/>
@@ -263,7 +300,7 @@
                             </VBox>
                         </TabView>
                     </VBox>
-                    <TabView Name="more.tabs" Class="tabs" Slot.Title="More" Slot.Fill="1">
+                    <Switcher Name="more.tabs" Slot.Title="More" Slot.Fill="1">
                     <VBox Class="workspace" Slot.Title="Definitions">
                         <Border Class="tool-header" Padding="18,14" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
                             <HBox>
@@ -338,20 +375,6 @@
                                         </HBox>
                                     </VBox>
                                 </Border>
-
-                                <Expander Name="settings.notifications.expander" Title="Notifications" Expanded="true">
-                                <Border Class="section-header" Padding="20,18" BorderWidth="0" CornerRadius="10">
-                                    <VBox Spacing="12">
-                                        <Label Text="Desktop alerts only. History stays in Alerts." Class="muted" TextSize="11" Wrap="true"/>
-                                        <Checkbox Name="settings.notifications.dnd" Text="Do not disturb" Style="Switch" OnChanged="alerts.dnd"/>
-                                        <Checkbox Name="settings.notifications.run" Text="Run results" Style="Switch" Checked="true" OnChanged="settings.notifications.run"/>
-                                        <Checkbox Name="settings.notifications.verification" Text="Verification failures" Style="Switch" Checked="true" OnChanged="settings.notifications.verification"/>
-                                        <Checkbox Name="settings.notifications.knowledge" Text="Knowledge review" Style="Switch" Checked="true" OnChanged="settings.notifications.knowledge"/>
-                                        <Checkbox Name="settings.notifications.mission" Text="Mission updates" Style="Switch" Checked="true" OnChanged="settings.notifications.mission"/>
-                                        <Checkbox Name="settings.notifications.autosave" Text="Autosave failures" Style="Switch" Checked="true" OnChanged="settings.notifications.autosave"/>
-                                    </VBox>
-                                </Border>
-                                </Expander>
 
                                 <Expander Name="settings.keyboard.expander" Title="Keyboard &amp; shortcuts" Expanded="true">
                                 <VBox Spacing="16">
@@ -445,7 +468,7 @@
                             <Button Name="mission.create" Text="Create and run" Style="Primary" OnClicked="mission.create"/>
                         </HBox>
                         <Label Name="mission.empty" Text="No missions yet. Describe an isolated task above to create a Git worktree." Class="muted" Wrap="true" Slot.Padding="14,4,14,12"/>
-                        <ListView Name="mission.list" Height="140" OnActivated="mission.review" Slot.Padding="14,0,14,8" Metric.BorderWidth="0" Metric.CornerRadius="0" AccessibleName="Git missions" Visibility="Collapsed"/>
+                        <ListView Name="mission.list" Height="140" OnActivated="mission.review" Slot.Padding="14,0,14,8" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Git missions" Visibility="Collapsed"/>
                         <HBox Name="mission.hunks.row" Slot.Padding="14,0,14,8" Spacing="8" Visibility="Collapsed">
                             <ComboBox Name="mission.hunks" Slot.Fill="1" Tooltip="Mission hunk to apply" AccessibleName="Mission diff hunk"/>
                             <Button Name="mission.apply_hunk" Text="Apply hunk" Style="Flat" OnClicked="mission.apply_hunk"/>
@@ -458,7 +481,7 @@
                         </HBox>
                         <TextEditor Name="mission.diff" Slot.Fill="1" Slot.Padding="14,0,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Select a mission to inspect its complete diff" Visibility="Collapsed"/>
                     </VBox>
-                    </TabView>
+                    </Switcher>
                     <TabView Name="review.tabs" Class="tabs" Slot.Title="Review" Slot.Fill="1">
                         <VBox Class="workspace" Slot.Title="Code changes">
                             <Border Class="tool-header" Padding="20,16" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
@@ -482,7 +505,7 @@
                             <TabView Name="checkpoint.content.tabs" Class="tabs" Slot.Fill="1" Visibility="Collapsed">
                                 <TextEditor Name="checkpoint.diff" Slot.Title="Diff" Slot.Fill="1" Slot.Padding="14,10,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Complete an agent run to inspect source changes here"/>
                                 <VBox Slot.Title="Verification">
-                                    <ListView Name="verification.results" Height="140" OnActivated="verification.open" Slot.Padding="14,8,14,6" Metric.BorderWidth="0" Metric.CornerRadius="0" AccessibleName="Build and test results"/>
+                                    <ListView Name="verification.results" Height="140" OnActivated="verification.open" Slot.Padding="14,8,14,6" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Build and test results"/>
                                     <HBox Name="verification.actions.row" Slot.Padding="14,0,14,8" Spacing="8">
                                         <Button Name="verification.rerun" Text="Rerun check" Style="Flat" OnClicked="verification.rerun"/>
                                         <Button Name="verification.watch" Text="Watch checks" Style="Flat" OnClicked="verification.watch" Tooltip="Rerun the selected check after autosave"/>
@@ -511,12 +534,77 @@
                             </HBox>
                         </VBox>
                     </TabView>
-                </TabView>
+                    <VBox Class="workspace" Slot.Title="Tesseract">
+                        <Canvas Slot.Fill="1" Clip="true">
+                            <Custom Name="tesseract.canvas" Slot.Anchors="0,0,1,1" AccessibleName="Tesseract UI canvas" AccessibleDescription="Agent-generated editable interface frames. Click to select a frame, Control-click to select the deepest element, double-click text to edit, drag to move, and use the bottom-right handle to resize. Space-drag pans, scroll zooms, and zero fits. Reduced motion shows the empty composition without animation."/>
+                            <TextInput Name="tesseract.inline.editor" Slot.Anchors="0,0" Slot.Position="0,0" Slot.Size="160,34" Visibility="Collapsed" AccessibleName="Edit selected canvas text" Tooltip="Enter to save · Escape to cancel"/>
+                            <HBox Slot.Anchors="1,0" Slot.Alignment="1,0" Slot.Position="-16,14" Slot.Size="184,34" Spacing="4">
+                                <Button Text="−" Style="Flat" OnClicked="tesseract.zoom.out" Tooltip="Zoom out" AccessibleName="Zoom out"/>
+                                <Label Name="tesseract.zoom" Text="85%" Class="data" MinWidth="42" TextAlign="Center" Slot.VAlign="Center"/>
+                                <Button Text="+" Style="Flat" OnClicked="tesseract.zoom.in" Tooltip="Zoom in" AccessibleName="Zoom in"/>
+                                <Button Text="Fit" Style="Flat" OnClicked="tesseract.fit" Tooltip="Frame every interface (0)"/>
+                            </HBox>
+                            <Border Name="tesseract.composer.shell" Class="composer" Padding="14" MaxWidth="860" Slot.Anchors="0.08,1,0.92,1" Slot.Position="0,-182" Slot.Size="0,160">
+                                <VBox Spacing="10">
+                                    <HBox Name="tesseract.activity.bar" Spacing="8" Visibility="Collapsed" Appear="Fade">
+                                        <VBox Slot.Fill="1" Spacing="3">
+                                            <HBox Spacing="8">
+                                                <Label Name="tesseract.activity.state" Text="Creating your interface" TextSize="13" Slot.Fill="1" Slot.VAlign="Center"/>
+                                                <Label Name="tesseract.activity.time" Text="00:00" Class="data" Font="monospace" TextSize="11" Slot.VAlign="Center"/>
+                                            </HBox>
+                                            <Label Name="tesseract.activity.action" Text="Starting the agent" Class="muted" TextSize="11"/>
+                                            <Label Name="tesseract.activity.prompt" Class="muted" TextSize="11"/>
+                                        </VBox>
+                                    </HBox>
+                                    <HBox Name="tesseract.queue.bar" Spacing="8" Visibility="Collapsed" Appear="Fade">
+                                        <VBox Slot.Fill="1" Spacing="2" Slot.VAlign="Center">
+                                            <Label Name="tesseract.queue.state" Text="Follow-up queued" Class="section" TextSize="11"/>
+                                            <Label Name="tesseract.queue.prompt" Class="muted" TextSize="11"/>
+                                        </VBox>
+                                        <Button Text="Cancel" Style="Flat" OnClicked="queue.cancel" Tooltip="Remove the queued UI refinement" Slot.VAlign="Center"/>
+                                    </HBox>
+                                    <HBox Name="tesseract.selection.bar" Spacing="8" Visibility="Collapsed" Appear="Fade">
+                                        <Label Name="tesseract.selection" Class="muted" TextSize="11" Slot.Fill="1" Slot.VAlign="Center"/>
+                                        <Button Text="Clear" Style="Flat" OnClicked="tesseract.selection.clear" Tooltip="Stop targeting the selected frame"/>
+                                    </HBox>
+                                    <HBox Name="tesseract.image.bar" Spacing="12" Visibility="Collapsed" Appear="Fade">
+                                        <Image Name="tesseract.image.preview" Width="76" Height="60" Stretch="Cover" CornerRadius="10" AccessibleName="Pasted image preview"/>
+                                        <VBox Slot.Fill="1" Spacing="4" Slot.VAlign="Center">
+                                            <Label Text="Pasted reference" TextSize="12"/>
+                                            <Label Name="tesseract.image.details" Class="muted" TextSize="11"/>
+                                        </VBox>
+                                        <Button Text="Remove" Style="Flat" OnClicked="tesseract.image.remove" Tooltip="Remove the pasted image" Slot.VAlign="Center"/>
+                                    </HBox>
+                                    <TextEditor Name="tesseract.composer" Class="composer-input" Height="88" Wrap="true" AutoPairs="false" Placeholder="Describe an interface · paste a reference image…" AccessibleName="Tesseract prompt"/>
+                                    <HBox Spacing="8">
+                                        <Overlay Width="36" Height="34">
+                                            <Button Name="tesseract.setup" Text="" Width="36" Height="34" Style="Flat" OnClicked="run.setup.toggle" Tooltip="Run setup · model, effort, harness, and mode (Ctrl+Shift+E)" AccessibleName="Run setup"/>
+                                            <Image Source="icons/setup.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                                        </Overlay>
+                                        <Spacer Slot.Fill="1"/>
+                                        <Overlay Width="36" Height="34">
+                                            <Button Name="tesseract.send" Text="" Width="36" Height="34" Style="Flat" Class="send-button" OnClicked="run.send" Tooltip="Create with agent (Enter)" AccessibleName="Create with agent"/>
+                                            <Image Source="icons/send.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                                        </Overlay>
+                                    </HBox>
+                                </VBox>
+                            </Border>
+                        </Canvas>
+                    </VBox>
+                </Switcher>
             </VBox>
 
-            <VBox Name="right.sidebar" Class="surface" Slot.Fill="0.21" MinWidth="300" MaxWidth="380" Appear="SlideLeft">
-                <TabView Name="right.tabs" Class="tabs" Slot.Fill="1" OnChanged="wiki.view">
-                    <ScrollBox Slot.Title="Run">
+            <VBox Name="right.sidebar" Class="surface" Slot.Fill="0.21" MinWidth="300" MaxWidth="380" Appear="SlideLeft" Visibility="Collapsed">
+                <HBox Slot.Padding="16,16,12,10" Spacing="10">
+                    <VBox Slot.Fill="1" Spacing="4" Slot.VAlign="Center">
+                        <Label Name="context.title" Text="Activity" TextSize="17"/>
+                        <Label Name="context.subtitle" Text="Live agent work and run details" Class="muted" TextSize="11" Wrap="true"/>
+                    </VBox>
+                    <Button Name="context.alerts" Text="Alerts" Style="Flat" OnClicked="alerts.view" Tooltip="Open notification history" Slot.VAlign="Center"/>
+                    <Button Text="Close" Style="Flat" OnClicked="context.close" Tooltip="Close this panel" Slot.VAlign="Center"/>
+                </HBox>
+                <Switcher Name="right.tabs" Slot.Fill="1">
+                    <ScrollBox>
                         <VBox Slot.Padding="12,14" Spacing="12">
                             <Border Class="activity" Padding="14" BorderWidth="1" CornerRadius="14">
                                 <VBox Spacing="11">
@@ -543,9 +631,9 @@
                             </Border>
                             <Border Name="proposal.bar" Class="proposal" Padding="14" Visibility="Collapsed" BorderWidth="1" Appear="Fade">
                                 <VBox Spacing="9">
-                                    <Label Text="Wiki review ready" Class="section proposal-title"/>
+                                    <Label Text="Knowledge review ready" Class="section proposal-title"/>
                                     <Label Name="proposal.summary" Wrap="true"/>
-                                    <Button Text="Review proposed edits" Style="Primary" OnClicked="proposal.open"/>
+                                    <Button Text="Review changes" Style="Primary" OnClicked="proposal.open"/>
                                 </VBox>
                             </Border>
                         </VBox>
@@ -561,7 +649,7 @@
                             </HBox>
                         </Border>
                         <TabView Name="wiki.tabs" Class="tabs" Slot.Fill="1">
-                            <TextEditor Name="note.editor" Slot.Title="Edit" Markdown="true" Wrap="true" Metric.BorderWidth="0" Metric.CornerRadius="0" Placeholder="Select or create a workspace note"/>
+                            <TextEditor Name="note.editor" Slot.Title="Edit" Markdown="true" Wrap="true" Metric.BorderWidth="0" Metric.CornerRadius="10" Placeholder="Select or create a workspace note"/>
                             <ScrollBox Slot.Title="Preview">
                                 <Label Name="note.preview" Markdown="true" Wrap="true" Slot.Padding="18,16"/>
                             </ScrollBox>
@@ -573,7 +661,10 @@
                     <VBox Slot.Title="Graph">
                         <Border Class="section-header wiki-chrome" Padding="16,12" BorderWidth="1">
                             <VBox Spacing="9">
-                                <TextInput Name="knowledge.search" Placeholder="Search entities and relations…" OnCommitted="knowledge.search"/>
+                                <HBox Spacing="8">
+                                    <TextInput Name="knowledge.search" Placeholder="Search knowledge…" OnCommitted="knowledge.search" Slot.Fill="1"/>
+                                    <Button Text="Universe" Style="Flat" OnClicked="memory.open" Tooltip="Visualize reviewed memory" Slot.VAlign="Center"/>
+                                </HBox>
                                 <Label Name="knowledge.stats" Text="0 entities · 0 relations" Class="muted" TextSize="11" Wrap="true"/>
                             </VBox>
                         </Border>
@@ -587,13 +678,7 @@
                         </HBox>
                     </VBox>
                     <VBox Slot.Title="Log" Slot.Padding="12" Spacing="10">
-                        <HBox Spacing="10">
-                            <VBox Slot.Fill="1" Spacing="3">
-                                <Label Text="NOTIFICATIONS" Class="section" Font="monospace"/>
-                                <Label Text="History stays here even when OS alerts are muted." Class="muted" TextSize="11" Wrap="true"/>
-                            </VBox>
-                            <Checkbox Name="alerts.dnd" Text="Do not disturb" Style="Switch" OnChanged="alerts.dnd" Slot.VAlign="Center"/>
-                        </HBox>
+                        <Label Text="Run and workflow events appear here without desktop pop-ups." Class="muted" TextSize="11" Wrap="true"/>
                         <HBox Spacing="8">
                             <Button Name="alerts.open" Text="Open" Style="Primary" OnClicked="alerts.open" Enabled="false" Slot.Fill="1"/>
                             <Button Name="alerts.clear" Text="Clear" Style="Flat" OnClicked="alerts.clear" Slot.Fill="1"/>
@@ -649,7 +734,7 @@
                             </HBox>
                         </VBox>
                     </ScrollBox>
-                </TabView>
+                </Switcher>
             </VBox>
         </Splitter>
 
@@ -726,7 +811,7 @@
                 <Button Text="Close" Style="Flat" OnClicked="recall.close" Slot.VAlign="Center"/>
             </HBox>
             <TextInput Name="recall.search" Placeholder="Search saved prompts…" OnChanged="recall.changed" AccessibleName="Search saved prompts"/>
-            <ListView Name="recall.results" Height="300" OnActivated="recall.use" Metric.BorderWidth="0" Metric.CornerRadius="0" AccessibleName="Saved prompt recommendations"/>
+            <ListView Name="recall.results" Height="300" OnActivated="recall.use" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Saved prompt recommendations"/>
             <HBox Spacing="8">
                 <Button Name="recall.pin" Text="Pin" Style="Flat" OnClicked="recall.pin" Enabled="false"/>
                 <Button Name="recall.erase" Text="Forget" Style="Flat" OnClicked="recall.erase" Enabled="false"/>
@@ -743,7 +828,7 @@
                 <Button Text="Close" Style="Flat" OnClicked="palette.close" Slot.VAlign="Center"/>
             </HBox>
             <TextInput Name="palette.search" Placeholder="Type a command…" AccessibleName="Command and workspace search"/>
-            <ListView Name="palette.results" Height="360" OnActivated="palette.open" Metric.BorderWidth="0" Metric.CornerRadius="0" AccessibleName="Search results"/>
+            <ListView Name="palette.results" Height="360" OnActivated="palette.open" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Search results"/>
             <Label Name="palette.status" Class="muted" TextSize="11" Wrap="true"/>
         </VBox>
     </Border>

@@ -11,6 +11,7 @@
 #include "recovery.hpp"
 #include "splash.hpp"
 #include "theme_gallery.hpp"
+#include "tesseract.hpp"
 #include "threads.hpp"
 #include "verification.hpp"
 #include "workspace.hpp"
@@ -528,6 +529,13 @@ void recovery_tests() {
     const auto root = std::filesystem::temp_directory_path() / "raven-ide-recovery-tests";
     std::filesystem::remove_all(root);
     raven::RecoveryStore store(root);
+    const std::string png("\x89PNG\r\n\x1a\n", 8);
+    expect(!raven::is_valid_utf8(png) && raven::is_valid_utf8("Stellar · draft") &&
+           !raven::is_valid_utf8(std::string("\xC0\xAF", 2)), "UTF-8 validation accepted binary or rejected text");
+    store.set_draft(png);
+    raven::RecoveryStore sanitized(root);
+    expect(!sanitized.draft().empty() && raven::is_valid_utf8(sanitized.draft()),
+           "recovery did not sanitize a binary clipboard draft");
     store.set_draft("unfinished prompt");
     store.set_editor("code", root / "src" / "main.cpp", "recovered edit", "saved version");
     raven::RecoveryStore loaded(root);
@@ -666,6 +674,14 @@ void parser_tests() {
     expect(raven::parse_diagnostics(acp_raw[0].text).size() == 1, "real ACP output did not produce a diagnostic");
 }
 
+void image_attachment_tests() {
+    expect(raven::base64_encode("") == "", "empty image encoding failed");
+    expect(raven::base64_encode("f") == "Zg==", "one-byte image encoding failed");
+    expect(raven::base64_encode("fo") == "Zm8=", "two-byte image encoding failed");
+    expect(raven::base64_encode("foo") == "Zm9v", "three-byte image encoding failed");
+    expect(raven::base64_encode(std::string("\x89PNG\r\n\x1a\n", 8)) == "iVBORw0KGgo=", "PNG signature encoding failed");
+}
+
 void notification_tests() {
     const auto root = std::filesystem::temp_directory_path() / "raven-ide-notification-tests";
     std::filesystem::remove_all(root);
@@ -724,24 +740,31 @@ void profile_tests() {
     store.data.kimi_model = "kimi-code/kimi-for-coding";
     store.data.kimi_effort = "high";
     store.data.left_sidebar = false;
+    store.data.right_sidebar = true;
     store.data.vector_recall = false;
     store.data.watch_checks = true;
-    store.data.do_not_disturb = true;
     store.data.opening_sound = false;
-    store.data.notification_mutes["verification"] = true;
     store.data.shortcuts["memory.open"] = "Ctrl+Alt+M";
     store.save();
     raven::WorkspaceProfileStore reloaded(root);
     expect(reloaded.data.interface_zoom == 1.35f && reloaded.data.editor_zoom == 1.2f && reloaded.data.theme == 16,
            "appearance profile did not survive reload");
     expect(reloaded.data.harness == 1 && reloaded.data.run_mode == 2 && !reloaded.data.left_sidebar &&
-           !reloaded.data.vector_recall && reloaded.data.watch_checks && reloaded.data.do_not_disturb && !reloaded.data.opening_sound,
-           "workspace behavior profile did not survive reload");
-    expect(reloaded.data.notification_mutes.at("verification") && reloaded.data.shortcuts.at("memory.open") == "Ctrl+Alt+M",
-           "notification or shortcut profile did not survive reload");
+           reloaded.data.right_sidebar && !reloaded.data.vector_recall && reloaded.data.watch_checks &&
+           !reloaded.data.opening_sound, "workspace behavior profile did not survive reload");
+    expect(reloaded.data.shortcuts.at("memory.open") == "Ctrl+Alt+M", "shortcut profile did not survive reload");
     expect(reloaded.data.claude_model == "opus" && reloaded.data.claude_effort == "xhigh" &&
            reloaded.data.kimi_model == "kimi-code/kimi-for-coding" && reloaded.data.kimi_effort == "high",
            "model or effort profile did not survive reload");
+    {
+        std::ofstream legacy(root / ".stellar" / "profile.json", std::ios::trunc);
+        legacy << "{\"version\":1,\"right_sidebar\":true}\n";
+    }
+    raven::WorkspaceProfileStore migrated(root);
+    expect(!migrated.data.right_sidebar, "legacy profile did not migrate to a folded context panel");
+    migrated.save();
+    expect(raven::WorkspaceProfileStore(root).data.right_sidebar == false,
+           "migrated context preference did not survive reload");
     std::filesystem::remove_all(root);
 }
 
@@ -790,6 +813,171 @@ void opening_audio_tests() {
     std::filesystem::remove_all(root);
 }
 
+void tesseract_tests() {
+    const auto root = std::filesystem::temp_directory_path() / "raven-ide-tesseract-tests";
+    std::filesystem::remove_all(root);
+    const auto file = root / ".stellar" / "tesseract.json";
+    raven::write_file(file, R"({
+      "version":"stellar-tesseract/1",
+      "variables":{"accent":"#65C18C","ink":"#131714"},
+      "children":[
+        {"type":"frame","id":"login","name":"Login","x":0,"y":0,"width":420,"height":280,
+         "layout":"vertical","padding":24,"gap":12,"fill":"#FFFFFF","children":[
+           {"id":"title","content":"Welcome back","width":160,"fontSize":28,"fontWeight":"bold","fill":"$ink"},
+           {"type":"frame","id":"actions","width":"fill_container","height":44,"layout":"horizontal","gap":8,"children":[
+             {"type":"rect","id":"primary","width":"fill_container","height":44,"fill":"$accent","cornerRadius":8},
+             {"type":"text","id":"hint","content":"Continue","fill":"$ink"}
+           ]}
+         ]},
+        {"type":"frame","id":"next","name":"Next","width":300,"height":200,"children":[]}
+      ]
+    })");
+    raven::TesseractCanvas canvas;
+    canvas.open(file);
+    expect(canvas.roots().size() == 2 && canvas.error().empty(), "valid Tesseract document did not load");
+    const auto* login = canvas.find("login");
+    const auto* next = canvas.find("next");
+    expect(login && next && login->bounds.width == 420 && login->bounds.height == 280, "root frame dimensions are wrong");
+    expect(next->bounds.x >= login->bounds.x + login->bounds.width + 40, "automatic root placement overlaps another frame");
+    expect(login->children.size() == 2 && login->children[0].bounds.y == 24, "vertical frame padding was not applied");
+    expect(login->children[1].children[0].bounds.width > 0 && login->children[1].children[0].bounds.height == 44,
+           "fill_container child did not receive its allocated size");
+
+    canvas.select("login");
+    expect(canvas.selection_context().find("login") != std::string::npos, "selected frame is not shared with the agent");
+    expect(canvas.agent_guide().find(".stellar/tesseract.json") != std::string::npos &&
+           canvas.agent_guide().find("USER TASK") == std::string::npos, "agent guide does not describe the shared document");
+    expect(canvas.agent_guide().find("your next tool call must Write a complete first version") != std::string::npos,
+           "agent guide does not prioritize an immediate first render");
+    const auto frozen = canvas.selection_context();
+    canvas.select("next");
+    const auto frozen_guide = canvas.agent_guide(frozen);
+    expect(frozen_guide.find("root frame 'login'") != std::string::npos &&
+           frozen_guide.find("root frame 'next'") == std::string::npos, "queued selection context changed with the active selection");
+
+    canvas.clear_selection();
+    REvent click{};
+    click.button = R_MOUSE_LEFT;
+    click.local_x = click.local_y = 100.0f;
+    click.type = R_EVENT_MOUSE_DOWN;
+    canvas.event(R_INVALID_ID, &click);
+    click.type = R_EVENT_MOUSE_UP;
+    canvas.event(R_INVALID_ID, &click);
+    expect(canvas.selected_id() == "login", "canvas hit-testing did not select the clicked root frame");
+
+    REvent key{};
+    key.type = R_EVENT_KEY_DOWN;
+    key.key = R_KEY_ENTER;
+    canvas.event(R_INVALID_ID, &key);
+    expect(canvas.selected_id() == "title", "Enter did not select the first nested element");
+    key.modifiers = R_MOD_SHIFT;
+    canvas.event(R_INVALID_ID, &key);
+    expect(canvas.selected_id() == "login", "Shift+Enter did not select the parent frame");
+
+    click = REvent{};
+    click.button = R_MOUSE_LEFT;
+    click.modifiers = R_MOD_CTRL;
+    click.clicks = 1;
+    click.local_x = click.local_y = 70.0f;
+    click.type = R_EVENT_MOUSE_DOWN;
+    canvas.event(R_INVALID_ID, &click);
+    click.type = R_EVENT_MOUSE_UP;
+    canvas.event(R_INVALID_ID, &click);
+    const auto title_bounds = canvas.screen_bounds("title");
+    expect(canvas.selected_id() == "title", ("Ctrl+click selected '" + canvas.selected_id() + "'; title bounds " +
+        std::to_string(title_bounds.x) + "," + std::to_string(title_bounds.y) + " " +
+        std::to_string(title_bounds.width) + "x" + std::to_string(title_bounds.height)).c_str());
+    expect(canvas.selection_context().find("inside root frame 'login'") != std::string::npos,
+           "nested selection context does not identify its root frame");
+    click.clicks = 2;
+    click.type = R_EVENT_MOUSE_DOWN;
+    canvas.event(R_INVALID_ID, &click);
+    expect(canvas.consume_text_edit_request(), "double-click did not request inline text editing");
+    expect(!canvas.consume_text_edit_request(), "text edit request was consumed more than once");
+    expect(canvas.update_selected_text("Welcome, Commander"), "inline text edit did not save");
+    auto document = nlohmann::json::parse(raven::read_file(file));
+    expect(document["children"][0]["children"][0]["content"] == "Welcome, Commander" &&
+           document["children"][0]["children"][0]["fill"] == "$ink",
+           "inline text edit damaged unrelated node properties");
+
+    canvas.select("login");
+    click = REvent{};
+    click.button = R_MOUSE_LEFT;
+    click.clicks = 1;
+    click.local_x = 397.0f;
+    click.local_y = 278.0f;
+    click.type = R_EVENT_MOUSE_DOWN;
+    canvas.event(R_INVALID_ID, &click);
+    click.local_x = 437.0f;
+    click.local_y = 318.0f;
+    click.type = R_EVENT_MOUSE_MOVE;
+    canvas.event(R_INVALID_ID, &click);
+    click.type = R_EVENT_MOUSE_UP;
+    canvas.event(R_INVALID_ID, &click);
+    document = nlohmann::json::parse(raven::read_file(file));
+    expect(document["children"][0]["width"] == 467 && document["children"][0]["height"] == 327,
+           "bottom-right resize did not persist fixed frame dimensions");
+
+    click = REvent{};
+    click.button = R_MOUSE_LEFT;
+    click.clicks = 1;
+    click.local_x = click.local_y = 100.0f;
+    click.type = R_EVENT_MOUSE_DOWN;
+    canvas.event(R_INVALID_ID, &click);
+    click.local_x = 120.0f;
+    click.local_y = 130.0f;
+    click.type = R_EVENT_MOUSE_MOVE;
+    canvas.event(R_INVALID_ID, &click);
+    click.type = R_EVENT_MOUSE_UP;
+    canvas.event(R_INVALID_ID, &click);
+    document = nlohmann::json::parse(raven::read_file(file));
+    expect(document["children"][0]["x"] == 24 && document["children"][0]["y"] == 35,
+           "frame drag did not persist pixel-snapped coordinates");
+
+    click = REvent{};
+    click.button = R_MOUSE_LEFT;
+    click.modifiers = R_MOD_CTRL;
+    click.clicks = 1;
+    click.local_x = 90.0f;
+    click.local_y = 100.0f;
+    click.type = R_EVENT_MOUSE_DOWN;
+    canvas.event(R_INVALID_ID, &click);
+    click.modifiers = 0;
+    click.local_x = 120.0f;
+    click.local_y = 120.0f;
+    click.type = R_EVENT_MOUSE_MOVE;
+    canvas.event(R_INVALID_ID, &click);
+    click.type = R_EVENT_MOUSE_UP;
+    canvas.event(R_INVALID_ID, &click);
+    document = nlohmann::json::parse(raven::read_file(file));
+    expect(canvas.selected_id() == "title" && document["children"][0]["children"][0]["x"] == 35 &&
+           document["children"][0]["children"][0]["y"] == 24,
+           "nested drag did not persist absolute child coordinates");
+    expect(canvas.find("title")->bounds.x == canvas.find("login")->bounds.x + 59.0f,
+           "absolute child was still positioned by the automatic layout");
+
+    raven::write_file(file, "{\"children\":[");
+    expect(canvas.reload_if_changed(), "modified Tesseract document was not observed");
+    expect(canvas.roots().size() == 2 && !canvas.error().empty(), "invalid JSON destroyed the last valid design");
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(400));
+    raven::write_file(file, R"({"version":"stellar-tesseract/1","children":[
+      {"type":"frame","id":"replacement","name":"Replacement","width":320,"height":180,"children":[]}
+    ]})");
+    expect(canvas.reload_if_changed(), "corrected Tesseract document was not reloaded");
+    expect(canvas.roots().size() == 1 && canvas.find("replacement") && canvas.error().empty(),
+           "valid correction did not replace the document");
+    expect(canvas.selected_id().empty(), "selection survived deletion of its frame");
+
+    raven::TesseractCanvas empty_canvas;
+    empty_canvas.open(root / "empty.json");
+    expect(empty_canvas.empty(), "new Tesseract document is not empty");
+    expect(empty_canvas.advance(1.0, false), "empty-state animation did not advance");
+    expect(!empty_canvas.advance(1.0, true), "reduced motion did not stop the empty-state animation");
+    expect(!canvas.advance(1.0, false), "nonempty canvas kept the empty-state animation active");
+    std::filesystem::remove_all(root);
+}
+
 void splash_tests() {
     raven::SplashScreen splash;
     splash.begin();
@@ -827,9 +1015,11 @@ int main() {
         recall_tests();
         profile_tests();
         opening_audio_tests();
+        tesseract_tests();
         splash_tests();
         thread_tests();
         parser_tests();
+        image_attachment_tests();
         std::cout << "All core tests passed\n";
         return 0;
     } catch (const std::exception& error) {

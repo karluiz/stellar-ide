@@ -47,6 +47,14 @@ int main() {
                << "echo '{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"done\",\"total_cost_usd\":0.01,\"usage\":{\"input_tokens\":5,\"output_tokens\":7}}'\n";
     }
     std::filesystem::permissions(fake, std::filesystem::perms::owner_exec | std::filesystem::perms::owner_read | std::filesystem::perms::owner_write);
+    const auto fake_kimi = bin / "kimi";
+    {
+        std::ofstream script(fake_kimi);
+        script << "#!/bin/bash\n"
+               << "echo 'simulated Kimi startup diagnostic' >&2\n"
+               << "exit 2\n";
+    }
+    std::filesystem::permissions(fake_kimi, std::filesystem::perms::owner_exec | std::filesystem::perms::owner_read | std::filesystem::perms::owner_write);
     const auto* previous_path = std::getenv("PATH");
     const std::string path = bin.string() + ":" + (previous_path ? previous_path : "");
     setenv("PATH", path.c_str(), 1);
@@ -61,7 +69,10 @@ int main() {
         raven::EndurancePreferences preferences;
         raven::EnduranceController controller(workspace, checkpoints, missions, {}, preferences);
         int successes = 0;
-        controller.set_callbacks([] {}, [](const auto&, const auto&, bool, const auto&) {}, [&](const auto&) { ++successes; });
+        int failure_notifications = 0;
+        controller.set_callbacks([] {}, [&](const auto& title, const auto&, bool, const auto&) {
+            if (title == "Endurance failed") ++failure_notifications;
+        }, [&](const auto&) { ++successes; });
         controller.load();
         auto workflow = raven::endurance_default_workflow();
         workflow.path = "mission.yaml";
@@ -95,7 +106,18 @@ int main() {
         expect(controller.start(retry_workflow, "Test retry budget", false, error), error.c_str());
         expect(wait_status(controller, {}, "failed") == "failed", "retry budget did not end in failure");
         expect(raven::endurance_result(*controller.active_run(), "review").attempt == 2, "retry budget was not honored");
+        const auto notifications_at_failure = failure_notifications;
+        for (int tick = 0; tick < 20; ++tick) controller.tick({});
+        expect(failure_notifications == notifications_at_failure, "failed run emitted duplicate completion notifications");
         unsetenv("RAVEN_TEST_FAIL_REVIEW");
+
+        auto acp_workflow = workflow;
+        acp_workflow.default_harness = "kimi";
+        acp_workflow.steps.resize(1);
+        expect(controller.start(acp_workflow, "Test ACP diagnostics", false, error), error.c_str());
+        expect(wait_status(controller, {}, "failed") == "failed", "ACP startup failure did not propagate");
+        expect(controller.active_run()->error.find("simulated Kimi startup diagnostic") != std::string::npos,
+               "ACP process diagnostics were discarded");
 
         workflow.recurrence.enabled = true;
         workflow.recurrence.missed_runs = "skip";

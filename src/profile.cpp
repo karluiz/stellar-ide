@@ -47,6 +47,7 @@ void WorkspaceProfileStore::load() {
     if (!std::filesystem::exists(path_)) return;
     const auto root = json::parse(read_text(path_));
     if (!root.is_object()) throw std::runtime_error("Invalid workspace profile");
+    const int version = root.value("version", 1);
     data.interface_zoom = std::clamp(root.value("interface_zoom", data.interface_zoom), 0.5f, 2.0f);
     data.editor_zoom = std::clamp(root.value("editor_zoom", data.editor_zoom), 0.5f, 2.5f);
     data.theme = root.value("theme", data.theme);
@@ -59,17 +60,10 @@ void WorkspaceProfileStore::load() {
     data.kimi_model = root.value("kimi_model", data.kimi_model);
     data.kimi_effort = root.value("kimi_effort", data.kimi_effort);
     data.left_sidebar = root.value("left_sidebar", data.left_sidebar);
-    data.right_sidebar = root.value("right_sidebar", data.right_sidebar);
+    if (version >= 2) data.right_sidebar = root.value("right_sidebar", data.right_sidebar);
     data.vector_recall = root.value("vector_recall", data.vector_recall);
     data.watch_checks = root.value("watch_checks", data.watch_checks);
-    data.do_not_disturb = root.value("do_not_disturb", data.do_not_disturb);
     data.opening_sound = root.value("opening_sound", data.opening_sound);
-    if (root.contains("notification_mutes")) {
-        if (!root["notification_mutes"].is_object()) throw std::runtime_error("Invalid notification preferences");
-        for (const auto& [kind, muted] : root["notification_mutes"].items()) {
-            if (muted.is_boolean()) data.notification_mutes[kind] = muted.get<bool>();
-        }
-    }
     if (root.contains("shortcuts")) {
         if (!root["shortcuts"].is_object()) throw std::runtime_error("Invalid custom shortcuts");
         for (const auto& [action, combination] : root["shortcuts"].items()) {
@@ -84,14 +78,13 @@ void WorkspaceProfileStore::save() const {
     json shortcuts = json::object();
     for (const auto& [action, combination] : data.shortcuts) shortcuts[action] = combination;
     const json root = {
-        {"version", 1}, {"interface_zoom", data.interface_zoom}, {"editor_zoom", data.editor_zoom},
+        {"version", 2}, {"interface_zoom", data.interface_zoom}, {"editor_zoom", data.editor_zoom},
         {"theme", data.theme}, {"harness", data.harness}, {"run_mode", data.run_mode},
         {"claude_model", data.claude_model}, {"claude_effort", data.claude_effort},
         {"kimi_model", data.kimi_model}, {"kimi_effort", data.kimi_effort},
         {"left_sidebar", data.left_sidebar}, {"right_sidebar", data.right_sidebar},
         {"vector_recall", data.vector_recall}, {"watch_checks", data.watch_checks},
-        {"do_not_disturb", data.do_not_disturb}, {"opening_sound", data.opening_sound}, {"notification_mutes", data.notification_mutes},
-        {"shortcuts", shortcuts}
+        {"opening_sound", data.opening_sound}, {"shortcuts", shortcuts}
     };
     write_text(path_, root.dump(2) + "\n");
 }

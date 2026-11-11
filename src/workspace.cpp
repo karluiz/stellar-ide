@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <fstream>
 #include <set>
 #include <sstream>
@@ -416,6 +417,44 @@ std::string Workspace::diff(const std::string& before, const std::string& after)
     while (i < a.size()) output += "- " + a[i++] + "\n";
     while (j < b.size()) output += "+ " + b[j++] + "\n";
     return output;
+}
+
+bool is_valid_utf8(std::string_view text) {
+    size_t i = 0;
+    while (i < text.size()) {
+        const auto first = static_cast<unsigned char>(text[i]);
+        if (first <= 0x7F) {
+            ++i;
+            continue;
+        }
+        size_t length = 0;
+        std::uint32_t codepoint = 0;
+        std::uint32_t minimum = 0;
+        if (first >= 0xC2 && first <= 0xDF) {
+            length = 2;
+            codepoint = first & 0x1F;
+            minimum = 0x80;
+        } else if (first >= 0xE0 && first <= 0xEF) {
+            length = 3;
+            codepoint = first & 0x0F;
+            minimum = 0x800;
+        } else if (first >= 0xF0 && first <= 0xF4) {
+            length = 4;
+            codepoint = first & 0x07;
+            minimum = 0x10000;
+        } else {
+            return false;
+        }
+        if (i + length > text.size()) return false;
+        for (size_t j = 1; j < length; ++j) {
+            const auto next = static_cast<unsigned char>(text[i + j]);
+            if ((next & 0xC0) != 0x80) return false;
+            codepoint = (codepoint << 6) | (next & 0x3F);
+        }
+        if (codepoint < minimum || codepoint > 0x10FFFF || (codepoint >= 0xD800 && codepoint <= 0xDFFF)) return false;
+        i += length;
+    }
+    return true;
 }
 
 } // namespace raven

@@ -9,6 +9,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace raven {
@@ -72,6 +73,7 @@ struct RunOptions {
     std::filesystem::path agent_file;
     std::filesystem::path knowledge_binary;
     std::vector<std::filesystem::path> resource_links;
+    std::vector<std::filesystem::path> image_links;
     Harness harness = Harness::ClaudeCode;
     bool read_only = false;
     bool wiki_schema = false;
@@ -98,5 +100,6 @@ private:
 
 std::string wiki_schema();
 std::string claude_agents_json(const std::vector<AgentDefinition>& agents);
+std::string base64_encode(std::string_view data);
 
 } // namespace raven

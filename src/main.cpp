@@ -43,6 +43,7 @@ int main(int argc, char** argv) {
     bool watch = false;
     bool endurance = false;
     bool memory = false;
+    bool tesseract = false;
     bool demo = false;
     for (int i = 1; i < argc; ++i) {
         const std::string argument = argv[i];
@@ -94,9 +95,10 @@ int main(int argc, char** argv) {
         else if (argument == "--watch") watch = true;
         else if (argument == "--endurance") endurance = true;
         else if (argument == "--memory") memory = true;
+        else if (argument == "--tesseract") tesseract = true;
         else if (argument == "--demo") demo = true;
         else if (argument == "--help") {
-            std::cout << "raven-ide [--workspace PATH] [--harness claude|kimi] [--mode build|ask|review] [--watch] [--endurance] [--memory] [--theme earth|earth-light|earth-glass|miller|miller-light|miller-glass|mann|mann-dark|mann-glass|edmunds|edmunds-dark|edmunds-glass|gargantua|gargantua-light|gargantua-glass] [--prompt TEXT] [--workflow-task TEXT] [--open-file PATH] [--demo]\n";
+            std::cout << "raven-ide [--workspace PATH] [--harness claude|kimi] [--mode build|ask|review] [--watch] [--endurance] [--memory] [--tesseract] [--theme earth|earth-light|earth-glass|miller|miller-light|miller-glass|mann|mann-dark|mann-glass|edmunds|edmunds-dark|edmunds-glass|gargantua|gargantua-light|gargantua-glass] [--prompt TEXT] [--workflow-task TEXT] [--open-file PATH] [--demo]\n";
             return 0;
         } else if (!argument.empty() && argument[0] != '-') {
             workspace = argument;
@@ -163,8 +165,12 @@ int main(int argc, char** argv) {
             if (!workflow_task.empty()) app.start_endurance_with_task(workflow_task);
             else if (endurance && prompt.empty()) app.open_endurance();
             else if (memory && prompt.empty()) app.open_memory();
-            if (!prompt.empty()) app.start_with_prompt(prompt);
-            else if (workflow_task.empty() && !memory) app.play_opening_score();
+            else if (tesseract && prompt.empty()) app.open_tesseract();
+            if (!prompt.empty()) {
+                if (tesseract) app.start_tesseract_with_prompt(prompt);
+                else app.start_with_prompt(prompt);
+            }
+            else if (workflow_task.empty() && !memory && !tesseract) app.play_opening_score();
             const char* frames = std::getenv("RAVEN_IDE_FRAMES");
             if (frames) {
                 const int count = std::atoi(frames);
