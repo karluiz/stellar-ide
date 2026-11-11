@@ -1097,7 +1097,7 @@ void App::erase_recall() {
     if (selected < 0 || selected >= static_cast<int>(recall_rows_.size())) return;
     const auto* prompt = recall_store_.find(recall_rows_[selected]);
     if (!prompt) return;
-    if (Rmessage_box(window_, "Forget saved prompt", "Remove this prompt from Recall? The conversation history will not change.", R_MESSAGE_YES_NO) != R_MESSAGE_RESULT_YES) return;
+    if (!confirm("Forget saved prompt", "Remove this prompt from Recall? The conversation history will not change.", "Forget prompt", true)) return;
     recall_store_.erase(prompt->id);
     refresh_recall();
     set_status("Prompt removed from Recall");
@@ -3463,6 +3463,47 @@ void App::fit_tesseract_composer() {
     Rwindow_request_redraw(window_);
 }
 
+// A confirmation whose buttons name the action. Raven's message box only offers Yes/No with Yes as
+// the accent button, even for deletions. Destructive actions use the theme's danger colour and
+// start with focus on Cancel, so Enter alone never destroys anything; Escape always cancels.
+bool App::confirm(const std::string& title, const std::string& text, const std::string& action, bool destructive) {
+    const auto box = Rwidget_create(R_WIDGET_VBOX);
+    Rpanel_set_spacing(box, 12);
+    Rwidget_set_size(box, 400.0f, -1.0f);
+    const auto heading = Rwidget_add_child(box, Rlabel_create(title.c_str()));
+    Rlabel_set_text_size(heading, 17);
+    const auto body = Rwidget_add_child(box, Rlabel_create(text.c_str()));
+    Rlabel_set_wrap(body, R_TRUE);
+    Rwidget_set_opacity(body, 0.82f);
+    const auto row = Rwidget_add_child(box, Rwidget_create(R_WIDGET_HBOX));
+    Rpanel_set_spacing(row, 8);
+    Rslot_set_halign(row, R_HALIGN_RIGHT);
+    Rslot_set_padding(row, 0, 6, 0, 0);
+    const auto cancel = Rwidget_add_child(row, Rbutton_create("Cancel"));
+    const auto proceed = Rwidget_add_child(row, Rbutton_create(action.c_str()));
+    Rwidget_set_min_size(cancel, 84.0f, -1.0f);
+    Rwidget_set_min_size(proceed, 84.0f, -1.0f);
+    Rbutton_set_style(cancel, R_BUTTON_FLAT);
+    if (destructive) {
+        float danger[4];
+        Rwidget_get_color(Rwindow_get_content(window_), R_COLOR_DANGER, &danger[0], &danger[1], &danger[2], &danger[3]);
+        Rbutton_set_style(proceed, R_BUTTON_DEFAULT);
+        Rwidget_set_color(proceed, R_COLOR_TEXT, danger[0], danger[1], danger[2], 1.0f);
+        Rwidget_set_color(proceed, R_COLOR_CONTROL_BORDER, danger[0], danger[1], danger[2], 0.6f);
+    } else {
+        Rbutton_set_style(proceed, R_BUTTON_PRIMARY);
+    }
+    Rbutton_set_clicked_callback(cancel, [](Rid button, void*) { Rdialog_close(button, 0); }, nullptr);
+    Rbutton_set_clicked_callback(proceed, [](Rid button, void*) { Rdialog_close(button, 1); }, nullptr);
+    // Keys reach the dialog's root: Enter confirms a safe action and cancels a destructive one.
+    Rwidget_set_event_callback(box, [](Rid widget, const REvent* event, void* user_data) -> int {
+        if (event->type != R_EVENT_KEY_DOWN || (event->key != R_KEY_ENTER && event->key != R_KEY_KP_ENTER)) return R_FALSE;
+        Rdialog_close(widget, user_data ? 0 : 1);
+        return R_TRUE;
+    }, destructive ? reinterpret_cast<void*>(1) : nullptr);
+    return Rdialog_run(window_, box) == 1;
+}
+
 // Routes a trackpad pinch to the canvas on screen: Tesseract and Memory Universe zoom around the
 // fingers, the workflow graph around its centre.
 void App::apply_pinch() {
@@ -3881,7 +3922,7 @@ void App::restore_checkpoint() {
     const auto checkpoint_id = checkpoint->id;
     const auto message = "Restore " + counted(checkpoint->changes.size(), "file") +
         " to the state before this task? Files changed afterward will be left untouched and the restore will be cancelled.";
-    if (Rmessage_box(window_, "Restore task checkpoint", message.c_str(), R_MESSAGE_YES_NO) != R_MESSAGE_RESULT_YES) return;
+    if (!confirm("Restore task checkpoint", message, "Restore files", true)) return;
     try {
         const auto affected_editor = !current_code_path_.empty() && std::any_of(checkpoint->changes.begin(), checkpoint->changes.end(), [&](const auto& change) {
             return workspace_.root() / change.path == current_code_path_;
@@ -3931,7 +3972,7 @@ void App::restore_checkpoint_hunk() {
     }
     if (!can_discard_code() || !flush_autosave()) return;
     const auto hunk_id = checkpoint_hunk_ids_[index];
-    if (Rmessage_box(window_, "Restore selected hunk", "Restore only this hunk? Its file must still match the post-run state.", R_MESSAGE_YES_NO) != R_MESSAGE_RESULT_YES) return;
+    if (!confirm("Restore selected hunk", "Restore only this hunk? Its file must still match the post-run state.", "Restore hunk", true)) return;
     try {
         checkpoint_store_.restore_hunks(selected_checkpoint_id_, {hunk_id});
         const auto path = hunk_id.substr(0, hunk_id.rfind('#'));
@@ -4144,7 +4185,7 @@ void App::apply_mission() {
     }
     const auto message = "Apply the complete diff for “" + mission.title + "” to " + mission.repository.string() +
         "? Conflicting current changes will stop the apply without modifying the workspace.";
-    if (Rmessage_box(window_, "Apply mission", message.c_str(), R_MESSAGE_YES_NO) != R_MESSAGE_RESULT_YES) return;
+    if (!confirm("Apply mission", message, "Apply changes", false)) return;
     try {
         mission_store_.apply(mission.id);
         active_mission_id_.clear();
@@ -4170,7 +4211,7 @@ void App::apply_mission_hunk() {
         return;
     }
     const auto hunk_id = mission_hunk_ids_[index];
-    if (Rmessage_box(window_, "Apply selected hunk", "Apply only this mission hunk to the original workspace? Conflicts will stop the apply.", R_MESSAGE_YES_NO) != R_MESSAGE_RESULT_YES) return;
+    if (!confirm("Apply selected hunk", "Apply only this mission hunk to the original workspace? Conflicts will stop the apply.", "Apply hunk", false)) return;
     try {
         mission_store_.apply_hunks(selected_mission_id_, {hunk_id});
         review_mission(selected_mission_id_);
@@ -4193,7 +4234,7 @@ void App::discard_mission() {
     }
     const auto mission = *selected;
     const auto message = "Permanently discard “" + mission.title + "”, its worktree, and every unapplied change? This cannot be undone.";
-    if (Rmessage_box(window_, "Discard mission", message.c_str(), R_MESSAGE_YES_NO) != R_MESSAGE_RESULT_YES) return;
+    if (!confirm("Discard mission", message, "Discard mission", true)) return;
     try {
         if (active_mission_id_ == mission.id) {
             active_mission_id_.clear();
@@ -4316,8 +4357,7 @@ bool App::flush_autosave() {
 
 bool App::can_discard_code() {
     if (!current_code_modified_ || save_code_file(true)) return true;
-    return Rmessage_box(window_, "Unsaved file changes", "Discard the changes in the current code file?", R_MESSAGE_YES_NO)
-        == R_MESSAGE_RESULT_YES;
+    return confirm("Unsaved file changes", "The current file could not be saved. Discard its unsaved changes?", "Discard changes", true);
 }
 
 void App::file_accepted(Rid browser, const char* path, void* user) {
@@ -4411,7 +4451,7 @@ void App::delete_agent() {
         return;
     }
     const auto message = "Permanently delete .agents/agents/" + filename.string() + "? This cannot be undone.";
-    if (Rmessage_box(window_, "Delete agent", message.c_str(), R_MESSAGE_YES_NO) != R_MESSAGE_RESULT_YES) return;
+    if (!confirm("Delete agent", message, "Delete agent", true)) return;
     try {
         const auto deleted_index = current_agent_;
         workspace_.delete_agent(agent.path);
@@ -4675,7 +4715,7 @@ void App::forget_memory() {
         return;
     }
     const auto message = "Forget “" + memory_id + "” and every relation touching it? This deletes accepted data from wiki/graph.jsonl and cannot be undone.";
-    if (Rmessage_box(window_, "Forget accepted memory", message.c_str(), R_MESSAGE_YES_NO) != R_MESSAGE_RESULT_YES) return;
+    if (!confirm("Forget accepted memory", message, "Forget memory", true)) return;
     try {
         if (!workspace_.knowledge().forget(memory_id)) {
             set_status("Memory record was not found");

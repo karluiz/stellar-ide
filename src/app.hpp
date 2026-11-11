@@ -52,6 +52,7 @@ public:
     void apply_agent_title(const std::string& proposed);
     void sync_accessibility();
     void apply_pinch();
+    bool confirm(const std::string& title, const std::string& text, const std::string& action, bool destructive);
     void fit_tesseract_composer();
     void place_tesseract_text_editor(const TesseractNode& node, bool style);
     void render_proposal();
