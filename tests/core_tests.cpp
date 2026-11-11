@@ -851,6 +851,156 @@ void opening_audio_tests() {
     std::filesystem::remove_all(root);
 }
 
+// Dragging helpers for the canvas, in screen pixels at the default zoom (0.85, pan 40).
+void canvas_drag(raven::TesseractCanvas& canvas, float x0, float y0, float x1, float y1, unsigned move_modifiers = 0) {
+    REvent event{};
+    event.button = R_MOUSE_LEFT;
+    event.clicks = 1;
+    event.local_x = x0;
+    event.local_y = y0;
+    event.type = R_EVENT_MOUSE_DOWN;
+    canvas.event(R_INVALID_ID, &event);
+    event.local_x = x1;
+    event.local_y = y1;
+    event.modifiers = move_modifiers;
+    event.type = R_EVENT_MOUSE_MOVE;
+    canvas.event(R_INVALID_ID, &event);
+    event.type = R_EVENT_MOUSE_UP;
+    canvas.event(R_INVALID_ID, &event);
+}
+
+void tesseract_editing_tests() {
+    const auto root = std::filesystem::temp_directory_path() / "raven-ide-tesseract-editing";
+    std::filesystem::remove_all(root);
+    const auto file = root / "tesseract.json";
+    raven::write_file(file, R"({"version":"stellar-tesseract/1","children":[
+      {"type":"frame","id":"a","name":"A","x":0,"y":0,"width":200,"height":100,"layout":"vertical","children":[
+        {"type":"text","id":"label","content":"Hello world","width":80}
+      ]},
+      {"type":"frame","id":"b","name":"B","x":400,"y":0,"width":100,"height":100,"children":[]}
+    ]})");
+    raven::TesseractCanvas canvas;
+    canvas.open(file);
+    const auto json = [&] { return nlohmann::json::parse(raven::read_file(file)); };
+    // Screen = 40 + world * 0.85. Frame A spans x 40..210, y 40..125.
+
+    canvas.select("a");
+    canvas_drag(canvas, 40.0f, 82.0f, 23.0f, 82.0f);  // left side, 20 world px outward
+    auto doc = json();
+    expect(doc["children"][0]["width"] == 220 && doc["children"][0]["x"] == -20 && doc["children"][0]["height"] == 100,
+           "left-edge resize did not grow leftward while keeping the right side");
+
+    canvas.select("a");
+    const auto a = canvas.screen_bounds("a");
+    canvas_drag(canvas, a.x + a.width * 0.5f, a.y, a.x + a.width * 0.5f, a.y - 17.0f);  // top side, 20 up
+    doc = json();
+    expect(doc["children"][0]["height"] == 120 && doc["children"][0]["y"] == -20 && doc["children"][0]["width"] == 220,
+           "top-edge resize changed the width or did not move the top");
+
+    canvas.select("b");
+    auto b = canvas.screen_bounds("b");
+    canvas_drag(canvas, b.x + b.width, b.y + b.height, b.x + b.width + 85.0f, b.y + b.height + 17.0f, R_MOD_SHIFT);
+    doc = json();
+    expect(doc["children"][1]["width"] == 200 && doc["children"][1]["height"] == 200,
+           "Shift corner resize did not keep the proportions");
+
+    canvas.select("b");
+    b = canvas.screen_bounds("b");
+    canvas_drag(canvas, b.x + b.width, b.y + b.height * 0.5f, b.x + b.width + 8.5f, b.y + b.height * 0.5f, R_MOD_ALT);
+    doc = json();
+    expect(doc["children"][1]["width"] == 220 && doc["children"][1]["x"] == 390,
+           "Alt resize did not grow around the center");
+
+    // Text resizes sideways only and switches to fixed-width wrapping; inside a vertical layout it
+    // keeps its place in the flow.
+    canvas.select("label");
+    const auto label = canvas.screen_bounds("label");
+    canvas_drag(canvas, label.x + label.width, label.y + label.height * 0.5f,
+                label.x + label.width + 17.0f, label.y + label.height * 0.5f);
+    doc = json();
+    const auto& text = doc["children"][0]["children"][0];
+    expect(text["width"] == 100 && text["textGrowth"] == "fixed-width" && !text.contains("x") && !text.contains("height"),
+           "text resize did not set a fixed width in the flow");
+
+    // A root frame dragged near another frame's edge snaps onto it.
+    canvas.select("b");
+    b = canvas.screen_bounds("b");
+    const auto a_now = canvas.screen_bounds("a");
+    canvas_drag(canvas, b.x + 10.0f, b.y + 10.0f, b.x + 10.0f + (a_now.x + a_now.width + 3.0f - b.x), b.y + 10.0f);
+    doc = json();
+    expect(doc["children"][1]["x"] == 200, "a dragged frame did not snap to its neighbour's edge");
+
+    // Arrows nudge the selection, Shift by ten; each nudge is undoable.
+    canvas.select("b");
+    REvent key{};
+    key.type = R_EVENT_KEY_DOWN;
+    key.key = R_KEY_RIGHT;
+    canvas.event(R_INVALID_ID, &key);
+    key.key = R_KEY_DOWN;
+    key.modifiers = R_MOD_SHIFT;
+    canvas.event(R_INVALID_ID, &key);
+    doc = json();
+    expect(doc["children"][1]["x"] == 201 && doc["children"][1]["y"] == 10, "arrow keys did not nudge the selection");
+    expect(canvas.undo() && json()["children"][1]["y"] == 0, "a nudge could not be undone");
+
+    // Ctrl/Cmd+D duplicates with fresh ids and selects the copy.
+    canvas.select("a");
+    key = REvent{};
+    key.type = R_EVENT_KEY_DOWN;
+    key.key = R_KEY_D;
+    key.modifiers = R_MOD_CTRL;
+    canvas.event(R_INVALID_ID, &key);
+    doc = json();
+    expect(doc["children"].size() == 3 && doc["children"][1]["id"] == "a-copy" &&
+           doc["children"][1]["children"][0]["id"] == "label-copy" && canvas.selected_id() == "a-copy",
+           "duplicate did not copy the frame with fresh ids");
+
+    // Duplicate then undo leaves nothing behind and keeps every frame where it was.
+    {
+        const auto before = json();
+        canvas.select("b");
+        REvent dup{};
+        dup.type = R_EVENT_KEY_DOWN;
+        dup.key = R_KEY_D;
+        dup.modifiers = R_MOD_CTRL;
+        canvas.event(R_INVALID_ID, &dup);
+        REvent undo_key{};
+        undo_key.type = R_EVENT_KEY_DOWN;
+        undo_key.key = R_KEY_Z;
+        undo_key.modifiers = R_MOD_CTRL;
+        canvas.event(R_INVALID_ID, &undo_key);
+        const auto after = json();
+        expect(after == before, ("duplicate + undo changed the document: " + after.dump()).c_str());
+        canvas.event(R_INVALID_ID, &dup);
+        const auto again = json();
+        for (std::size_t i = 0; i < before["children"].size(); ++i) {
+            expect(again["children"][i].value("y", 0.0) == before["children"][i].value("y", 0.0),
+                   "duplicating after an undo moved an existing frame");
+        }
+        canvas.undo();
+    }
+
+    // Escape during a drag puts the element back.
+    canvas.select("b");
+    b = canvas.screen_bounds("b");
+    REvent drag{};
+    drag.button = R_MOUSE_LEFT;
+    drag.clicks = 1;
+    drag.local_x = b.x + 20.0f;
+    drag.local_y = b.y + 20.0f;
+    drag.type = R_EVENT_MOUSE_DOWN;
+    canvas.event(R_INVALID_ID, &drag);
+    drag.local_x += 60.0f;
+    drag.type = R_EVENT_MOUSE_MOVE;
+    canvas.event(R_INVALID_ID, &drag);
+    key = REvent{};
+    key.type = R_EVENT_KEY_DOWN;
+    key.key = R_KEY_ESCAPE;
+    canvas.event(R_INVALID_ID, &key);
+    expect(canvas.screen_bounds("b").x == b.x, "Escape did not cancel the drag");
+    std::filesystem::remove_all(root);
+}
+
 void tesseract_tests() {
     const auto root = std::filesystem::temp_directory_path() / "raven-ide-tesseract-tests";
     std::filesystem::remove_all(root);
@@ -979,8 +1129,10 @@ void tesseract_tests() {
     canvas.event(R_INVALID_ID, &click);
     click.local_x = 120.0f;
     click.local_y = 130.0f;
+    click.modifiers = R_MOD_CTRL;  // precise placement: no snapping
     click.type = R_EVENT_MOUSE_MOVE;
     canvas.event(R_INVALID_ID, &click);
+    click.modifiers = 0;
     click.type = R_EVENT_MOUSE_UP;
     canvas.event(R_INVALID_ID, &click);
     document = nlohmann::json::parse(raven::read_file(file));
@@ -996,18 +1148,26 @@ void tesseract_tests() {
     click.type = R_EVENT_MOUSE_DOWN;
     canvas.event(R_INVALID_ID, &click);
     click.modifiers = 0;
-    click.local_x = 120.0f;
-    click.local_y = 120.0f;
+    // Dragging a child of the vertical layout below its sibling reorders it; it stays in the flow.
+    const auto actions = canvas.screen_bounds("actions");
+    click.local_x = actions.x + 20.0f;
+    click.local_y = actions.y + actions.height + 4.0f;
     click.type = R_EVENT_MOUSE_MOVE;
     canvas.event(R_INVALID_ID, &click);
     click.type = R_EVENT_MOUSE_UP;
     canvas.event(R_INVALID_ID, &click);
     document = nlohmann::json::parse(raven::read_file(file));
-    expect(canvas.selected_id() == "title" && document["children"][0]["children"][0]["x"] == 35 &&
-           document["children"][0]["children"][0]["y"] == 24,
-           "nested drag did not persist absolute child coordinates");
-    expect(canvas.find("title")->bounds.x == canvas.find("login")->bounds.x + 59.0f,
-           "absolute child was still positioned by the automatic layout");
+    expect(canvas.selected_id() == "title" && document["children"][0]["children"][1]["id"] == "title" &&
+           !document["children"][0]["children"][1].contains("x"),
+           "dragging a child in an automatic layout did not reorder it");
+    REvent up{};
+    up.type = R_EVENT_KEY_DOWN;
+    up.key = R_KEY_UP;
+    canvas.event(R_INVALID_ID, &up);
+    document = nlohmann::json::parse(raven::read_file(file));
+    expect(document["children"][0]["children"][0]["id"] == "title", "the up arrow did not move the child back in the flow");
+
+    tesseract_editing_tests();
 
     raven::write_file(file, "{\"children\":[");
     expect(canvas.reload_if_changed(), "modified Tesseract document was not observed");

@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <limits>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
@@ -938,21 +939,59 @@ void TesseractCanvas::paint(Rid widget, RPainter* painter, float width, float he
                    active ? accent.b : muted.b, 1.0f);
         paint_node(painter, root_node);
     }
+    // Selection chrome follows the element exactly: a hairline on its bounds, square handles on the
+    // corners (on the sides for text, which only resizes sideways), and its size underneath.
+    const auto accent_text = theme_color(content, R_COLOR_ACCENT_TEXT);
     const auto draw_outline = [&](const TesseractNode* node, bool selected) {
         if (!node) return;
-        const float x = pan_x_ + node->bounds.x * zoom_ - 3.0f;
-        const float y = pan_y_ + node->bounds.y * zoom_ - 3.0f;
-        const float width = node->bounds.width * zoom_ + 6.0f;
-        const float height = node->bounds.height * zoom_ + 6.0f;
-        Rdraw_rect_outline(painter, x, y, width, height, node->corner_radius * zoom_ + 2.0f, selected ? 1.5f : 1.0f,
-                           accent.r, accent.g, accent.b, selected ? 1.0f : 0.45f);
-        if (selected) {
-            Rdraw_rect(painter, x + width - 4.0f, y + height - 4.0f, 8.0f, 8.0f, 1.0f,
-                       accent.r, accent.g, accent.b, 1.0f);
+        const float x = pan_x_ + node->bounds.x * zoom_;
+        const float y = pan_y_ + node->bounds.y * zoom_;
+        const float w = node->bounds.width * zoom_;
+        const float h = node->bounds.height * zoom_;
+        Rdraw_rect_outline(painter, x, y, w, h, 0.0f, selected ? 1.5f : 1.0f, accent.r, accent.g, accent.b, selected ? 1.0f : 0.55f);
+        if (!selected) return;
+        const auto handle = [&](float cx, float cy) {
+            Rdraw_rect(painter, cx - 4.0f, cy - 4.0f, 8.0f, 8.0f, 1.5f, 1.0f, 1.0f, 1.0f, 1.0f);
+            Rdraw_rect_outline(painter, cx - 4.0f, cy - 4.0f, 8.0f, 8.0f, 1.5f, 1.0f, accent.r, accent.g, accent.b, 1.0f);
+        };
+        if (node->kind == TesseractNodeKind::Text) {
+            handle(x, y + h * 0.5f);
+            handle(x + w, y + h * 0.5f);
+        } else {
+            handle(x, y);
+            handle(x + w, y);
+            handle(x, y + h);
+            handle(x + w, y + h);
         }
+        const auto size = std::to_string(static_cast<int>(std::lround(node->bounds.width))) + " × " +
+            std::to_string(static_cast<int>(std::lround(node->bounds.height)));
+        const float label_width = text_width(Rfont_get_default(), 11.0f, size) + 12.0f;
+        const float label_x = x + w * 0.5f - label_width * 0.5f;
+        const float label_y = y + h + 8.0f;
+        Rdraw_rect(painter, label_x, label_y, label_width, 18.0f, 4.0f, accent.r, accent.g, accent.b, 1.0f);
+        Rdraw_text(painter, Rfont_get_default(), 11.0f, label_x + 6.0f, label_y + 2.0f, size.c_str(),
+                   accent_text.r, accent_text.g, accent_text.b, 1.0f);
     };
     if (!hovered_id_.empty() && hovered_id_ != selected_id_) draw_outline(find(hovered_id_), false);
     draw_outline(find(selected_id_), true);
+    // Reordering inside an automatic layout: the dragged ghost and the insertion line.
+    if (reorder_index_ >= 0 && dragging_) {
+        Rdraw_rect(painter, drag_ghost_.x, drag_ghost_.y, drag_ghost_.width, drag_ghost_.height, 2.0f,
+                   accent.r, accent.g, accent.b, 0.12f);
+        Rdraw_rect_outline(painter, drag_ghost_.x, drag_ghost_.y, drag_ghost_.width, drag_ghost_.height, 2.0f, 1.0f,
+                           accent.r, accent.g, accent.b, 0.7f);
+        Rdraw_rect(painter, reorder_line_.x, reorder_line_.y, reorder_line_.width, reorder_line_.height, 1.0f,
+                   accent.r, accent.g, accent.b, 1.0f);
+    }
+    // Alignment guides while a root frame snaps to another.
+    for (const float gx : guide_x_) {
+        const float sx = pan_x_ + gx * zoom_;
+        Rdraw_rect(painter, sx - 0.5f, 0.0f, 1.0f, height, 0.0f, 1.0f, 0.27f, 0.52f, 0.95f);
+    }
+    for (const float gy : guide_y_) {
+        const float sy = pan_y_ + gy * zoom_;
+        Rdraw_rect(painter, 0.0f, sy - 0.5f, width, 1.0f, 0.0f, 1.0f, 0.27f, 0.52f, 0.95f);
+    }
 
     if (roots_.empty()) {
         paint_empty(widget, painter);
@@ -962,9 +1001,9 @@ void TesseractCanvas::paint(Rid widget, RPainter* painter, float width, float he
         Rdraw_text(painter, Rfont_get_default(), 11.0f, 16.0f, 40.0f, summary.c_str(), muted.r, muted.g, muted.b, 1.0f);
         Rdraw_text(painter, Rfont_get_default(), 10.0f, 16.0f, 58.0f, 
 #ifdef __APPLE__
-            "Cmd+click selects inside · Double-click text to edit · Cmd+Z undo"
+            "⌘-click selects inside · Drag edges to resize · Arrows nudge · ⌘D duplicates · ⌘Z undo"
 #else
-            "Ctrl+click selects inside · Double-click text to edit · Ctrl+Z undo"
+            "Ctrl+click selects inside · Drag edges to resize · Arrows nudge · Ctrl+D duplicates · Ctrl+Z undo"
 #endif
 , muted.r, muted.g, muted.b, 1.0f);
     }
@@ -974,6 +1013,310 @@ void TesseractCanvas::paint(Rid widget, RPainter* painter, float width, float he
         Rdraw_text(painter, Rfont_get_default(), 11.0f, 16.0f, error_y, "Document not updated · fix the JSON to recover.", danger.r, danger.g, danger.b, 1.0f);
         Rdraw_text(painter, Rfont_get_default(), 10.0f, 16.0f, error_y + 18.0f, error_.c_str(), muted.r, muted.g, muted.b, 1.0f);
     }
+}
+
+namespace {
+
+RCursor cursor_for_edges(int edges) {
+    const bool left = edges & 1, right = edges & 2, top = edges & 4, bottom = edges & 8;
+    if ((left && top) || (right && bottom)) return R_CURSOR_RESIZE_NWSE;
+    if ((right && top) || (left && bottom)) return R_CURSOR_RESIZE_NESW;
+    if (left || right) return R_CURSOR_RESIZE_H;
+    if (top || bottom) return R_CURSOR_RESIZE_V;
+    return R_CURSOR_ARROW;
+}
+
+void collect_ids(const nlohmann::json& node, std::set<std::string>& ids) {
+    if (!node.is_object()) return;
+    if (node.contains("id") && node["id"].is_string()) ids.insert(node["id"].get<std::string>());
+    if (node.contains("children") && node["children"].is_array())
+        for (const auto& child : node["children"]) collect_ids(child, ids);
+}
+
+void rename_ids(nlohmann::json& node, std::set<std::string>& ids) {
+    if (!node.is_object()) return;
+    if (node.contains("id") && node["id"].is_string()) {
+        const auto base = node["id"].get<std::string>() + "-copy";
+        auto id = base;
+        for (int n = 2; ids.count(id); ++n) id = base + "-" + std::to_string(n);
+        ids.insert(id);
+        node["id"] = id;
+    }
+    if (node.contains("name") && node["name"].is_string()) node["name"] = node["name"].get<std::string>() + " copy";
+    if (node.contains("children") && node["children"].is_array())
+        for (auto& child : node["children"]) rename_ids(child, ids);
+}
+
+} // namespace
+
+// The selection's handles: within 6 px of a corner or a side. Text resizes only sideways (its
+// height follows its lines), so it answers to the left and right sides alone.
+int TesseractCanvas::edges_at(float x, float y) const {
+    const auto* node = find(selected_id_);
+    if (!node) return EdgeNone;
+    const auto b = screen_bounds(selected_id_);
+    const float reach = 6.0f;
+    if (x < b.x - reach || x > b.x + b.width + reach || y < b.y - reach || y > b.y + b.height + reach) return EdgeNone;
+    int edges = EdgeNone;
+    const float to_left = std::abs(x - b.x);
+    const float to_right = std::abs(x - (b.x + b.width));
+    if (std::min(to_left, to_right) <= reach) edges |= to_left <= to_right ? EdgeLeft : EdgeRight;
+    if (node->kind != TesseractNodeKind::Text) {
+        const float to_top = std::abs(y - b.y);
+        const float to_bottom = std::abs(y - (b.y + b.height));
+        if (std::min(to_top, to_bottom) <= reach) edges |= to_top <= to_bottom ? EdgeTop : EdgeBottom;
+    }
+    return edges;
+}
+
+// Edges and centers of the other root frames along one axis: what a root frame snaps to.
+std::vector<float> TesseractCanvas::snap_targets(bool horizontal) const {
+    std::vector<float> targets;
+    const auto* moving = root(selected_id_);
+    for (const auto& other : roots_) {
+        if (&other == moving) continue;
+        const float start = horizontal ? other.bounds.x : other.bounds.y;
+        const float size = horizontal ? other.bounds.width : other.bounds.height;
+        targets.insert(targets.end(), {start, start + size * 0.5f, start + size});
+    }
+    return targets;
+}
+
+// Snaps `value` to the nearest target within 6 screen pixels; `guide` receives the target, or NaN.
+float TesseractCanvas::snap_axis(float value, const std::vector<float>& targets, float& guide) const {
+    guide = std::numeric_limits<float>::quiet_NaN();
+    float best = 6.0f / zoom_;
+    float snapped = value;
+    for (const float target : targets) {
+        if (std::abs(target - value) < best) {
+            best = std::abs(target - value);
+            snapped = target;
+            guide = target;
+        }
+    }
+    return snapped;
+}
+
+void TesseractCanvas::apply_move(TesseractNode& node, float dx, float dy, bool snap) {
+    float x = start_x_ + dx;
+    float y = start_y_ + dy;
+    guide_x_.clear();
+    guide_y_.clear();
+    // Root frames snap any of their edges or their center to the other frames'.
+    if (snap && root(node.id) == &node) {
+        const auto snap_rect = [&](float& position, float size, const std::vector<float>& targets, std::vector<float>& guides) {
+            float best = 6.0f / zoom_;
+            float shift = 0.0f;
+            float found = std::numeric_limits<float>::quiet_NaN();
+            for (const float anchor : {0.0f, size * 0.5f, size}) {
+                for (const float target : targets) {
+                    const float delta = target - (position + anchor);
+                    if (std::abs(delta) < best) {
+                        best = std::abs(delta);
+                        shift = delta;
+                        found = target;
+                    }
+                }
+            }
+            position += shift;
+            if (!std::isnan(found)) guides.push_back(found);
+        };
+        snap_rect(x, node.bounds.width, snap_targets(true), guide_x_);
+        snap_rect(y, node.bounds.height, snap_targets(false), guide_y_);
+    }
+    node.x = std::round(x);
+    node.y = std::round(y);
+    node.has_x = node.has_y = true;
+}
+
+// Resizes from the dragged sides: the opposite side stays put (or the center with Alt), Shift keeps
+// the proportions on a corner, and root frames snap the moving side to the other frames.
+void TesseractCanvas::apply_resize(TesseractNode& node, float dx, float dy, unsigned modifiers) {
+    const bool left = resize_edges_ & EdgeLeft, right = resize_edges_ & EdgeRight;
+    const bool top = resize_edges_ & EdgeTop, bottom = resize_edges_ & EdgeBottom;
+    const bool centered = modifiers & R_MOD_ALT;
+    const bool proportional = (modifiers & R_MOD_SHIFT) && (left || right) && (top || bottom);
+    const float factor = centered ? 2.0f : 1.0f;
+    float width = start_width_ + (right ? dx : left ? -dx : 0.0f) * factor;
+    float height = start_height_ + (bottom ? dy : top ? -dy : 0.0f) * factor;
+    if (proportional && start_width_ > 0.0f && start_height_ > 0.0f) {
+        const float ratio = start_width_ / start_height_;
+        if (std::abs(width / start_width_ - 1.0f) >= std::abs(height / start_height_ - 1.0f)) height = width / ratio;
+        else width = height * ratio;
+    }
+    float x = start_x_;
+    float y = start_y_;
+    guide_x_.clear();
+    guide_y_.clear();
+    if (root(node.id) == &node && !centered && !proportional) {
+        float guide = 0.0f;
+        if (right) {
+            width = snap_axis(start_x_ + width, snap_targets(true), guide) - start_x_;
+            if (!std::isnan(guide)) guide_x_.push_back(guide);
+        } else if (left) {
+            const float edge = snap_axis(start_x_ + start_width_ - width, snap_targets(true), guide);
+            width = start_x_ + start_width_ - edge;
+            if (!std::isnan(guide)) guide_x_.push_back(guide);
+        }
+        if (bottom) {
+            height = snap_axis(start_y_ + height, snap_targets(false), guide) - start_y_;
+            if (!std::isnan(guide)) guide_y_.push_back(guide);
+        } else if (top) {
+            const float edge = snap_axis(start_y_ + start_height_ - height, snap_targets(false), guide);
+            height = start_y_ + start_height_ - edge;
+            if (!std::isnan(guide)) guide_y_.push_back(guide);
+        }
+    }
+    width = std::max(1.0f, std::round(width));
+    height = std::max(1.0f, std::round(height));
+    if (centered) {
+        x = start_x_ - (width - start_width_) * 0.5f;
+        y = start_y_ - (height - start_height_) * 0.5f;
+    } else {
+        if (left) x = start_x_ + start_width_ - width;
+        if (top) y = start_y_ + start_height_ - height;
+    }
+    if (left || right) {
+        node.width = {TesseractSizeKind::Fixed, width};
+        if (node.kind == TesseractNodeKind::Text) node.text_growth = "fixed-width";
+        // A child in an automatic layout keeps its place in the flow; only free nodes move.
+        if ((left || centered) && !in_flow_) {
+            node.x = std::round(x);
+            node.has_x = true;
+        }
+    }
+    if ((top || bottom) && node.kind != TesseractNodeKind::Text) {
+        node.height = {TesseractSizeKind::Fixed, height};
+        if ((top || centered) && !in_flow_) {
+            node.y = std::round(y);
+            node.has_y = true;
+        }
+    }
+}
+
+// Where a dragged child of an automatic layout would land: before the first sibling whose center
+// lies past the pointer along the layout's axis.
+void TesseractCanvas::update_reorder(float x, float y) {
+    reorder_index_ = -1;
+    const auto* node = find(selected_id_);
+    const auto* parent_node = parent(selected_id_);
+    if (!node || !parent_node) return;
+    const bool vertical = parent_node->layout == "vertical";
+    const float pointer = vertical ? (y - pan_y_) / zoom_ : (x - pan_x_) / zoom_;
+    int index = 0;
+    int self = -1;
+    const TesseractNode* before = nullptr;
+    const TesseractNode* last = nullptr;
+    for (std::size_t i = 0; i < parent_node->children.size(); ++i) {
+        const auto& sibling = parent_node->children[i];
+        if (sibling.id == node->id) {
+            self = static_cast<int>(i);
+            continue;
+        }
+        if (sibling.has_x || sibling.has_y) continue;
+        last = &sibling;
+        const float center = vertical ? sibling.bounds.y + sibling.bounds.height * 0.5f : sibling.bounds.x + sibling.bounds.width * 0.5f;
+        if (pointer > center) index = static_cast<int>(i) + 1 - (self >= 0 ? 1 : 0);
+        else if (!before) before = &sibling;
+    }
+    reorder_index_ = index;
+    // The insertion line sits in the gap before `before`, or after the last sibling.
+    const float gap = parent_node->gap * 0.5f;
+    const float cross_start = vertical ? parent_node->bounds.x + parent_node->padding[3] : parent_node->bounds.y + parent_node->padding[0];
+    const float cross_size = vertical ? parent_node->bounds.width - parent_node->padding[1] - parent_node->padding[3]
+                                      : parent_node->bounds.height - parent_node->padding[0] - parent_node->padding[2];
+    float along = 0.0f;
+    if (before) along = (vertical ? before->bounds.y : before->bounds.x) - gap;
+    else if (last) along = (vertical ? last->bounds.y + last->bounds.height : last->bounds.x + last->bounds.width) + gap;
+    else along = vertical ? node->bounds.y : node->bounds.x;
+    if (vertical) reorder_line_ = {pan_x_ + cross_start * zoom_, pan_y_ + along * zoom_ - 1.0f, cross_size * zoom_, 2.0f};
+    else reorder_line_ = {pan_x_ + along * zoom_ - 1.0f, pan_y_ + cross_start * zoom_, 2.0f, cross_size * zoom_};
+}
+
+// Moves the selected child to another position among its siblings, as one undoable step.
+bool TesseractCanvas::move_in_flow(int to_index) {
+    const auto* selected = find(selected_id_);
+    if (!selected || selected->path.size() < 2 || to_index < 0) return false;
+    auto* parent_json = &document_;
+    for (std::size_t i = 0; i + 1 < selected->path.size(); ++i) parent_json = &(*parent_json)["children"][selected->path[i]];
+    auto& siblings = (*parent_json)["children"];
+    const auto from = selected->path.back();
+    if (!siblings.is_array() || from >= siblings.size()) return false;
+    const auto target = std::min<std::size_t>(static_cast<std::size_t>(to_index), siblings.size() - 1);
+    if (target == from) return false;
+    auto node = siblings[from];
+    siblings.erase(siblings.begin() + static_cast<std::ptrdiff_t>(from));
+    siblings.insert(siblings.begin() + static_cast<std::ptrdiff_t>(target), node);
+    return commit_document();
+}
+
+// Writes what a finished drag changed into the document as one undoable step.
+void TesseractCanvas::persist_drag(DragMode mode) {
+    auto* selected = find_mutable(selected_id_);
+    if (!selected) return;
+    auto* raw = raw_node(*selected);
+    if (!raw) return;
+    if (mode == DragMode::Move) {
+        (*raw)["x"] = selected->x;
+        (*raw)["y"] = selected->y;
+    } else {
+        if (resize_edges_ & (EdgeLeft | EdgeRight)) {
+            (*raw)["width"] = selected->width.value;
+            if (selected->kind == TesseractNodeKind::Text) (*raw)["textGrowth"] = "fixed-width";
+        }
+        if ((resize_edges_ & (EdgeTop | EdgeBottom)) && selected->kind != TesseractNodeKind::Text) {
+            (*raw)["height"] = selected->height.value;
+        }
+        if (selected->has_x) (*raw)["x"] = selected->x;
+        if (selected->has_y) (*raw)["y"] = selected->y;
+    }
+    save_selected();
+}
+
+bool TesseractCanvas::nudge_selected(float dx, float dy) {
+    auto* node = find_mutable(selected_id_);
+    if (!node) return false;
+    float x = node->x;
+    float y = node->y;
+    if (const auto* parent_node = parent(selected_id_)) {
+        if (!node->has_x) x = node->bounds.x - parent_node->bounds.x - parent_node->padding[3];
+        if (!node->has_y) y = node->bounds.y - parent_node->bounds.y - parent_node->padding[0];
+    } else {
+        if (!node->has_x) x = node->bounds.x;
+        if (!node->has_y) y = node->bounds.y;
+    }
+    auto* raw = raw_node(*node);
+    if (!raw) return false;
+    (*raw)["x"] = std::round(x + dx);
+    (*raw)["y"] = std::round(y + dy);
+    return commit_document();
+}
+
+bool TesseractCanvas::duplicate_selected() {
+    const auto* selected = find(selected_id_);
+    if (!selected || selected->path.empty()) return false;
+    auto* parent_json = &document_;
+    for (std::size_t i = 0; i + 1 < selected->path.size(); ++i) parent_json = &(*parent_json)["children"][selected->path[i]];
+    auto& siblings = (*parent_json)["children"];
+    const auto index = selected->path.back();
+    if (!siblings.is_array() || index >= siblings.size()) return false;
+    auto copy = siblings[index];
+    std::set<std::string> ids;
+    collect_ids(document_, ids);
+    rename_ids(copy, ids);
+    if (selected->path.size() == 1) {
+        // A root copy sits to the right of the original, like a new artboard.
+        copy["x"] = std::round(selected->bounds.x + selected->bounds.width + 40.0f);
+        copy["y"] = std::round(selected->bounds.y);
+    } else if (copy.contains("x") || copy.contains("y")) {
+        copy["x"] = copy.value("x", 0.0f) + 16.0f;
+        copy["y"] = copy.value("y", 0.0f) + 16.0f;
+    }
+    const auto new_id = copy["id"].get<std::string>();
+    siblings.insert(siblings.begin() + static_cast<std::ptrdiff_t>(index + 1), copy);
+    if (!commit_document()) return false;
+    select(new_id);
+    return true;
 }
 
 int TesseractCanvas::event(Rid widget, const REvent* event) {
@@ -988,6 +1331,8 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
         // Ctrl+click on Linux and Windows; Cmd+click on macOS, where Ctrl+click is the context click.
         const bool deep = (event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)) || event->clicks >= 2;
         const auto* node = deep ? hit_deepest(down_x_, down_y_) : hit_root(down_x_, down_y_);
+        // A handle of the current selection wins over whatever lies under it.
+        if (!deep && edges_at(down_x_, down_y_) != EdgeNone) node = find(selected_id_);
         if (!deep && !selected_id_.empty()) {
             const auto bounds = screen_bounds(selected_id_);
             if (down_x_ >= bounds.x && down_x_ <= bounds.x + bounds.width &&
@@ -1007,17 +1352,17 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
             Rwidget_invalidate(widget);
             return R_TRUE;
         }
-        const auto bounds = screen_bounds(selected_id_);
-        const bool resize = down_x_ >= bounds.x + bounds.width - 10.0f && down_x_ <= bounds.x + bounds.width + 6.0f &&
-            down_y_ >= bounds.y + bounds.height - 10.0f && down_y_ <= bounds.y + bounds.height + 6.0f;
-        drag_mode_ = resize ? DragMode::Resize : DragMode::Move;
+        resize_edges_ = edges_at(down_x_, down_y_);
+        drag_mode_ = resize_edges_ != EdgeNone ? DragMode::Resize : DragMode::Move;
         start_width_ = node->bounds.width;
         start_height_ = node->bounds.height;
         start_x_ = node->x;
         start_y_ = node->y;
+        in_flow_ = false;
         if (const auto* parent_node = parent(selected_id_)) {
             if (!node->has_x) start_x_ = node->bounds.x - parent_node->bounds.x - parent_node->padding[3];
             if (!node->has_y) start_y_ = node->bounds.y - parent_node->bounds.y - parent_node->padding[0];
+            in_flow_ = parent_node->layout != "none" && !node->has_x && !node->has_y;
         } else {
             if (!node->has_x) start_x_ = node->bounds.x;
             if (!node->has_y) start_y_ = node->bounds.y;
@@ -1038,15 +1383,22 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
                     pan_y_ += event->delta_y;
                     Rwidget_set_cursor(widget, R_CURSOR_MOVE);
                 } else if (auto* selected = find_mutable(selected_id_)) {
-                    if (drag_mode_ == DragMode::Move) {
-                        selected->x = std::round(start_x_ + dx / zoom_);
-                        selected->y = std::round(start_y_ + dy / zoom_);
-                        selected->has_x = selected->has_y = true;
+                    if (drag_mode_ == DragMode::Move && in_flow_) {
+                        // A child of an automatic layout is reordered, not placed: it stays in
+                        // the flow while a ghost follows the pointer and a line shows where it lands.
+                        const auto origin = screen_bounds(selected_id_);
+                        drag_ghost_ = {origin.x + dx, origin.y + dy, origin.width, origin.height};
+                        update_reorder(event->local_x, event->local_y);
+                        Rwidget_set_cursor(widget, R_CURSOR_MOVE);
+                        Rwidget_invalidate(widget);
+                        return R_TRUE;
+                    } else if (drag_mode_ == DragMode::Move) {
+                        // Ctrl/Cmd while dragging turns snapping off for fine placement.
+                        apply_move(*selected, dx / zoom_, dy / zoom_, !(event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)));
                         Rwidget_set_cursor(widget, R_CURSOR_MOVE);
                     } else if (drag_mode_ == DragMode::Resize) {
-                        selected->width = {TesseractSizeKind::Fixed, std::max(8.0f, std::round(start_width_ + dx / zoom_))};
-                        selected->height = {TesseractSizeKind::Fixed, std::max(8.0f, std::round(start_height_ + dy / zoom_))};
-                        Rwidget_set_cursor(widget, R_CURSOR_RESIZE_NWSE);
+                        apply_resize(*selected, dx / zoom_, dy / zoom_, event->modifiers);
+                        Rwidget_set_cursor(widget, cursor_for_edges(resize_edges_));
                     }
                     layout();
                 }
@@ -1059,11 +1411,8 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
                 hovered_id_ = next;
                 Rwidget_invalidate(widget);
             }
-            const auto bounds = screen_bounds(selected_id_);
-            const bool resize = !selected_id_.empty() && event->local_x >= bounds.x + bounds.width - 10.0f &&
-                event->local_x <= bounds.x + bounds.width + 6.0f && event->local_y >= bounds.y + bounds.height - 10.0f &&
-                event->local_y <= bounds.y + bounds.height + 6.0f;
-            Rwidget_set_cursor(widget, resize ? R_CURSOR_RESIZE_NWSE : node ? R_CURSOR_HAND : R_CURSOR_ARROW);
+            const int edges = edges_at(event->local_x, event->local_y);
+            Rwidget_set_cursor(widget, edges != EdgeNone ? cursor_for_edges(edges) : node ? R_CURSOR_HAND : R_CURSOR_ARROW);
         }
         return R_TRUE;
     case R_EVENT_MOUSE_UP: {
@@ -1073,19 +1422,17 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
         tracking_ = false;
         dragging_ = false;
         drag_mode_ = DragMode::None;
-        if (commit) {
-            if (auto* selected = find_mutable(selected_id_)) {
-                auto* raw = raw_node(*selected);
-                if (raw && completed_mode == DragMode::Move) {
-                    (*raw)["x"] = selected->x;
-                    (*raw)["y"] = selected->y;
-                } else if (raw) {
-                    (*raw)["width"] = selected->width.value;
-                    (*raw)["height"] = selected->height.value;
-                }
-                save_selected();
-            }
+        guide_x_.clear();
+        guide_y_.clear();
+        if (commit && completed_mode == DragMode::Move && in_flow_) {
+            const int index = reorder_index_;
+            const auto id = selected_id_;
+            reorder_index_ = -1;
+            if (move_in_flow(index)) select(id);
+        } else if (commit) {
+            persist_drag(completed_mode);
         }
+        reorder_index_ = -1;
         Rwidget_set_cursor(widget, R_CURSOR_ARROW);
         Rwidget_invalidate(widget);
         return R_TRUE;
@@ -1112,6 +1459,50 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
         if ((event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)) && (event->key == R_KEY_Z || event->key == R_KEY_Y)) {
             const bool redo_requested = event->key == R_KEY_Y || (event->modifiers & R_MOD_SHIFT);
             if (redo_requested ? redo() : undo()) Rwidget_invalidate(widget);
+            return R_TRUE;
+        }
+        // Escape during a drag puts the element back where it was.
+        if (event->key == R_KEY_ESCAPE && tracking_) {
+            tracking_ = dragging_ = false;
+            drag_mode_ = DragMode::None;
+            guide_x_.clear();
+            guide_y_.clear();
+            reorder_index_ = -1;
+            load();
+            Rwidget_set_cursor(widget, R_CURSOR_ARROW);
+            Rwidget_invalidate(widget);
+            return R_TRUE;
+        }
+        // Ctrl+D (Cmd+D on macOS) duplicates the selection.
+        if ((event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)) && event->key == R_KEY_D) {
+            if (duplicate_selected()) Rwidget_invalidate(widget);
+            return R_TRUE;
+        }
+        // Arrows move the selection by a pixel (ten with Shift); with nothing selected they pan.
+        if (!selected_id_.empty() && (event->key == R_KEY_LEFT || event->key == R_KEY_RIGHT ||
+                                      event->key == R_KEY_UP || event->key == R_KEY_DOWN)) {
+            // Inside an automatic layout the arrows along its axis reorder instead.
+            const auto* node = find(selected_id_);
+            const auto* parent_node = parent(selected_id_);
+            if (node && parent_node && parent_node->layout != "none" && !node->has_x && !node->has_y) {
+                const bool vertical = parent_node->layout == "vertical";
+                const int index = static_cast<int>(node->path.back());
+                int to = index;
+                if (vertical && event->key == R_KEY_UP) to = index - 1;
+                else if (vertical && event->key == R_KEY_DOWN) to = index + 1;
+                else if (!vertical && event->key == R_KEY_LEFT) to = index - 1;
+                else if (!vertical && event->key == R_KEY_RIGHT) to = index + 1;
+                const auto id = selected_id_;
+                if (to != index && to >= 0 && move_in_flow(to)) {
+                    select(id);
+                    Rwidget_invalidate(widget);
+                }
+                return R_TRUE;
+            }
+            const float step = (event->modifiers & R_MOD_SHIFT) ? 10.0f : 1.0f;
+            const float nx = event->key == R_KEY_LEFT ? -step : event->key == R_KEY_RIGHT ? step : 0.0f;
+            const float ny = event->key == R_KEY_UP ? -step : event->key == R_KEY_DOWN ? step : 0.0f;
+            if (nudge_selected(nx, ny)) Rwidget_invalidate(widget);
             return R_TRUE;
         }
         // Delete or Backspace removes the selected element (undoable with Cmd/Ctrl+Z).

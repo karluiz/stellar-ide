@@ -103,9 +103,15 @@ public:
     bool can_undo() const { return !undo_stack_.empty(); }
     // Removes the selected element from the document as one undoable step.
     bool delete_selected();
+    // Copies the selected element (with fresh ids) next to it and selects the copy.
+    bool duplicate_selected();
+    // Moves the selected element by whole pixels as one undoable step (arrow keys).
+    bool nudge_selected(float dx, float dy);
 
 private:
     enum class DragMode { None, Pan, Move, Resize };
+    // Which side or corner of the selection a resize drags; bit flags combine into corners.
+    enum Edge { EdgeNone = 0, EdgeLeft = 1, EdgeRight = 2, EdgeTop = 4, EdgeBottom = 8 };
 
     std::filesystem::path file_;
     std::filesystem::file_time_type modified_{};
@@ -138,6 +144,24 @@ private:
     float start_y_ = 0.0f;
     float start_width_ = 0.0f;
     float start_height_ = 0.0f;
+    int resize_edges_ = EdgeNone;
+    bool in_flow_ = false;
+    // Dragging a child of an automatic layout reorders it: where it would land among its siblings
+    // (-1: no change) and, for painting, the insertion line and the dragged ghost (screen space).
+    int reorder_index_ = -1;
+    TesseractRect reorder_line_;
+    TesseractRect drag_ghost_;
+    void update_reorder(float x, float y);
+    bool move_in_flow(int to_index);
+    // Alignment guides shown while a root frame snaps to another one (world coordinates).
+    std::vector<float> guide_x_;
+    std::vector<float> guide_y_;
+    int edges_at(float x, float y) const;
+    void apply_resize(TesseractNode& node, float dx, float dy, unsigned modifiers);
+    void apply_move(TesseractNode& node, float dx, float dy, bool snap);
+    float snap_axis(float value, const std::vector<float>& targets, float& guide) const;
+    std::vector<float> snap_targets(bool horizontal) const;
+    void persist_drag(DragMode mode);
     std::chrono::steady_clock::time_point next_poll_{};
     std::string saved_document_;
     std::string editing_id_;
