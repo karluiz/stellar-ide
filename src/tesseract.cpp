@@ -636,6 +636,13 @@ bool TesseractCanvas::consume_text_edit_request() {
     return requested;
 }
 
+void TesseractCanvas::set_editing(const std::string& id) { editing_id_ = id; }
+
+TesseractCanvas::TesseractColor TesseractCanvas::text_color(const TesseractNode& node) const {
+    const auto color = parse_color(node.fill.empty() ? "$ink" : node.fill, variables_, node.opacity);
+    return {color.r, color.g, color.b, color.a};
+}
+
 bool TesseractCanvas::update_selected_text(const std::string& text) {
     auto* selected = find_mutable(selected_id_);
     if (!selected || selected->kind != TesseractNodeKind::Text) return false;
@@ -755,6 +762,8 @@ void TesseractCanvas::paint_node(RPainter* painter, const TesseractNode& node) {
                                stroke.r, stroke.g, stroke.b, stroke.a);
         }
     } else {
+        // The text being edited inline is drawn by the editor on top; painting it here too doubled it.
+        if (node.id == editing_id_) return;
         const auto fill = parse_color(node.fill.empty() ? "$ink" : node.fill, variables_, node.opacity);
         const Rid font = font_for(node);
         const auto lines = wrap_text(node, node.text_growth == "auto" ? 0.0f : node.bounds.width);

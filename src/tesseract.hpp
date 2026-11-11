@@ -91,6 +91,11 @@ public:
     void clear_selection();
     bool consume_text_edit_request();
     bool update_selected_text(const std::string& text);
+    // While a text node is edited inline, the canvas leaves it to the editor drawn above it.
+    void set_editing(const std::string& id);
+    // The colour a text node is drawn with, so the inline editor can match it.
+    struct TesseractColor { float r = 0.0f, g = 0.0f, b = 0.0f, a = 1.0f; };
+    TesseractColor text_color(const TesseractNode& node) const;
     // Undo and redo the user's canvas edits (text, move, resize). Agent rewrites of the document
     // clear the history so an undo never silently reverts the agent's work.
     bool undo();
@@ -133,6 +138,7 @@ private:
     float start_height_ = 0.0f;
     std::chrono::steady_clock::time_point next_poll_{};
     std::string saved_document_;
+    std::string editing_id_;
     std::vector<std::string> undo_stack_;
     std::vector<std::string> redo_stack_;
     bool restore(std::vector<std::string>& from, std::vector<std::string>& to);

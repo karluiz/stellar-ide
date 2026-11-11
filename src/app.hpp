@@ -53,6 +53,7 @@ public:
     void sync_accessibility();
     void apply_pinch();
     void fit_tesseract_composer();
+    void place_tesseract_text_editor(const TesseractNode& node, bool style);
     void render_proposal();
     void save_pending_wiki_edits();
     void sync_file_browser_path();

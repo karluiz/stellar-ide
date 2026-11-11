@@ -4516,13 +4516,38 @@ void App::begin_tesseract_text_edit() {
     const auto* selected = tesseract_.find(tesseract_.selected_id());
     if (!selected || selected->kind != TesseractNodeKind::Text) return;
     const auto editor = id("tesseract.inline.editor");
-    const auto bounds = tesseract_.screen_bounds(selected->id);
-    Rslot_set_position(editor, bounds.x, bounds.y);
-    Rslot_set_size(editor, std::clamp(bounds.width, 120.0f, 520.0f), std::clamp(bounds.height, 34.0f, 120.0f));
+    place_tesseract_text_editor(*selected, true);
+    tesseract_.set_editing(selected->id);
     Rtext_input_set_text(editor, selected->content.c_str());
     Rwidget_set_visibility(editor, R_VISIBLE);
     Rwidget_focus(editor);
     Rtext_input_select_all(editor);
+}
+
+// The inline editor sits on the text it edits and looks like it: the text's size at the current
+// zoom, dark ink on a light field, instead of a small dark UI field over a light design.
+void App::place_tesseract_text_editor(const TesseractNode& node, bool style) {
+    const auto editor = id("tesseract.inline.editor");
+    const auto bounds = tesseract_.screen_bounds(node.id);
+    const float font_size = std::clamp(node.font_size * tesseract_.zoom_percent() / 100.0f, 11.0f, 72.0f);
+    const float height = std::max(bounds.height + 6.0f, font_size * 1.35f + 6.0f);
+    Rslot_set_position(editor, bounds.x - 5.0f, bounds.y - 3.0f);
+    Rslot_set_size(editor, std::clamp(bounds.width + 10.0f, 140.0f, 720.0f), std::min(height, 160.0f));
+    // Styling is applied once when editing starts: re-applying it on every refresh (each frame)
+    // reset the caret while typing and scrambled the text.
+    if (!style) return;
+    Rwidget_set_metric(editor, R_METRIC_FONT_SIZE, font_size);
+    Rwidget_set_metric(editor, R_METRIC_PADDING_X, 4.0f);
+    Rwidget_set_metric(editor, R_METRIC_PADDING_Y, 0.0f);
+    // Transparent field in the text's own colour: editing looks like the text with a caret, framed
+    // by the accent outline, not a separate dark control over the design.
+    const auto ink = tesseract_.text_color(node);
+    for (const auto role : {R_COLOR_INPUT, R_COLOR_CONTROL, R_COLOR_CONTROL_HOVERED}) Rwidget_set_color(editor, role, 0.0f, 0.0f, 0.0f, 0.0f);
+    Rwidget_set_color(editor, R_COLOR_TEXT, ink.r, ink.g, ink.b, ink.a);
+    float accent[4];
+    Rwidget_get_color(Rwindow_get_content(window_), R_COLOR_ACCENT, &accent[0], &accent[1], &accent[2], &accent[3]);
+    Rwidget_set_color(editor, R_COLOR_SELECTION, accent[0], accent[1], accent[2], 0.35f);
+    for (const auto role : {R_COLOR_BORDER, R_COLOR_CONTROL_BORDER, R_COLOR_FOCUS}) Rwidget_set_color(editor, role, accent[0], accent[1], accent[2], 1.0f);
 }
 
 void App::finish_tesseract_text_edit(bool commit) {
@@ -4530,6 +4555,7 @@ void App::finish_tesseract_text_edit(bool commit) {
     if (Rwidget_get_visibility(editor) != R_VISIBLE) return;
     const std::string text = Rtext_input_get_text(editor);
     Rwidget_set_visibility(editor, R_COLLAPSED);
+    tesseract_.set_editing("");
     if (commit) {
         set_status(tesseract_.update_selected_text(text) ? "Text updated · .stellar/tesseract.json saved" : "Text could not be saved");
     } else {
@@ -4553,9 +4579,7 @@ void App::refresh_tesseract_chrome() {
         if (!selected || selected->kind != TesseractNodeKind::Text) {
             Rwidget_set_visibility(inline_editor, R_COLLAPSED);
         } else {
-            const auto bounds = tesseract_.screen_bounds(selected->id);
-            Rslot_set_position(inline_editor, bounds.x, bounds.y);
-            Rslot_set_size(inline_editor, std::clamp(bounds.width, 120.0f, 520.0f), std::clamp(bounds.height, 34.0f, 120.0f));
+            place_tesseract_text_editor(*selected, false);
         }
     }
     Rwidget_set_visibility(id("tesseract.activity.bar"), activity ? R_VISIBLE : R_COLLAPSED);
