@@ -176,6 +176,11 @@ private:
     void paint_node(RPainter* painter, const TesseractNode& node);
     const TesseractNode* hit_root(float x, float y) const;
     const TesseractNode* hit_deepest(float x, float y) const;
+    // Every node under a point, from its root frame down to the deepest element.
+    std::vector<const TesseractNode*> chain_at(float x, float y) const;
+    // What a click selects, as in design tools: the root's direct child first, a sibling of the
+    // current selection next, and one level deeper on a double-click.
+    const TesseractNode* scoped_pick(const std::vector<const TesseractNode*>& chain, bool deeper) const;
     const TesseractNode* parent(const std::string& id) const;
     const TesseractNode* root(const std::string& id) const;
     TesseractNode* find_mutable(const std::string& id);

@@ -980,6 +980,44 @@ void tesseract_editing_tests() {
         canvas.undo();
     }
 
+    // A click selects the root's direct child under the pointer; a click on a sibling moves the
+    // selection there; a double-click goes one level in; empty space in the root selects the root.
+    {
+        raven::TesseractCanvas scoped;
+        const auto scoped_file = root / "scoped.json";
+        raven::write_file(scoped_file, R"({"version":"stellar-tesseract/1","children":[
+          {"type":"frame","id":"card","x":0,"y":0,"width":300,"height":300,"layout":"vertical","padding":20,"gap":20,"children":[
+            {"type":"frame","id":"group","width":"fill_container","height":100,"layout":"vertical","children":[
+              {"type":"frame","id":"field","width":"fill_container","height":60,"children":[]}
+            ]},
+            {"type":"frame","id":"other","width":"fill_container","height":60,"children":[]}
+          ]}
+        ]})");
+        scoped.open(scoped_file);
+        const auto click_at = [&](float x, float y, int clicks) {
+            REvent e{};
+            e.button = R_MOUSE_LEFT;
+            e.clicks = clicks;
+            e.local_x = x;
+            e.local_y = y;
+            e.type = R_EVENT_MOUSE_DOWN;
+            scoped.event(R_INVALID_ID, &e);
+            e.type = R_EVENT_MOUSE_UP;
+            scoped.event(R_INVALID_ID, &e);
+        };
+        const auto field = scoped.screen_bounds("field");
+        click_at(field.x + 10.0f, field.y + 10.0f, 1);
+        expect(scoped.selected_id() == "group", ("a click inside a frame selected '" + scoped.selected_id() + "', not its direct child").c_str());
+        click_at(field.x + 10.0f, field.y + 10.0f, 2);
+        expect(scoped.selected_id() == "field", "a double-click did not go one level in");
+        const auto other = scoped.screen_bounds("other");
+        click_at(other.x + 10.0f, other.y + 10.0f, 1);
+        expect(scoped.selected_id() == "other", "a click on another element did not select it");
+        const auto card = scoped.screen_bounds("card");
+        click_at(card.x + card.width * 0.5f, card.y + card.height - 20.0f, 1);
+        expect(scoped.selected_id() == "card", "a click on the frame's empty space did not select the frame");
+    }
+
     // Escape during a drag puts the element back.
     canvas.select("b");
     b = canvas.screen_bounds("b");

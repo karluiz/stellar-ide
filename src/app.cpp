@@ -418,7 +418,7 @@ bool App::create() {
         "palette.commands", "palette.files", "palette.search", "palette.changed", "palette.open", "palette.close",
         "recall.open", "recall.close", "recall.changed", "recall.use", "recall.pin", "recall.erase",
         "knowledge.search", "knowledge.open", "knowledge.open_tab", "navigation.search", "code.save", "sidebar.left", "sidebar.right",
-        "nav.chat", "nav.canvas", "nav.workflows", "nav.files", "nav.agents", "nav.review", "nav.knowledge", "nav.worktrees", "nav.settings", "activity.open", "alerts.view", "context.close",
+        "files.column.toggle", "agents.column.toggle", "nav.chat", "nav.canvas", "nav.workflows", "nav.files", "nav.agents", "nav.review", "nav.knowledge", "nav.worktrees", "nav.settings", "activity.open", "alerts.view", "context.close",
         "mission.create", "mission.review", "mission.apply", "mission.apply_hunk", "mission.discard", "mission.return", "mission.open",
         "settings.toggle", "settings.close", "settings.harness.changed", "settings.vector", "appearance.toggle",
         "settings.interface.decrease", "settings.interface.reset", "settings.interface.increase",
@@ -5437,6 +5437,13 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "theme.gallery.dark") app.select_theme(theme_index(app.theme_gallery_.family(), 0));
     else if (name == "theme.gallery.light") app.select_theme(theme_index(app.theme_gallery_.family(), 1));
     else if (name == "theme.gallery.glass") app.select_theme(theme_index(app.theme_gallery_.family(), 2));
+    else if (name == "files.column.toggle" || name == "agents.column.toggle") {
+        // The list beside an editor folds away for more room, like the navigation sidebar.
+        const auto column = app.id(name == "files.column.toggle" ? "files.column" : "agents.column");
+        const bool shown = Rwidget_get_visibility(column) == R_VISIBLE;
+        Rwidget_set_visibility(column, shown ? R_COLLAPSED : R_VISIBLE);
+        app.set_status(shown ? "List folded · the toggle beside the title brings it back" : "List shown");
+    }
     else if (name == "theme.earth") app.select_theme(12);
     else if (name == "theme.earth.light") app.select_theme(13);
     else if (name == "theme.earth.glass") app.select_theme(14);

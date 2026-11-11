@@ -769,6 +769,44 @@ const TesseractNode* TesseractCanvas::hit_deepest(float x, float y) const {
     return deepest_at(*root_node, world_x, world_y);
 }
 
+std::vector<const TesseractNode*> TesseractCanvas::chain_at(float x, float y) const {
+    std::vector<const TesseractNode*> chain;
+    const auto* node = hit_root(x, y);
+    const float world_x = (x - pan_x_) / zoom_;
+    const float world_y = (y - pan_y_) / zoom_;
+    while (node) {
+        chain.push_back(node);
+        const TesseractNode* next = nullptr;
+        for (auto it = node->children.rbegin(); it != node->children.rend(); ++it) {
+            const auto& b = it->bounds;
+            if (world_x >= b.x && world_x <= b.x + b.width && world_y >= b.y && world_y <= b.y + b.height) {
+                next = &*it;
+                break;
+            }
+        }
+        node = next;
+    }
+    return chain;
+}
+
+const TesseractNode* TesseractCanvas::scoped_pick(const std::vector<const TesseractNode*>& chain, bool deeper) const {
+    if (chain.empty()) return nullptr;
+    int selected = -1;
+    for (std::size_t i = 0; i < chain.size(); ++i) if (chain[i]->id == selected_id_) selected = static_cast<int>(i);
+    if (selected >= 0) {
+        // Inside the selection: keep it (so it can be dragged), or step one level in.
+        if (deeper && selected + 1 < static_cast<int>(chain.size())) return chain[static_cast<std::size_t>(selected) + 1];
+        return chain[static_cast<std::size_t>(selected)];
+    }
+    // A sibling of the selection, or of one of its ancestors, at the same level.
+    if (const auto* parent_node = parent(selected_id_)) {
+        for (std::size_t i = 0; i + 1 < chain.size(); ++i) {
+            if (chain[i]->id == parent_node->id) return chain[i + 1];
+        }
+    }
+    return chain.size() > 1 ? chain[1] : chain[0];
+}
+
 void TesseractCanvas::paint_node(RPainter* painter, const TesseractNode& node) {
     const float x = pan_x_ + node.bounds.x * zoom_;
     const float y = pan_y_ + node.bounds.y * zoom_;
@@ -1001,9 +1039,9 @@ void TesseractCanvas::paint(Rid widget, RPainter* painter, float width, float he
         Rdraw_text(painter, Rfont_get_default(), 11.0f, 16.0f, 40.0f, summary.c_str(), muted.r, muted.g, muted.b, 1.0f);
         Rdraw_text(painter, Rfont_get_default(), 10.0f, 16.0f, 58.0f, 
 #ifdef __APPLE__
-            "⌘-click selects inside · Drag edges to resize · Arrows nudge · ⌘D duplicates · ⌘Z undo"
+            "Double-click goes inside · ⌘-click selects the deepest · Drag edges to resize · ⌘D duplicates · ⌘Z undo"
 #else
-            "Ctrl+click selects inside · Drag edges to resize · Arrows nudge · Ctrl+D duplicates · Ctrl+Z undo"
+            "Double-click goes inside · Ctrl+click selects the deepest · Drag edges to resize · Ctrl+D duplicates · Ctrl+Z undo"
 #endif
 , muted.r, muted.g, muted.b, 1.0f);
     }
@@ -1328,16 +1366,12 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
         down_y_ = event->local_y;
         dragging_ = false;
         drag_mode_ = DragMode::None;
-        // Ctrl+click on Linux and Windows; Cmd+click on macOS, where Ctrl+click is the context click.
-        const bool deep = (event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)) || event->clicks >= 2;
-        const auto* node = deep ? hit_deepest(down_x_, down_y_) : hit_root(down_x_, down_y_);
+        // Ctrl+click on Linux and Windows (Cmd+click on macOS) picks the deepest element.
+        const auto chain = chain_at(down_x_, down_y_);
+        const TesseractNode* node = (event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)) ? (chain.empty() ? nullptr : chain.back())
+                                                                                   : scoped_pick(chain, event->clicks >= 2);
         // A handle of the current selection wins over whatever lies under it.
-        if (!deep && edges_at(down_x_, down_y_) != EdgeNone) node = find(selected_id_);
-        if (!deep && !selected_id_.empty()) {
-            const auto bounds = screen_bounds(selected_id_);
-            if (down_x_ >= bounds.x && down_x_ <= bounds.x + bounds.width &&
-                down_y_ >= bounds.y && down_y_ <= bounds.y + bounds.height) node = find(selected_id_);
-        }
+        if (edges_at(down_x_, down_y_) != EdgeNone) node = find(selected_id_);
         if (space_down_) node = nullptr;
         if (!node) {
             selected_id_.clear();
@@ -1405,7 +1439,9 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
                 Rwidget_invalidate(widget);
             }
         } else {
-            const auto* node = (event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)) ? hit_deepest(event->local_x, event->local_y) : hit_root(event->local_x, event->local_y);
+            const auto chain = chain_at(event->local_x, event->local_y);
+            const auto* node = (event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)) ? (chain.empty() ? nullptr : chain.back())
+                                                                               : scoped_pick(chain, false);
             const std::string next = node ? node->id : "";
             if (next != hovered_id_) {
                 hovered_id_ = next;

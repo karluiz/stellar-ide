@@ -194,6 +194,10 @@
                     <VBox Class="workspace" Slot.Title="Editor">
                         <Border Class="tool-header" Padding="0,10" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
                             <HBox>
+                                <Overlay Width="28" Height="28" Slot.VAlign="Center" Slot.Padding="0,0,8,0">
+                                    <Button Name="files.column.toggle" Text="" Width="28" Height="28" Style="Flat" OnClicked="files.column.toggle" Tooltip="Show or hide the file tree" AccessibleName="Show or hide the file tree"/>
+                                    <Image Source="icons/files.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                                </Overlay>
                                 <VBox Slot.Fill="1">
                                     <Label Name="code.title" Text="No file open" TextSize="17"/>
                                     <Label Name="code.path" Text="Select a file in FILES" Class="data" Font="monospace"/>
@@ -202,7 +206,7 @@
                             </HBox>
                         </Border>
                         <HBox Slot.Fill="1">
-                            <VBox Width="250" Slot.Padding="14,6,0,14" Spacing="6">
+                            <VBox Name="files.column" Width="250" Slot.Padding="14,6,0,14" Spacing="6">
                                 <Label Text="Workspace files" Class="section" Slot.Padding="0,6,0,0"/>
                                 <TreeView Name="workspace.files" Class="file-tree" Slot.Fill="1" AccessibleName="Workspace files"/>
                             </VBox>
@@ -325,6 +329,10 @@
                     <VBox Class="workspace" Slot.Title="Definitions">
                         <Border Class="tool-header" Padding="0,10" BorderWidth="0" CornerRadius="10" Slot.Padding="14,8,14,4">
                             <HBox>
+                                <Overlay Width="28" Height="28" Slot.VAlign="Center" Slot.Padding="0,0,8,0">
+                                    <Button Name="agents.column.toggle" Text="" Width="28" Height="28" Style="Flat" OnClicked="agents.column.toggle" Tooltip="Show or hide the agent list" AccessibleName="Show or hide the agent list"/>
+                                    <Image Source="icons/files.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
+                                </Overlay>
                                 <VBox Slot.Fill="1">
                                     <Label Name="agent.title" Text="Select an agent" TextSize="17"/>
                                     <Label Name="agent.path" Text=".agents/agents/*.md" Class="data" Font="monospace"/>
@@ -336,7 +344,7 @@
                             </HBox>
                         </Border>
                         <HBox Slot.Fill="1">
-                            <VBox Width="250" Slot.Padding="14,6,0,14" Spacing="6">
+                            <VBox Name="agents.column" Width="250" Slot.Padding="14,6,0,14" Spacing="6">
                                 <HBox>
                                     <Label Text="Agent definitions" Class="section" Slot.Fill="1" Slot.VAlign="Center"/>
                                     <Button Text="New" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)"/>
