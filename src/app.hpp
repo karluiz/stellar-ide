@@ -129,6 +129,7 @@ private:
     bool threads_busy_ = false;
     std::string browser_directory_;
     std::string browser_label_;
+    std::string accessibility_key_;
     bool composer_completion_pending_ = false;
     float editor_zoom_ = 1.0f;
     float interface_zoom_ = 1.15f;

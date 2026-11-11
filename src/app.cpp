@@ -3401,6 +3401,14 @@ void App::pump() {
 // the page on screen is exposed: inactive pages are hidden, and the workspace is hidden while the
 // opening or the world gallery covers it.
 void App::sync_accessibility() {
+    // Runs every frame; only update the tree when a page or cover actually changed, so screen
+    // readers are not sent a stream of identical changes.
+    std::string key;
+    for (const char* name : {"left.tabs", "center.tabs", "more.tabs", "right.tabs"}) key += std::to_string(Rswitcher_get_index(id(name))) + ",";
+    key += splash_.active() ? "s" : "-";
+    key += Rwidget_get_visibility(id("theme.gallery")) == R_VISIBLE ? "g" : "-";
+    if (key == accessibility_key_) return;
+    accessibility_key_ = key;
     for (const char* name : {"left.tabs", "center.tabs", "more.tabs", "right.tabs"}) {
         const auto switcher = id(name);
         if (!Rwidget_is_valid(switcher)) continue;
