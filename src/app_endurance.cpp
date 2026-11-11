@@ -669,6 +669,9 @@ void App::refresh_endurance_runs() {
         const auto found = std::find(endurance_run_rows_.begin(), endurance_run_rows_.end(), endurance_.active_run()->id);
         if (found != endurance_run_rows_.end()) selected = static_cast<int>(found - endurance_run_rows_.begin());
     }
+    // Runs are listed newest first; with history and no selection, show the latest run rather than
+    // the "No runs yet" placeholder beside a non-empty list.
+    if (selected < 0 && !endurance_run_rows_.empty()) selected = 0;
     endurance_run_index_ = selected;
     Rlist_view_set_selected(id("endurance.run.list"), selected);
     Rcombo_box_set_selected(id("endurance.run.select"), selected);
@@ -713,12 +716,16 @@ void App::refresh_endurance_run_details() {
         Rslot_set_fill(title, 1);
         auto status = Rwidget_add_child(heading, Rlabel_create(result.status.c_str()));
         Rlabel_set_text_size(status, 10);
-        auto meta = Rwidget_add_child(box, Rlabel_create((step.type == "approval" ? "Human gate" : step.agent + " · " + step.harness + " · " + step.mode +
+        // A step without its own harness inherits the workflow default; show the one actually used.
+        const auto harness = step.harness.empty() ? run->snapshot.default_harness : step.harness;
+        auto meta = Rwidget_add_child(box, Rlabel_create((step.type == "approval" ? "Human gate" : step.agent + " · " + harness + " · " + step.mode +
             " · attempt " + std::to_string(result.attempt)).c_str()));
         Rlabel_set_text_size(meta, 10);
         if (!result.output.empty()) {
             auto output = Rwidget_add_child(box, Rlabel_create(short_text(result.output, 5000).c_str()));
-            Rlabel_set_text_size(output, 11);
+            Rlabel_set_text_size(output, 12);
+            // Agent output is Markdown, rendered the same way as lead messages in the transcript.
+            Rlabel_set_markdown(output, R_TRUE);
             Rlabel_set_wrap(output, R_TRUE);
         }
         if (!result.error.empty()) {
