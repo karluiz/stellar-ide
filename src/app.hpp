@@ -131,6 +131,7 @@ private:
     std::string browser_directory_;
     std::string browser_label_;
     std::string accessibility_key_;
+    float endurance_graph_width_ = 0.0f;
     bool composer_completion_pending_ = false;
     float editor_zoom_ = 1.0f;
     float interface_zoom_ = 1.15f;

@@ -3394,6 +3394,17 @@ void App::pump() {
         refresh_threads();
     }
     update_reading_column();
+    // Opening the step inspector, folding a sidebar, or resizing narrows the workflow canvas; the
+    // graph is framed again so the selected step and both ends of the flow stay in view.
+    if (active_view(id("center.tabs")) == 2) {
+        float gx = 0.0f, gy = 0.0f, gw = 0.0f, gh = 0.0f;
+        Rwidget_get_rect(id("endurance.graph"), &gx, &gy, &gw, &gh);
+        if (gw > 0.0f && std::abs(gw - endurance_graph_width_) > 1.0f) {
+            const bool first = endurance_graph_width_ == 0.0f;
+            endurance_graph_width_ = gw;
+            if (!first) fit_endurance_graph();
+        }
+    }
     sync_accessibility();
     sync_file_browser_path();
     // The Review → Knowledge tab follows the pending proposal. A cheap key detects changes.
