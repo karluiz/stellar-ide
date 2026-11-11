@@ -243,7 +243,7 @@
                                     <Label Name="endurance.yaml.path" Text="endurance/mission-1.yaml" Class="data" TextSize="10" Slot.Fill="1" Slot.VAlign="Center"/>
                                     <Label Name="endurance.yaml.status" Text="Valid workflow · no cycles" Class="muted" TextSize="11" Slot.VAlign="Center"/>
                                 </HBox>
-                                <TextEditor Name="endurance.yaml" Slot.Fill="1" Slot.Padding="14,0,14,14" LineNumbers="true" Wrap="false" Placeholder="version: 1" AccessibleName="Endurance YAML editor"/>
+                                <TextEditor Name="endurance.yaml" Font="monospace" Slot.Fill="1" Slot.Padding="14,0,14,14" LineNumbers="true" Wrap="false" Placeholder="version: 1" AccessibleName="Endurance YAML editor"/>
                             </VBox>
                             <VBox Slot.Title="Runs">
                                 <HBox Slot.Fill="1">
@@ -475,7 +475,7 @@
                             <Button Name="mission.discard" Text="Discard mission" Style="Flat" OnClicked="mission.discard"/>
                             <Button Name="mission.apply" Text="Apply to workspace" Style="Primary" OnClicked="mission.apply"/>
                         </HBox>
-                        <TextEditor Name="mission.diff" Slot.Fill="1" Slot.Padding="14,0,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Select a mission to inspect its complete diff" Visibility="Collapsed"/>
+                        <TextEditor Name="mission.diff" Font="monospace" Slot.Fill="1" Slot.Padding="14,0,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Select a mission to inspect its complete diff" Visibility="Collapsed"/>
                     </VBox>
                     </Switcher>
                     <TabView Name="review.tabs" Class="tabs" Slot.Title="Review" Slot.Fill="1">
@@ -500,7 +500,7 @@
                                 <Button Name="checkpoint.restore_hunk" Text="Restore hunk" Style="Flat" OnClicked="checkpoint.restore_hunk" Tooltip="Restore only the selected hunk after validating its file"/>
                             </HBox>
                             <TabView Name="checkpoint.content.tabs" Class="tabs" Slot.Fill="1" Visibility="Collapsed">
-                                <TextEditor Name="checkpoint.diff" Slot.Title="Diff" Slot.Fill="1" Slot.Padding="14,10,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Complete an agent run to inspect source changes here"/>
+                                <TextEditor Name="checkpoint.diff" Font="monospace" Slot.Title="Diff" Slot.Fill="1" Slot.Padding="14,10,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="Complete an agent run to inspect source changes here"/>
                                 <VBox Slot.Title="Verification">
                                     <ListView Name="verification.results" Height="140" OnActivated="verification.open" Slot.Padding="14,8,14,6" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Build and test results"/>
                                     <HBox Name="verification.actions.row" Slot.Padding="14,0,14,8" Spacing="8">
@@ -512,7 +512,7 @@
                                         <ComboBox Name="verification.diagnostics" Slot.Fill="1" Tooltip="Diagnostic to inspect" AccessibleName="Verification diagnostic"/>
                                         <Button Name="verification.open_diagnostic" Text="Open diagnostic" Style="Flat" OnClicked="verification.open_diagnostic" Tooltip="Open the diagnostic at its source line"/>
                                     </HBox>
-                                    <TextEditor Name="verification.detail" Slot.Fill="1" Slot.Padding="14,10,14,14" ReadOnly="true" LineNumbers="true" Wrap="true" Placeholder="Build and test commands from the agent run will appear here"/>
+                                    <TextEditor Name="verification.detail" Font="monospace" Slot.Fill="1" Slot.Padding="14,10,14,14" ReadOnly="true" LineNumbers="true" Wrap="true" Placeholder="Build and test commands from the agent run will appear here"/>
                                 </VBox>
                             </TabView>
                         </VBox>
@@ -523,7 +523,7 @@
                                     <Label Name="proposal.files" Class="muted" Wrap="true"/>
                                 </VBox>
                             </Border>
-                            <TextEditor Name="proposal.diff" Slot.Fill="1" Slot.Padding="14,0,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="A completed run can produce a reviewed wiki proposal here"/>
+                            <TextEditor Name="proposal.diff" Font="monospace" Slot.Fill="1" Slot.Padding="14,0,14,14" ReadOnly="true" LineNumbers="true" Wrap="false" Placeholder="A completed run can produce a reviewed wiki proposal here"/>
                             <HBox Slot.Padding="18,14" Spacing="10">
                                 <Label Text="Validated against current files before writing" Class="muted" Slot.Fill="1" Slot.VAlign="Center"/>
                                 <Button Text="Discard" Style="Flat" OnClicked="proposal.discard"/>
