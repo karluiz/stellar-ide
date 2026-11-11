@@ -389,6 +389,7 @@
                                 <Border Class="section-header" Padding="20,18" BorderWidth="0" CornerRadius="10">
                                     <VBox Spacing="12">
                                         <Label Text="DEFAULT KEYBOARD REFERENCE" Class="section" Font="monospace" Slot.Padding="0,0,0,4"/>
+                                        <Label Text="On macOS, Cmd works wherever Ctrl is shown." Class="muted" TextSize="11" Wrap="true" Slot.Padding="0,0,0,6"/>
                                         <HBox><Label Text="Ctrl+," Class="data" Font="monospace" MinWidth="132"/><Label Text="Open or close Settings" Slot.Fill="1"/></HBox>
                                         <HBox><Label Text="Esc" Class="data" Font="monospace" MinWidth="132"/><Label Text="Return from Settings" Slot.Fill="1"/></HBox>
                                         <HBox><Label Text="Ctrl+Enter" Class="data" Font="monospace" MinWidth="132"/><Label Text="Send to lead" Slot.Fill="1"/></HBox>
