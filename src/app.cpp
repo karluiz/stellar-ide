@@ -836,7 +836,7 @@ bool App::composer_token_complete() const {
 }
 
 float composer_editor_height(Rid editor) {
-    return std::clamp(28.0f + 20.0f * static_cast<float>(Rtext_editor_get_line_count(editor)), 48.0f, 88.0f);
+    return std::clamp(20.0f + 20.0f * static_cast<float>(Rtext_editor_get_line_count(editor)), 40.0f, 140.0f);
 }
 
 void App::composer_changed() {

@@ -359,6 +359,12 @@ Most divisions are one-pixel theme-colored strokes. Graph nodes retain an 11px n
 
 ## Components
 
+### Sidebar grid
+One left edge for everything in the sidebar: an 8px outer gutter and a 10px inner inset put section labels, destination icons, the list heading, the search text and chat titles all at 18px. Destinations are 32px rows with 2px gaps; the list heading's Archived toggle and archive icon are 28px, 11px text, right-aligned. The chat search is a plain 30px field with no external magnifier.
+
+### Composer and status bar
+The chat composer is compact: 12×10px shell padding, a 40px (two-line) editor that grows 20px per line up to 140px, 4px between the editor and its toolbar, and 30px icon buttons. The status bar's theme chip sizes to its content and sits flush with the right edge (8px), with a 16px planet.
+
 ### Files explorer
 A code-editor tree directly on the workspace surface: no box, header, path field, or back/forward/up controls. Folders come first, then files, both in case-insensitive order; hidden entries are left out. Rows are 26px with a 14px indent, chevrons for folders, an accent folder glyph and a quieter file glyph (drawn at runtime in the theme's Accent and Text colours). One click opens a file or toggles a folder; folders load lazily and stay open across refreshes. Status messages show workspace-relative paths.
 
