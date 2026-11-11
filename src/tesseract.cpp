@@ -929,7 +929,13 @@ void TesseractCanvas::paint(Rid widget, RPainter* painter, float width, float he
         Rdraw_text(painter, Rfont_get_default(), 14.0f, 16.0f, 18.0f, "Tesseract", text.r, text.g, text.b, 1.0f);
         const auto summary = std::to_string(roots_.size()) + (roots_.size() == 1 ? " frame" : " frames");
         Rdraw_text(painter, Rfont_get_default(), 11.0f, 16.0f, 40.0f, summary.c_str(), muted.r, muted.g, muted.b, 1.0f);
-        Rdraw_text(painter, Rfont_get_default(), 10.0f, 16.0f, 58.0f, "Ctrl+click direct select · Double-click text to edit", muted.r, muted.g, muted.b, 1.0f);
+        Rdraw_text(painter, Rfont_get_default(), 10.0f, 16.0f, 58.0f, 
+#ifdef __APPLE__
+            "Cmd+click selects inside · Double-click text to edit · Cmd+Z undo"
+#else
+            "Ctrl+click selects inside · Double-click text to edit · Ctrl+Z undo"
+#endif
+, muted.r, muted.g, muted.b, 1.0f);
     }
     if (!error_.empty()) {
         const float error_y = height - 146.0f;
@@ -948,7 +954,8 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
         down_y_ = event->local_y;
         dragging_ = false;
         drag_mode_ = DragMode::None;
-        const bool deep = (event->modifiers & R_MOD_CTRL) || event->clicks >= 2;
+        // Ctrl+click on Linux and Windows; Cmd+click on macOS, where Ctrl+click is the context click.
+        const bool deep = (event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)) || event->clicks >= 2;
         const auto* node = deep ? hit_deepest(down_x_, down_y_) : hit_root(down_x_, down_y_);
         if (!deep && !selected_id_.empty()) {
             const auto bounds = screen_bounds(selected_id_);
@@ -1015,7 +1022,7 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
                 Rwidget_invalidate(widget);
             }
         } else {
-            const auto* node = (event->modifiers & R_MOD_CTRL) ? hit_deepest(event->local_x, event->local_y) : hit_root(event->local_x, event->local_y);
+            const auto* node = (event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)) ? hit_deepest(event->local_x, event->local_y) : hit_root(event->local_x, event->local_y);
             const std::string next = node ? node->id : "";
             if (next != hovered_id_) {
                 hovered_id_ = next;
