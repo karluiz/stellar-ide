@@ -1245,7 +1245,7 @@ void App::refresh_threads() {
         if (thread.id == current_thread_id_ && (lead_process_.running() || wiki_process_.running())) suffix = "running";
         else if (thread.id == current_thread_id_ && last_run_failed_) suffix = "failed";
         else suffix = relative_age(thread.updated_at);
-        const size_t width = suffix.empty() ? 26 : 26 - std::min<size_t>(suffix.size() + 3, 12);
+        const size_t width = suffix.empty() ? 30 : 30 - std::min<size_t>(suffix.size() + 3, 12);
         Rlist_view_add_item(id("threads"), (shortened(thread.title, width) + (suffix.empty() ? "" : " · " + suffix)).c_str());
     }
     if (selected < 0 && show_archived_ && !thread_rows_.empty()) selected = 0;
