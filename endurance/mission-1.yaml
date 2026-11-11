@@ -1,0 +1,46 @@
+version: 1
+name: Ship with confidence
+description: Research, review, approve, implement, and verify a task.
+defaults:
+  harness: kimi
+concurrency: 2
+inputs:
+  task:
+    type: string
+    required: true
+    default: Review the current workspace and implement the next safe, verifiable improvement.
+steps:
+  - id: research
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [40, 100]
+    prompt: "Investigate this task and report the relevant implementation context:\n${{ inputs.task }}"
+  - id: review
+    type: agent
+    agent: code-reviewer
+    harness: claude
+    mode: review
+    needs: [research]
+    position: [290, 100]
+    prompt: "Review the proposed approach and identify material risks:\n${{ steps.research.output }}"
+  - id: approval
+    type: approval
+    needs: [review]
+    position: [540, 100]
+    prompt: Approve implementation after reviewing the research and risks.
+  - id: implement
+    type: agent
+    agent: orchestrator
+    mode: build
+    needs: [approval]
+    position: [790, 100]
+    prompt: "Implement the approved task:\n${{ inputs.task }}\n\nResearch:\n${{ steps.research.output }}\n\nReview:\n${{ steps.review.output }}"
+  - id: verify
+    type: agent
+    agent: code-reviewer
+    harness: claude
+    mode: review
+    needs: [implement]
+    position: [1040, 100]
+    prompt: "Review the implementation and verification evidence:\n${{ steps.implement.output }}"
