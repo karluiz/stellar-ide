@@ -21,7 +21,7 @@
     <Style Widget="Button" Class="header-action" Control="#00000000" ControlHovered="#292117" ControlPressed="#3A2D1D" Text="#F3EDE2"/>
     <Style Widget="Button" Class="send-button" Control="#292117" ControlHovered="#3A2D1D" ControlPressed="#4D3A22" Text="#F3EDE2" CornerRadius="17"/>
     <Style Widget="HeaderBar" Header="#100E0C" Text="#F3EDE2"/>
-    <Style Widget="TextEditor" Class="composer-input" Input="#00000000" Border="#00000000" ControlBorder="#00000000"/>
+    <Style Widget="TextEditor" Class="composer-input" Input="#00000000" Border="#00000000" ControlBorder="#00000000" RowHovered="#00000000"/>
     <Style Widget="Label" Class="section" Text="#B4A794" FontSize="11"/>
     <Style Widget="Label" Class="muted" Text="#B4A794"/>
     <Style Widget="Label" Class="data" Text="#E8C78E" FontSize="11"/>

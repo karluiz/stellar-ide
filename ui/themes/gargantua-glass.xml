@@ -18,7 +18,7 @@
     <Style Class="composer" Material="FrostedGlass" Panel="#1B1711"/>
     <Style Class="activity" Material="FrostedGlass" Panel="#191510"/>
     <Style Class="proposal" Material="TintedGlass" Panel="#3B2B15"/>
-    <Style Widget="TextEditor" Class="composer-input" Material="Solid" Focus="#00000000"/>
+    <Style Widget="TextEditor" Class="composer-input" Material="Solid" Focus="#00000000" RowHovered="#00000000"/>
     <Style Widget="Label" Class="section" Text="#CBBEA9"/>
     <Style Widget="Label" Class="muted" Text="#CBBEA9"/>
 </Theme>
