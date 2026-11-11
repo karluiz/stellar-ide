@@ -1472,7 +1472,13 @@ void App::reset_session() {
     if (!proposal_) {
         const auto staged = workspace_.knowledge().staged();
         if (!staged.empty()) {
-            proposal_ = workspace_.validate_proposal("Agent-staged graph operations awaiting human review", {}, staged);
+            const auto episodes = static_cast<size_t>(std::count_if(staged.begin(), staged.end(), [](const auto& operation) {
+                return operation.entity_type == "episode";
+            }));
+            const auto summary = episodes == staged.size()
+                ? (episodes == 1 ? std::string("1 run memory") : std::to_string(episodes) + " run memories") + " from earlier work, waiting for your review"
+                : counted(staged.size(), "knowledge record") + " from earlier work, waiting for your review";
+            proposal_ = workspace_.validate_proposal(summary, {}, staged);
             Rlabel_set_text(id("proposal.summary"), proposal_->summary.c_str());
             Rwidget_set_visibility(id("proposal.bar"), R_VISIBLE);
         }
