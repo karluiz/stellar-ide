@@ -3930,8 +3930,11 @@ void App::open_workspace() {
     RFileDialogDesc desc{};
     desc.parent = window_;
     desc.title = "Open a workspace root";
-    desc.directory = workspace_.root().c_str();
-    desc.flags = R_FILE_DIALOG_SHOW_HIDDEN;
+    // Start beside the current workspace, where other projects usually live, and hide dot-folders
+    // (.git, .stellar, .agents) that are never a workspace root.
+    const auto start = workspace_.root().has_parent_path() ? workspace_.root().parent_path().string() : workspace_.root().string();
+    desc.directory = start.c_str();
+    desc.flags = 0;
     const char* selected = Rfile_dialog_select_folder(&desc);
     if (!selected) return;
     active_mission_id_.clear();

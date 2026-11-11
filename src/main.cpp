@@ -49,6 +49,9 @@ void handle_termination_signals() {
         int received = 0;
         while (sigwait(&signals, &received) == 0) {
             if (quit_requested.exchange(true)) std::_Exit(128 + received); // second signal: stop now
+            // Rquit is thread-safe and also ends nested loops such as an open file dialog, which
+            // never return to the main loop's check below.
+            Rquit(0);
             Rwake_up();
         }
     }).detach();
