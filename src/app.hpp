@@ -158,6 +158,14 @@ private:
     bool file_tree_building_ = false;
     std::string accessibility_key_;
     float endurance_graph_width_ = 0.0f;
+    std::chrono::steady_clock::time_point endurance_graph_refit_at_{};
+    // The sidebar divider is dragged by the app so its limits apply on the same frame (see window_event).
+    int pane_drag_ = 0;
+    float pane_drag_x_ = 0.0f;
+    float pane_drag_left_ = 0.0f;
+    float pane_drag_center_ = 0.0f;
+    float pane_drag_right_ = 0.0f;
+    bool drag_panes(const REvent* event);
     float tesseract_composer_height_ = 0.0f;
     bool composer_completion_pending_ = false;
     float editor_zoom_ = 1.0f;

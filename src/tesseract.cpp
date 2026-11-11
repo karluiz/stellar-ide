@@ -730,12 +730,16 @@ void TesseractCanvas::fit() {
         max_x = std::max(max_x, root.bounds.x + root.bounds.width);
         max_y = std::max(max_y, root.bounds.y + root.bounds.height);
     }
+    // Frame the design in the free area: below the title and hints (top 76px) and above the
+    // floating prompt box (bottom 156px), with a margin on the sides.
+    const float top = 76.0f;
+    const float bottom = 156.0f;
     const float available_width = std::max(100.0f, width_ - 100.0f);
-    const float available_height = std::max(100.0f, height_ - 150.0f);
+    const float available_height = std::max(100.0f, height_ - top - bottom);
     zoom_ = std::clamp(std::min(available_width / std::max(1.0f, max_x - min_x),
                                 available_height / std::max(1.0f, max_y - min_y)), 0.15f, 1.6f);
     pan_x_ = width_ * 0.5f - (min_x + max_x) * 0.5f * zoom_;
-    pan_y_ = (height_ - 90.0f) * 0.5f - (min_y + max_y) * 0.5f * zoom_;
+    pan_y_ = top + std::max(100.0f, height_ - top - bottom) * 0.5f - (min_y + max_y) * 0.5f * zoom_;
 }
 
 void TesseractCanvas::zoom_at(float x, float y, float factor) {
@@ -945,7 +949,16 @@ void TesseractCanvas::paint_empty(Rid widget, RPainter* painter) {
 void TesseractCanvas::paint(Rid widget, RPainter* painter, float width, float height) {
     width_ = width;
     height_ = height;
-    if (!fitted_ || (!navigating_ && (std::abs(width_ - fit_width_) > 1.0f || std::abs(height_ - fit_height_) > 1.0f))) fit();
+    // The first size frames the design; later size changes (a divider, a folded panel, the window)
+    // keep the zoom and the view's center instead of reframing, which made the design jump.
+    if (!fitted_) {
+        fit();
+    } else if (std::abs(width_ - fit_width_) > 0.5f || std::abs(height_ - fit_height_) > 0.5f) {
+        pan_x_ += (width_ - fit_width_) * 0.5f;
+        pan_y_ += (height_ - fit_height_) * 0.5f;
+        fit_width_ = width_;
+        fit_height_ = height_;
+    }
     const auto content = Rwindow_get_content(Rwidget_get_window(widget));
     const auto window = theme_color(content, R_COLOR_WINDOW);
     const auto text = theme_color(widget, R_COLOR_TEXT);

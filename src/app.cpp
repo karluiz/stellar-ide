@@ -3462,14 +3462,20 @@ void App::pump() {
     apply_pinch();
     fit_tesseract_composer();
     // Opening the step inspector, folding a sidebar, or resizing narrows the workflow canvas; the
-    // graph is framed again so the selected step and both ends of the flow stay in view.
+    // graph is framed again so the selected step and both ends of the flow stay in view. Reframing
+    // on every frame of a drag made it jump, so it waits until the width has settled.
     if (active_view(id("center.tabs")) == 2) {
         float gx = 0.0f, gy = 0.0f, gw = 0.0f, gh = 0.0f;
         Rwidget_get_rect(id("endurance.graph"), &gx, &gy, &gw, &gh);
+        const auto now = std::chrono::steady_clock::now();
         if (gw > 0.0f && std::abs(gw - endurance_graph_width_) > 1.0f) {
             const bool first = endurance_graph_width_ == 0.0f;
             endurance_graph_width_ = gw;
-            if (!first) fit_endurance_graph();
+            if (!first) endurance_graph_refit_at_ = now + std::chrono::milliseconds(300);
+        }
+        if (endurance_graph_refit_at_ != std::chrono::steady_clock::time_point{} && now >= endurance_graph_refit_at_) {
+            endurance_graph_refit_at_ = {};
+            fit_endurance_graph();
         }
     }
     sync_accessibility();
@@ -3633,6 +3639,55 @@ void App::apply_platform_conventions() {
         }
         for (int i = 0; i < Rwidget_get_child_count(widget); ++i) pending.push_back(Rwidget_get_child(widget, i));
     }
+}
+
+// The dividers beside the navigation and the right panel. Raven's splitter would resize past the
+// panels' limits and clamp_side_panes() would pull them back a frame later, so the drag visibly
+// shook at the limit. The app takes the drag over and applies the limits on the same event.
+bool App::drag_panes(const REvent* event) {
+    const auto left = id("left.sidebar");
+    const auto center = id("center.workspace");
+    const auto right = id("right.sidebar");
+    const auto rect = [](Rid pane, float& x, float& w) {
+        float y = 0.0f, h = 0.0f;
+        x = w = 0.0f;
+        if (Rwidget_is_valid(pane) && Rwidget_get_visibility(pane) == R_VISIBLE) Rwidget_get_rect(pane, &x, &y, &w, &h);
+    };
+    float lx, lw, cx, cw, rx, rw;
+    rect(left, lx, lw);
+    rect(center, cx, cw);
+    rect(right, rx, rw);
+    if (event->type == R_EVENT_MOUSE_DOWN && event->button == R_MOUSE_LEFT && cw > 0.0f) {
+        int which = 0;
+        if (lw > 0.0f && std::abs(event->x - (lx + lw + 1.5f)) <= 4.0f) which = 1;
+        else if (rw > 0.0f && std::abs(event->x - (rx - 1.5f)) <= 4.0f) which = 2;
+        if (which == 0) return false;
+        pane_drag_ = which;
+        pane_drag_x_ = event->x;
+        pane_drag_left_ = lw;
+        pane_drag_center_ = cw;
+        pane_drag_right_ = rw;
+        return true;
+    }
+    if (pane_drag_ == 0) return false;
+    if (event->type == R_EVENT_MOUSE_MOVE) {
+        const float total = pane_drag_left_ + pane_drag_center_ + pane_drag_right_;
+        const float dx = event->x - pane_drag_x_;
+        float l = pane_drag_left_, r = pane_drag_right_;
+        if (pane_drag_ == 1) l = std::clamp(pane_drag_left_ + dx, 240.0f, std::min(310.0f, total - r - 420.0f));
+        else r = std::clamp(pane_drag_right_ - dx, 300.0f, std::min(380.0f, total - l - 420.0f));
+        if (l > 0.0f) Rslot_set_fill(left, l);
+        if (r > 0.0f) Rslot_set_fill(right, r);
+        Rslot_set_fill(center, total - l - r);
+        Rwidget_set_cursor(Rwindow_get_content(window_), R_CURSOR_RESIZE_H);
+        return true;
+    }
+    if (event->type == R_EVENT_MOUSE_UP) {
+        pane_drag_ = 0;
+        Rwidget_set_cursor(Rwindow_get_content(window_), R_CURSOR_ARROW);
+        return true;
+    }
+    return false;
 }
 
 // Raven's splitter ignores MaxWidth while dragging and grows every pane with the window, so the
@@ -5102,6 +5157,7 @@ void App::zoom_interface(float amount) {
 
 int App::window_event(Rid window, const REvent* event, void* user) {
     (void)window;
+    if (static_cast<App*>(user)->drag_panes(event)) return R_TRUE;
     if (event->type != R_EVENT_KEY_DOWN) return R_FALSE;
     auto& app = *static_cast<App*>(user);
     if (app.splash_.active()) {
