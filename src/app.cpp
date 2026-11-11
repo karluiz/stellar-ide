@@ -587,6 +587,7 @@ bool App::create() {
     Rtext_editor_set_changed_callback(id("note.editor"), [](Rid, void* user) {
         static_cast<App*>(user)->note_modified();
     }, this);
+    Rtext_editor_set_live_markdown(id("note.editor"), R_TRUE);
     Rtab_view_set_changed_callback(id("wiki.tabs"), tab_changed, this);
     Rwidget_set_event_callback(id("composer"), [](Rid, const REvent* event, void* user) -> int {
         auto& app = *static_cast<App*>(user);
@@ -2260,25 +2261,27 @@ void App::set_sidebar_visibility(bool left, bool visible) {
     const auto expected = visible ? R_VISIBLE : R_COLLAPSED;
     if (current == visible && Rwidget_get_visibility(target) == expected) return;
 
+    const auto measure_width = [](Rid pane) {
+        float x, y, width, height;
+        Rwidget_get_rect(pane, &x, &y, &width, &height);
+        return width;
+    };
+    const float left_width = measure_width(id("left.sidebar"));
+    const float center_width = measure_width(id("center.workspace"));
+    const float right_width = measure_width(id("right.sidebar"));
+    if (left_sidebar_visible_ && left_width > 0.0f) left_sidebar_share_ = left_width;
+    if (center_width > 0.0f) center_workspace_share_ = center_width;
+    if (right_sidebar_visible_ && right_width > 0.0f) right_sidebar_share_ = right_width;
     if (!visible) {
-        if (left_sidebar_visible_) left_sidebar_share_ = Rslot_get_fill(id("left.sidebar"));
-        center_workspace_share_ = Rslot_get_fill(id("center.workspace"));
-        if (right_sidebar_visible_) right_sidebar_share_ = Rslot_get_fill(id("right.sidebar"));
         center_workspace_share_ += target_share;
-        Rslot_set_fill(id("center.workspace"), center_workspace_share_);
-        const bool other_visible = left ? right_sidebar_visible_ : left_sidebar_visible_;
-        if (other_visible) Rslot_set_fill(id(left ? "right.sidebar" : "left.sidebar"), left ? right_sidebar_share_ : left_sidebar_share_);
     } else {
-        const bool other_visible = left ? right_sidebar_visible_ : left_sidebar_visible_;
-        const float other_share = other_visible ? (left ? right_sidebar_share_ : left_sidebar_share_) : 0.0f;
-        const float share = std::clamp(target_share, 0.0f, std::max(0.0f, 1.0f - other_share - 0.30f));
-        center_workspace_share_ = 1.0f - other_share - share;
-        Rslot_set_fill(id("center.workspace"), center_workspace_share_);
-        if (other_visible) Rslot_set_fill(id(left ? "right.sidebar" : "left.sidebar"), other_share);
-        Rslot_set_fill(target, share);
+        center_workspace_share_ = std::max(300.0f, center_workspace_share_ - target_share);
     }
 
     current = visible;
+    Rslot_set_fill(id("center.workspace"), center_workspace_share_);
+    Rslot_set_fill(id("left.sidebar"), left_sidebar_share_);
+    Rslot_set_fill(id("right.sidebar"), right_sidebar_share_);
     Rwidget_set_visibility(target, expected);
     refresh_navigation();
 }

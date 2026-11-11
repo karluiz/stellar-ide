@@ -168,7 +168,7 @@ private:
     bool compact_restore_right_ = true;
     float left_sidebar_share_ = 0.21f;
     float center_workspace_share_ = 0.58f;
-    float right_sidebar_share_ = 0.21f;
+    float right_sidebar_share_ = 300.0f;
 
     ClaudeProcess lead_process_;
     ClaudeProcess wiki_process_;
