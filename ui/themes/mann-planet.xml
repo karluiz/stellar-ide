@@ -15,8 +15,8 @@
     <Style Widget="TreeView" Track="#00000000" Handle="#749DAD" HandleHovered="#467F96"/>
     <Style Widget="TextEditor" Track="#00000000" Handle="#749DAD" HandleHovered="#467F96"/>
     <Style Widget="FileBrowser" Track="#00000000" Handle="#749DAD" HandleHovered="#467F96"/>
-    <!-- Navigation lists sit directly on the sidebar: only rows carry a fill, so an empty list stays dark. -->
-    <Style Widget="ListView" Class="nav-list" Input="#00000000"/>
+    <!-- Navigation lists sit directly on the sidebar: only rows carry a fill. The transparent fill keeps the panel hue so an unfocused selection blends toward it, not toward black. -->
+    <Style Widget="ListView" Class="nav-list" Input="#DCE9EE00"/>
     <Style Widget="Button" CornerRadius="8"/>
     <Style Widget="Button" Class="header-action" Control="#00000000" ControlHovered="#D3E4EA" ControlPressed="#BDD8E2" Text="#152831"/>
     <Style Widget="Button" Class="send-button" Control="#D3E4EA" ControlHovered="#BDD8E2" ControlPressed="#A4CAD8" Text="#152831" CornerRadius="17"/>
