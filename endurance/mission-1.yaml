@@ -1,0 +1,208 @@
+version: 1
+name: Ship with confidence
+description: Research, review, approve, implement, and verify a task.
+defaults:
+  harness: kimi
+concurrency: 2
+inputs:
+  task:
+    type: string
+    required: true
+    default: Review the current workspace and implement the next safe, verifiable improvement.
+steps:
+  - id: research
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [60, 70]
+    prompt: "Investigate this task and report the relevant implementation context:\n${{ inputs.task }}"
+  - id: review
+    type: agent
+    agent: code-reviewer
+    harness: claude
+    mode: review
+    needs: [research]
+    position: [310, 70]
+    prompt: "Review the proposed approach and identify material risks:\n${{ steps.research.output }}"
+  - id: approval
+    type: approval
+    needs: [review]
+    position: [560, 70]
+    prompt: Approve implementation after reviewing the research and risks.
+  - id: implement
+    type: agent
+    agent: orchestrator
+    mode: build
+    needs: [approval]
+    position: [810, 70]
+    prompt: "Implement the approved task:\n${{ inputs.task }}\n\nResearch:\n${{ steps.research.output }}\n\nReview:\n${{ steps.review.output }}"
+  - id: verify
+    type: agent
+    agent: code-reviewer
+    harness: claude
+    mode: review
+    needs: [implement]
+    position: [1060, 70]
+    prompt: "Review the implementation and verification evidence:\n${{ steps.implement.output }}"
+  - id: step-1
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [60, 230]
+    prompt: Describe this step's objective.
+  - id: step-2
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 400]
+    prompt: Describe this step's objective.
+  - id: step-3
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 540]
+    prompt: Describe this step's objective.
+  - id: step-4
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 120]
+    prompt: Describe this step's objective.
+  - id: step-5
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 260]
+    prompt: Describe this step's objective.
+  - id: step-6
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 400]
+    prompt: Describe this step's objective.
+  - id: step-7
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 540]
+    prompt: Describe this step's objective.
+  - id: step-8
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 120]
+    prompt: Describe this step's objective.
+  - id: step-9
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 260]
+    prompt: Describe this step's objective.
+  - id: step-10
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 400]
+    prompt: Describe this step's objective.
+  - id: step-11
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 540]
+    prompt: Describe this step's objective.
+  - id: step-12
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 120]
+    prompt: Describe this step's objective.
+  - id: step-13
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 260]
+    prompt: Describe this step's objective.
+  - id: step-14
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 400]
+    prompt: Describe this step's objective.
+  - id: step-15
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 540]
+    prompt: Describe this step's objective.
+  - id: step-16
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 120]
+    prompt: Describe this step's objective.
+  - id: step-17
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 260]
+    prompt: Describe this step's objective.
+  - id: step-18
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 400]
+    prompt: Describe this step's objective.
+  - id: step-19
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 540]
+    prompt: Describe this step's objective.
+  - id: step-20
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 120]
+    prompt: Describe this step's objective.
+  - id: step-21
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 260]
+    prompt: Describe this step's objective.
+  - id: step-22
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 400]
+    prompt: Describe this step's objective.
+  - id: step-23
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 540]
+    prompt: Describe this step's objective.
+  - id: step-24
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 120]
+    prompt: Describe this step's objective.
+  - id: step-25
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 260]
+    prompt: Describe this step's objective.
+  - id: step-26
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 400]
+    prompt: Describe this step's objective.
+  - id: step-27
+    type: agent
+    agent: orchestrator
+    mode: ask
+    position: [120, 540]
+    prompt: Describe this step's objective.
