@@ -3419,22 +3419,27 @@ void App::sync_file_browser_path() {
     if (!Rwidget_is_valid(browser) || Rwidget_get_child_count(browser) == 0) return;
     const char* current = Rfile_browser_get_directory(browser);
     if (!current) return;
-    std::error_code error;
-    const auto root = std::filesystem::weakly_canonical(workspace_.root(), error);
-    auto directory = std::filesystem::weakly_canonical(current, error);
-    auto relative = std::filesystem::relative(directory, root, error).generic_string();
-    if (error || relative.rfind("..", 0) == 0) {
-        Rfile_browser_set_directory(browser, root.string().c_str());
-        directory = root;
-        relative = ".";
+    // pump() runs every animation frame: the label is only recomputed (with filesystem calls)
+    // when the folder changes; otherwise this is a string comparison.
+    if (browser_directory_ != current) {
+        browser_directory_ = current;
+        std::error_code error;
+        const auto root = std::filesystem::weakly_canonical(workspace_.root(), error);
+        const auto directory = std::filesystem::weakly_canonical(current, error);
+        auto relative = std::filesystem::relative(directory, root, error).generic_string();
+        if (error || relative.rfind("..", 0) == 0) {
+            Rfile_browser_set_directory(browser, root.string().c_str());
+            browser_directory_ = root.string();
+            relative = ".";
+        }
+        browser_label_ = workspace_.name() + (relative == "." ? "" : "/" + relative);
     }
-    const auto label = workspace_.name() + (relative == "." ? "" : "/" + relative);
     const auto path_field = Rwidget_get_child(browser, 0);
     if (Rwidget_get_type(path_field) != R_WIDGET_TEXT_INPUT) return;
     const char* shown = Rtext_input_get_text(path_field);
-    if (shown && label == shown) return;
+    if (shown && browser_label_ == shown) return;
     Rtext_input_set_read_only(path_field, R_TRUE);
-    Rtext_input_set_text(path_field, label.c_str());
+    Rtext_input_set_text(path_field, browser_label_.c_str());
 }
 
 // Centers the transcript, queue bar and composer in the 860px reading column. A filling slot in a
