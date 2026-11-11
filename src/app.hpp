@@ -51,6 +51,8 @@ public:
     void set_run_state(const char* state);
     void apply_agent_title(const std::string& proposed);
     void sync_accessibility();
+    void apply_pinch();
+    void fit_tesseract_composer();
     void render_proposal();
     void save_pending_wiki_edits();
     void sync_file_browser_path();
@@ -132,6 +134,7 @@ private:
     std::string browser_label_;
     std::string accessibility_key_;
     float endurance_graph_width_ = 0.0f;
+    float tesseract_composer_height_ = 0.0f;
     bool composer_completion_pending_ = false;
     float editor_zoom_ = 1.0f;
     float interface_zoom_ = 1.15f;

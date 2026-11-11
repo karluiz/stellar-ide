@@ -1,4 +1,5 @@
 #include "memory.hpp"
+#include "platform.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -384,7 +385,14 @@ int MemoryUniverse::event(Rid widget, const REvent* event) {
         Rwidget_invalidate(widget);
         return R_TRUE;
     case R_EVENT_MOUSE_WHEEL:
-        zoom_at(event->local_x, event->local_y, std::exp(event->wheel_y * 0.12f));
+        // A trackpad swipe moves the view (pinch zooms, see App::pump); a mouse wheel, or Ctrl/Cmd
+        // with the trackpad, zooms at the pointer.
+        if (platform::precise_scrolling() && !(event->modifiers & (R_MOD_CTRL | R_MOD_SUPER))) {
+            pan_x_ += event->wheel_x;
+            pan_y_ += event->wheel_y;
+        } else {
+            zoom_at(event->local_x, event->local_y, std::exp(event->wheel_y * 0.12f));
+        }
         Rwidget_invalidate(widget);
         return R_TRUE;
     case R_EVENT_MOUSE_LEAVE:

@@ -13,6 +13,8 @@ namespace raven {
 
 class MemoryUniverse {
 public:
+    // Zooms by `factor` around a point in canvas coordinates (trackpad pinch).
+    void pinch(float x, float y, float factor) { zoom_at(x, y, factor); }
     struct Stats {
         size_t entities = 0;
         size_t relations = 0;

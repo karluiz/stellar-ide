@@ -38,6 +38,8 @@ void extend_search_path() {
 
 #ifdef __APPLE__
 
+#include <Raven.h>
+
 #include <Carbon/Carbon.h>
 #include <CoreGraphics/CoreGraphics.h>
 #include <objc/message.h>
@@ -341,6 +343,31 @@ void key_up(id self, SEL selector, id event) {
     reinterpret_cast<void (*)(id, SEL, id)>(original_key_up)(self, selector, forwarded);
 }
 
+// ---------------------------------------------------------------------------------------------
+// Trackpad gestures. Raven's Cocoa view has no pinch handler and reports trackpad swipes as wheel
+// turns, so canvases zoomed in large jumps on a two-finger swipe and ignored pinches.
+// ---------------------------------------------------------------------------------------------
+IMP original_scroll_wheel = nullptr;
+bool last_scroll_precise = false;
+PinchGesture pending_pinch;
+
+void scroll_wheel(id self, SEL selector, id event) {
+    last_scroll_precise = send<BOOL>(event, "hasPreciseScrollingDeltas");
+    reinterpret_cast<void (*)(id, SEL, id)>(original_scroll_wheel)(self, selector, event);
+}
+
+void magnify_with_event(id self, SEL, id event) {
+    const double magnification = send<double>(event, "magnification");
+    const id window = send<id>(self, "window");
+    const double scale = window ? send<double>(window, "backingScaleFactor") : 1.0;
+    const CGPoint in_window = send<CGPoint>(event, "locationInWindow");
+    const CGPoint point = send<CGPoint, CGPoint, id>(self, "convertPoint:fromView:", in_window, static_cast<id>(nullptr));
+    pending_pinch.factor *= static_cast<float>(std::clamp(1.0 + magnification, 0.5, 2.0));
+    pending_pinch.x = static_cast<float>(point.x * scale);
+    pending_pinch.y = static_cast<float>(point.y * scale);
+    Rwake_up();
+}
+
 } // namespace
 
 void prepare_windowing() {
@@ -356,8 +383,18 @@ void prepare_windowing() {
     if (const Class view = objc_getClass("RavenCocoaView")) {
         original_key_down = replace(view, "keyDown:", reinterpret_cast<IMP>(key_down));
         original_key_up = replace(view, "keyUp:", reinterpret_cast<IMP>(key_up));
+        original_scroll_wheel = replace(view, "scrollWheel:", reinterpret_cast<IMP>(scroll_wheel));
+        class_addMethod(view, sel_registerName("magnifyWithEvent:"), reinterpret_cast<IMP>(magnify_with_event), "v@:@");
     }
 }
+
+PinchGesture take_pinch() {
+    const auto pinch = pending_pinch;
+    pending_pinch = PinchGesture{};
+    return pinch;
+}
+
+bool precise_scrolling() { return last_scroll_precise; }
 
 void fit_main_window_to_display() {
     const id application = send<id>(reinterpret_cast<id>(objc_getClass("NSApplication")), "sharedApplication");
@@ -399,6 +436,8 @@ namespace raven::platform {
 
 void prepare_windowing() {}
 void fit_main_window_to_display() {}
+PinchGesture take_pinch() { return {}; }
+bool precise_scrolling() { return false; }
 
 } // namespace raven::platform
 

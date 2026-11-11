@@ -66,6 +66,8 @@ struct TesseractNode {
 
 class TesseractCanvas {
 public:
+    // Zooms by `factor` around a point in canvas coordinates (trackpad pinch).
+    void pinch(float x, float y, float factor) { zoom_at(x, y, factor); }
     void open(const std::filesystem::path& file);
     bool reload_if_changed();
 

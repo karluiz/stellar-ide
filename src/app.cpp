@@ -1,5 +1,6 @@
 #include "app.hpp"
 #include "app_icon.hpp"
+#include "platform.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -3394,6 +3395,8 @@ void App::pump() {
         refresh_threads();
     }
     update_reading_column();
+    apply_pinch();
+    fit_tesseract_composer();
     // Opening the step inspector, folding a sidebar, or resizing narrows the workflow canvas; the
     // graph is framed again so the selected step and both ends of the flow stay in view.
     if (active_view(id("center.tabs")) == 2) {
@@ -3418,6 +3421,56 @@ void App::pump() {
     // Accept and Discard only exist while there is a proposal to act on.
     const auto proposal_actions = proposal_ ? R_VISIBLE : R_COLLAPSED;
     if (Rwidget_get_visibility(id("proposal.actions")) != proposal_actions) Rwidget_set_visibility(id("proposal.actions"), proposal_actions);
+}
+
+// The Tesseract composer floats over the canvas with an explicit size. It used fixed estimates for
+// each optional row (activity, selection, queue, image); the selection row with its Clear button is
+// taller than estimated, so the setup and send buttons were pushed out of the bottom edge. The
+// shell now takes the measured height of its content.
+void App::fit_tesseract_composer() {
+    if (active_view(id("center.tabs")) != 5) return;
+    const auto shell = id("tesseract.composer.shell");
+    const auto content = Rwidget_get_child(shell, 0);
+    if (!Rwidget_is_valid(content)) return;
+    float width = 0.0f, height = 0.0f;
+    Rwidget_get_desired_size(content, &width, &height);
+    if (height <= 0.0f) return;
+    const float target = std::ceil(height + 28.0f + 2.0f);  // 14px padding on each side, 1px border
+    if (std::abs(tesseract_composer_height_ - target) < 1.0f) return;
+    tesseract_composer_height_ = target;
+    Rslot_set_size(shell, 0.0f, target);
+    Rslot_set_position(shell, 0.0f, -target - 22.0f);
+    Rwindow_request_redraw(window_);
+}
+
+// Routes a trackpad pinch to the canvas on screen: Tesseract and Memory Universe zoom around the
+// fingers, the workflow graph around its centre.
+void App::apply_pinch() {
+    const auto pinch = platform::take_pinch();
+    if (std::abs(pinch.factor - 1.0f) < 0.001f) return;
+    const float scale = std::max(Rwindow_get_scale(window_), 0.01f);
+    const float px = pinch.x / scale, py = pinch.y / scale;
+    const auto local = [&](Rid widget, float& x, float& y) {
+        float wx = 0.0f, wy = 0.0f, ww = 0.0f, wh = 0.0f;
+        Rwidget_get_rect(widget, &wx, &wy, &ww, &wh);
+        x = px - wx;
+        y = py - wy;
+    };
+    const int center = active_view(id("center.tabs"));
+    float x = 0.0f, y = 0.0f;
+    if (center == 5) {
+        local(id("tesseract.canvas"), x, y);
+        tesseract_.pinch(x, y, pinch.factor);
+        Rwidget_invalidate(id("tesseract.canvas"));
+    } else if (center == 3 && active_view(id("more.tabs")) == 2) {
+        local(id("memory.canvas"), x, y);
+        memory_.pinch(x, y, pinch.factor);
+        Rwidget_invalidate(id("memory.canvas"));
+    } else if (center == 2) {
+        float cx = 0.0f, cy = 0.0f, zoom = 1.0f;
+        Rnode_graph_get_view(id("endurance.graph"), &cx, &cy, &zoom);
+        Rnode_graph_set_view(id("endurance.graph"), cx, cy, std::clamp(zoom * pinch.factor, 0.3f, 2.5f));
+    }
 }
 
 // Raven exposes every child of a Switcher and everything under an overlay to screen readers. Only
@@ -4532,10 +4585,9 @@ void App::refresh_tesseract_chrome() {
     const auto composer = id("tesseract.composer");
     const float editor_height = composer_editor_height(composer);
     Rwidget_set_size(composer, -1.0f, editor_height);
-    const float composer_height = 120.0f + editor_height - 48.0f + (activity ? 60.0f : 0.0f) +
-        (selected ? 26.0f : 0.0f) + (queued ? 38.0f : 0.0f) + (tesseract_image_ ? 76.0f : 0.0f);
-    Rslot_set_size(id("tesseract.composer.shell"), 0.0f, composer_height);
-    Rslot_set_position(id("tesseract.composer.shell"), 0.0f, -composer_height - 22.0f);
+    (void)queued;
+    // The shell's height follows its measured content in fit_tesseract_composer().
+    Rwindow_request_redraw(window_);
     Rwidget_set_visibility(id("tesseract.selection.bar"), selected ? R_VISIBLE : R_COLLAPSED);
     if (selected) {
         Rlabel_set_text(id("tesseract.selection"), ("Selected " + selected->name).c_str());

@@ -15,4 +15,17 @@ void fit_main_window_to_display();
 // Appends the common per-user and package-manager locations that exist and are not already listed.
 void extend_search_path();
 
+// Trackpad pinch accumulated since the last call: a zoom factor (1 when there was none) and where
+// the gesture happened, in window pixels (the units of Raven mouse events). No-op outside macOS.
+struct PinchGesture {
+    float factor = 1.0f;
+    float x = 0.0f;
+    float y = 0.0f;
+};
+PinchGesture take_pinch();
+
+// True when the latest scroll came from a trackpad or another device with precise deltas, where a
+// two-finger swipe means "move the view", not "turn a wheel". False outside macOS.
+bool precise_scrolling();
+
 } // namespace raven::platform
