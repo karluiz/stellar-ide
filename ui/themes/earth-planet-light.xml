@@ -19,6 +19,8 @@
     <Style Widget="ListView" Class="nav-list" Input="#DDEDE500"/>
     <!-- Buttons: one 30px height everywhere. Default is the secondary action (control fill and border), Primary the one main
          action of a view, Flat only toolbars and icons. "danger" marks destructive actions with the Danger colour. -->
+    <!-- The Files tree sits directly on the workspace surface, with compact rows like a code editor explorer. -->
+    <Style Widget="TreeView" Class="file-tree" Input="#F3F9F500" Border="#00000000" ControlBorder="#00000000" Focus="#00000000" RowHeight="26" Indent="14"/>
     <Style Widget="Button" CornerRadius="7" ControlHeight="30" PaddingX="12" PaddingY="5"/>
     <Style Widget="Button" Class="danger" Text="#A44343"/>
     <Style Widget="Button" Class="header-action" Control="#00000000" ControlHovered="#C8E2D5" ControlPressed="#B1D5C4" Text="#15352B"/>

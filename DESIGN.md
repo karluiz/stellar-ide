@@ -359,6 +359,9 @@ Most divisions are one-pixel theme-colored strokes. Graph nodes retain an 11px n
 
 ## Components
 
+### Files explorer
+A code-editor tree directly on the workspace surface: no box, header, path field, or back/forward/up controls. Folders come first, then files, both in case-insensitive order; hidden entries are left out. Rows are 26px with a 14px indent, chevrons for folders, an accent folder glyph and a quieter file glyph (drawn at runtime in the theme's Accent and Text colours). One click opens a file or toggles a folder; folders load lazily and stay open across refreshes. Status messages show workspace-relative paths.
+
 ### Buttons
 Every button is one of three variants, 30px tall with 7px corners and 12×5px padding (set once per theme on `Widget="Button"`).
 - **Primary:** Accent fill with AccentText. At most one per view, for its main commitment: Save file/agent/note, Run workflow, Create and run, Apply to workspace, Accept and write, Settings Done.
@@ -366,6 +369,7 @@ Every button is one of three variants, 30px tall with 7px corners and 12×5px pa
 - **Destructive:** A secondary button with `Class="danger"`, whose label takes the theme's Danger colour: Delete agent, Discard mission, Forget memory, Reject, Discard, Delete, Forget. Never Primary.
 - **Flat:** Transparent until hovered, only for toolbars and chrome: header actions (New chat, Activity, Retry, Stop), icon buttons, zoom controls, Close/Cancel/Skip, the inline Copy under answers, attachment Remove/Clear, and segmented toggles (Archived, Dark/Light/Glass). Navigation and Appearance icon buttons use 17px authored icons inside 36×34px targets.
 - **Send:** A 36×34px circular icon button inside the composer, with a 16px send icon and accessible name `Send to lead`. Every variant supplies its Control, ControlHovered, ControlPressed, and Text colors. Send is disabled while the lead runs; Stop appears in the unified header only during a run.
+- **Save file:** Code files autosave 900ms after an edit, so Save file is enabled only while there are unsaved changes.
 - **Confirmations:** Confirmation dialogs name the action on the button (Delete agent, Restore files, Apply changes, Discard mission) next to a flat Cancel; never Yes/No. Safe actions use the Primary button and Enter confirms. Destructive actions use the Danger colour on a default button and Enter cancels; Escape always cancels.
 - **State:** Preserve native hover, pressed, disabled, and the active variant's keyboard-focus feedback. Do not communicate errors, completion, or availability by color alone.
 

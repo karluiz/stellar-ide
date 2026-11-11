@@ -176,7 +176,7 @@
                         <HBox Slot.Fill="1">
                             <VBox Width="260" Slot.Padding="10,8,10,12">
                                 <Label Text="Workspace files" Class="section" Slot.Padding="6,0,6,4"/>
-                                <FileBrowser Name="workspace.files" Slot.Fill="1" Controls="false" Places="false" ShowHidden="false"/>
+                                <TreeView Name="workspace.files" Class="file-tree" Slot.Fill="1" AccessibleName="Workspace files"/>
                             </VBox>
                             <TextEditor Name="code.editor" Slot.Fill="1" Slot.Padding="14,0,14,14" LineNumbers="true" Wrap="true" Placeholder="Open a source file from the workspace explorer"/>
                         </HBox>

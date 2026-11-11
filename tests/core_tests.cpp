@@ -1,3 +1,4 @@
+#include "file_tree.hpp"
 #include "checkpoints.hpp"
 #include "claude.hpp"
 #include "composer.hpp"
@@ -1032,6 +1033,27 @@ void splash_tests() {
 
 } // namespace
 
+void file_tree_tests() {
+    const auto root = std::filesystem::temp_directory_path() / "stellar-file-tree-test";
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root / "src");
+    std::filesystem::create_directories(root / "Docs");
+    std::filesystem::create_directories(root / ".git");
+    raven::write_file(root / "b.txt", "b");
+    raven::write_file(root / "A.md", "a");
+    raven::write_file(root / ".env", "secret");
+    const auto entries = raven::list_file_tree(root);
+    std::vector<std::string> names;
+    for (const auto& entry : entries) names.push_back(entry.path.filename().string() + (entry.directory ? "/" : ""));
+    expect(names == std::vector<std::string>{"Docs/", "src/", "A.md", "b.txt"}, "file tree lists folders first, sorted, without hidden entries");
+    expect(raven::list_file_tree(root / "missing").empty(), "a missing folder lists nothing");
+    const auto icon = raven::file_tree_icon(raven::FileTreeIcon::Folder, 40, 1.0f, 0.5f, 0.0f, 1.0f);
+    expect(icon.size() == 40u * 40u * 4u, "icon has size x size RGBA pixels");
+    expect(icon[(20 * 40 + 20) * 4 + 3] == 255 && icon[3] == 0, "folder icon is opaque inside and clear in the margin");
+    expect(icon[(20 * 40 + 20) * 4 + 1] == 128, "icon pixels carry the requested colour");
+    std::filesystem::remove_all(root);
+}
+
 int main() {
     try {
         workspace_tests();
@@ -1054,6 +1076,7 @@ int main() {
         thread_tests();
         parser_tests();
         image_attachment_tests();
+        file_tree_tests();
         std::cout << "All core tests passed\n";
         return 0;
     } catch (const std::exception& error) {

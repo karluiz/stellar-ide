@@ -36,6 +36,7 @@ add_library(raven_ide_core
     src/diff.cpp
     src/endurance.cpp
     src/endurance_controller.cpp
+    src/file_tree.cpp
     src/knowledge.cpp
     src/memory.cpp
     src/missions.cpp

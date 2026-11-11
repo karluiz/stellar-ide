@@ -394,6 +394,8 @@ App::~App() {
     wiki_process_.stop();
     if (Rtexture_is_valid(composer_texture_)) Rtexture_destroy(composer_texture_);
     if (Rtexture_is_valid(tesseract_texture_)) Rtexture_destroy(tesseract_texture_);
+    if (Rtexture_is_valid(folder_icon_)) Rtexture_destroy(folder_icon_);
+    if (Rtexture_is_valid(file_icon_)) Rtexture_destroy(file_icon_);
 }
 
 Rid App::id(const char* name) const { return Rwidget_find(window_, name); }
@@ -452,7 +454,8 @@ bool App::create() {
     Rlist_view_set_selection_changed_callback(id("mission.list"), list_selection, this);
     Rlist_view_set_selection_changed_callback(id("alerts.list"), list_selection, this);
     Rlist_view_set_selection_changed_callback(id("recall.results"), list_selection, this);
-    Rfile_browser_set_accepted_callback(id("workspace.files"), file_accepted, this);
+    Rtree_view_set_selection_changed_callback(id("workspace.files"), file_tree_selected, this);
+    update_file_tree_icons();
     Rnode_graph_set_selection_callback(id("graph"), [](Rid graph, int node, void* user) {
         auto& app = *static_cast<App*>(user);
         if (node == 0) {
@@ -741,7 +744,8 @@ void App::refresh_workspace() {
     notes_ = workspace_.wiki_notes();
     Rbutton_set_text(id("workspace.name"), shortened(workspace_.name(), 18).c_str());
     Rwidget_set_tooltip(id("workspace.name"), workspace_.root().c_str());
-    Rfile_browser_set_directory(id("workspace.files"), workspace_.root().c_str());
+    file_tree_expanded_.clear();
+    rebuild_file_tree();
     thread_store_ = ThreadStore(workspace_.root());
     thread_store_.load();
     checkpoint_store_ = CheckpointStore(workspace_.root());
@@ -1541,6 +1545,7 @@ void App::recover() {
             open_code_file(candidate);
             Rtext_editor_set_text(id("code.editor"), editor.content.c_str());
             current_code_modified_ = true;
+            Rwidget_set_enabled(id("code.save"), R_TRUE);
             code_autosave_pending_ = true;
             code_autosave_due_ = std::chrono::steady_clock::now() + std::chrono::milliseconds(900);
             Rlabel_set_text(id("code.path"), (std::filesystem::relative(candidate, root).string() + " •").c_str());
@@ -1705,6 +1710,7 @@ void App::select_theme(int index) {
     theme_index_ = index;
     Rwidget_set_theme(Rwindow_get_content(window_), names[index]);
     update_composer_focus();
+    update_file_tree_icons();
     Rlabel_set_text(id("theme.current.label"), labels[index]);
     Rwidget_set_user_handle(id("theme.current.art"), reinterpret_cast<void*>(static_cast<intptr_t>(index + 1)));
     Rwidget_invalidate(id("theme.current.art"));
@@ -3429,7 +3435,7 @@ void App::pump() {
         }
     }
     sync_accessibility();
-    sync_file_browser_path();
+    pump_file_tree();
     // The Review → Knowledge tab follows the pending proposal. A cheap key detects changes.
     const auto proposal_key = proposal_ ? proposal_->summary + "#" + std::to_string(proposal_->edits.size()) + "#" +
         std::to_string(proposal_->graph.size()) : std::string();
@@ -3554,34 +3560,106 @@ void App::sync_accessibility() {
     Rwidget_set_accessible_hidden(id("app.shell"), covered);
 }
 
-// The file tree's path field shows the folder relative to the workspace (read-only), and the tree
-// cannot leave the workspace through its Up button.
-void App::sync_file_browser_path() {
-    const auto browser = id("workspace.files");
-    if (!Rwidget_is_valid(browser) || Rwidget_get_child_count(browser) == 0) return;
-    const char* current = Rfile_browser_get_directory(browser);
-    if (!current) return;
-    // pump() runs every animation frame: the label is only recomputed (with filesystem calls)
-    // when the folder changes; otherwise this is a string comparison.
-    if (browser_directory_ != current) {
-        browser_directory_ = current;
-        std::error_code error;
-        const auto root = std::filesystem::weakly_canonical(workspace_.root(), error);
-        const auto directory = std::filesystem::weakly_canonical(current, error);
-        auto relative = std::filesystem::relative(directory, root, error).generic_string();
-        if (error || relative.rfind("..", 0) == 0) {
-            Rfile_browser_set_directory(browser, root.string().c_str());
-            browser_directory_ = root.string();
-            relative = ".";
-        }
-        browser_label_ = workspace_.name() + (relative == "." ? "" : "/" + relative);
+// The Files explorer: a tree of the workspace like a code editor's, folders first, loaded lazily.
+// A folder gets a placeholder child so it shows its arrow; its entries are read the first time it
+// opens. Expanded folders are remembered by path, so rebuilding after files change keeps the shape.
+void App::rebuild_file_tree() {
+    const auto tree = id("workspace.files");
+    if (!Rwidget_is_valid(tree)) return;
+    for (const auto& node : file_tree_nodes_) {
+        if (!node.directory || !Rtree_item_is_valid(node.item)) continue;
+        if (Rtree_item_is_expanded(node.item)) file_tree_expanded_.insert(node.path);
+        else file_tree_expanded_.erase(node.path);
     }
-    const auto path_field = Rwidget_get_child(browser, 0);
-    if (Rwidget_get_type(path_field) != R_WIDGET_TEXT_INPUT) return;
-    const char* shown = Rtext_input_get_text(path_field);
-    if (shown && browser_label_ == shown) return;
-    Rtext_input_set_read_only(path_field, R_TRUE);
-    Rtext_input_set_text(path_field, browser_label_.c_str());
+    file_tree_building_ = true;
+    Rtree_view_clear_items(tree);
+    file_tree_nodes_.clear();
+    fill_file_tree(R_INVALID_ID, workspace_.root());
+    for (const auto& node : file_tree_nodes_) {
+        if (!node.directory && node.path == current_code_path_) {
+            Rtree_view_set_selected_item(tree, node.item);
+            break;
+        }
+    }
+    file_tree_building_ = false;
+}
+
+void App::fill_file_tree(Rid parent, const std::filesystem::path& folder) {
+    const auto tree = id("workspace.files");
+    for (const auto& entry : list_file_tree(folder)) {
+        const auto item = Rtree_view_add_item(tree, parent, entry.path.filename().string().c_str());
+        const auto index = file_tree_nodes_.size();
+        file_tree_nodes_.push_back({item, entry.path, entry.directory, false});
+        Rtree_item_set_user_handle(item, reinterpret_cast<void*>(static_cast<intptr_t>(index + 1)));
+        const auto icon = entry.directory ? folder_icon_ : file_icon_;
+        if (Rtexture_is_valid(icon)) Rtree_item_set_icon(item, icon, 0.0f, 0.0f, 1.0f, 1.0f);
+        if (!entry.directory) continue;
+        if (file_tree_expanded_.count(entry.path)) {
+            load_file_tree_folder(index);
+            Rtree_item_set_expanded(item, R_TRUE);
+        } else {
+            Rtree_view_add_item(tree, item, "");
+        }
+    }
+}
+
+void App::load_file_tree_folder(size_t node) {
+    if (node >= file_tree_nodes_.size() || file_tree_nodes_[node].loaded) return;
+    file_tree_nodes_[node].loaded = true;
+    const auto item = file_tree_nodes_[node].item;
+    const auto folder = file_tree_nodes_[node].path;
+    while (Rtree_item_get_child_count(item) > 0) Rtree_item_destroy(Rtree_item_get_child(item, 0));
+    const bool building = file_tree_building_;
+    file_tree_building_ = true;
+    fill_file_tree(item, folder);
+    file_tree_building_ = building;
+}
+
+// The arrow opens a folder without telling the app, so folders that opened since the last frame
+// are read here. Only runs while Files is on screen.
+void App::pump_file_tree() {
+    if (active_view(id("center.tabs")) != 1) return;
+    for (size_t i = 0; i < file_tree_nodes_.size(); ++i) {
+        const auto& node = file_tree_nodes_[i];
+        if (node.directory && !node.loaded && Rtree_item_is_valid(node.item) && Rtree_item_is_expanded(node.item)) {
+            load_file_tree_folder(i);
+        }
+    }
+}
+
+// One click on a file opens it; one click on a folder opens or closes it.
+void App::file_tree_selected(Rid tree, Rid item, void* user) {
+    (void)tree;
+    auto& app = *static_cast<App*>(user);
+    if (app.file_tree_building_ || !Rtree_item_is_valid(item)) return;
+    const auto index = static_cast<size_t>(reinterpret_cast<intptr_t>(Rtree_item_get_user_handle(item)));
+    if (index == 0 || index > app.file_tree_nodes_.size()) return;
+    const auto node = app.file_tree_nodes_[index - 1];
+    if (node.directory) {
+        app.load_file_tree_folder(index - 1);
+        Rtree_item_set_expanded(item, !Rtree_item_is_expanded(item));
+        return;
+    }
+    app.open_code_file(node.path);
+}
+
+// Folder and file glyphs are drawn in the theme's colours: the folder in the accent, the file in a
+// quieter text tone. Called again whenever the theme changes.
+void App::update_file_tree_icons() {
+    const auto content = Rwindow_get_content(window_);
+    float accent[4] = {0.5f, 0.8f, 0.7f, 1.0f};
+    float text[4] = {0.9f, 0.9f, 0.9f, 1.0f};
+    if (Rwidget_is_valid(content)) {
+        Rwidget_get_color(content, R_COLOR_ACCENT, &accent[0], &accent[1], &accent[2], &accent[3]);
+        Rwidget_get_color(content, R_COLOR_TEXT, &text[0], &text[1], &text[2], &text[3]);
+    }
+    constexpr int size = 40;
+    const auto folder = file_tree_icon(FileTreeIcon::Folder, size, accent[0], accent[1], accent[2], 0.85f);
+    const auto file = file_tree_icon(FileTreeIcon::File, size, text[0], text[1], text[2], 0.62f);
+    if (Rtexture_is_valid(folder_icon_)) Rtexture_update(folder_icon_, folder.data(), size, size);
+    else folder_icon_ = Rtexture_create_from_pixels(folder.data(), size, size);
+    if (Rtexture_is_valid(file_icon_)) Rtexture_update(file_icon_, file.data(), size, size);
+    else file_icon_ = Rtexture_create_from_pixels(file.data(), size, size);
 }
 
 // Centers the transcript, queue bar and composer in the 860px reading column. A filling slot in a
@@ -4276,7 +4354,8 @@ void App::open_code_file(const std::filesystem::path& path, int line) {
         if (content.find('\0') != std::string::npos) throw std::runtime_error("Binary files are not supported by the editor");
 
         current_code_path_ = candidate;
-        Rwidget_set_enabled(id("code.save"), R_TRUE);
+        // Changes autosave; Save is only offered while there is something unsaved.
+        Rwidget_set_enabled(id("code.save"), R_FALSE);
         loading_code_ = true;
         Rtext_editor_set_text(id("code.editor"), content.c_str());
         Rtext_editor_set_language(id("code.editor"), Rlanguage_for_file(candidate.c_str()));
@@ -4291,7 +4370,7 @@ void App::open_code_file(const std::filesystem::path& path, int line) {
             Rtext_editor_set_cursor(id("code.editor"), line - 1, 0);
             Rtext_editor_scroll_to_line(id("code.editor"), line - 1);
         }
-        set_status("Opened " + candidate.string() + (line > 0 ? ":" + std::to_string(line) : ""));
+        set_status("Opened " + std::filesystem::relative(candidate, root).generic_string() + (line > 0 ? ":" + std::to_string(line) : ""));
     } catch (const std::exception& error) {
         loading_code_ = false;
         set_status(error.what());
@@ -4312,9 +4391,11 @@ bool App::save_code_file(bool automatic) {
         write_file(current_code_path_, Rtext_editor_get_text(id("code.editor")));
         recovery_store_.clear_editor("code", current_code_path_);
         current_code_modified_ = false;
+        Rwidget_set_enabled(id("code.save"), R_FALSE);
         code_autosave_pending_ = false;
         Rlabel_set_text(id("code.path"), std::filesystem::relative(current_code_path_, workspace_.root()).c_str());
-        set_status((automatic ? "Autosaved " : "Saved ") + current_code_path_.string());
+        set_status((automatic ? "Autosaved " : "Saved ") +
+            std::filesystem::relative(current_code_path_, workspace_.root()).generic_string());
         if (automatic) schedule_watch();
         return true;
     } catch (const std::exception& error) {
@@ -4331,6 +4412,7 @@ bool App::save_code_file(bool automatic) {
 void App::code_modified() {
     if (loading_code_ || current_code_path_.empty()) return;
     current_code_modified_ = true;
+    Rwidget_set_enabled(id("code.save"), R_TRUE);
     code_autosave_pending_ = true;
     code_autosave_due_ = std::chrono::steady_clock::now() + std::chrono::milliseconds(900);
     recovery_store_.set_editor("code", current_code_path_, Rtext_editor_get_text(id("code.editor")), read_file(current_code_path_));
@@ -4355,11 +4437,6 @@ bool App::flush_autosave() {
 bool App::can_discard_code() {
     if (!current_code_modified_ || save_code_file(true)) return true;
     return confirm("Unsaved file changes", "The current file could not be saved. Discard its unsaved changes?", "Discard changes", true);
-}
-
-void App::file_accepted(Rid browser, const char* path, void* user) {
-    (void)browser;
-    static_cast<App*>(user)->open_code_file(path);
 }
 
 void App::open_agent(int index) {
@@ -5128,6 +5205,7 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "nav.workflows") app.open_endurance();
     else if (name == "nav.files") {
         app.set_active_view(app.id("center.tabs"), 1);
+        app.rebuild_file_tree();
         Rwidget_focus(app.id("workspace.files"));
     }
     else if (name == "nav.agents") {

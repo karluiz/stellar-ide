@@ -4,6 +4,7 @@
 #include "claude.hpp"
 #include "composer.hpp"
 #include "endurance_controller.hpp"
+#include "file_tree.hpp"
 #include "memory.hpp"
 #include "missions.hpp"
 #include "notifications.hpp"
@@ -23,6 +24,7 @@
 #include <future>
 #include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -57,7 +59,12 @@ public:
     void place_tesseract_text_editor(const TesseractNode& node, bool style);
     void render_proposal();
     void save_pending_wiki_edits();
-    void sync_file_browser_path();
+    void rebuild_file_tree();
+    void fill_file_tree(Rid parent, const std::filesystem::path& folder);
+    void load_file_tree_folder(size_t node);
+    void update_file_tree_icons();
+    void pump_file_tree();
+    static void file_tree_selected(Rid tree, Rid item, void* user);
     std::string workspace_summary() const;
     Rid window() const;
     bool has_animation_frames() const;
@@ -132,8 +139,17 @@ private:
     std::string status_destination_;
     std::string rendered_proposal_key_;
     bool threads_busy_ = false;
-    std::string browser_directory_;
-    std::string browser_label_;
+    struct FileTreeNode {
+        Rid item = R_INVALID_ID;
+        std::filesystem::path path;
+        bool directory = false;
+        bool loaded = false;
+    };
+    std::vector<FileTreeNode> file_tree_nodes_;
+    std::set<std::filesystem::path> file_tree_expanded_;
+    Rid folder_icon_ = R_INVALID_ID;
+    Rid file_icon_ = R_INVALID_ID;
+    bool file_tree_building_ = false;
     std::string accessibility_key_;
     float endurance_graph_width_ = 0.0f;
     float tesseract_composer_height_ = 0.0f;
@@ -445,7 +461,6 @@ private:
     static void tab_changed(Rid tabs, int index, void* user);
     static void wiki_link(Rid label, const char* url, void* user);
     static void frame(double delta, void* user);
-    static void file_accepted(Rid browser, const char* path, void* user);
     static int window_event(Rid window, const REvent* event, void* user);
 };
 

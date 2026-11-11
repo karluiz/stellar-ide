@@ -11,6 +11,8 @@
     <Syntax Comment="#CFCFCF" String="#7CFF7C" Number="#FFFF00" Keyword="#FFFF00" Type="#75E6FF" Function="#FFFFFF" Heading="#FFFF00" Strong="#FFFFFF" Link="#75E6FF"/>
     <!-- Buttons: one 30px height everywhere. Default is the secondary action (control fill and border), Primary the one main
          action of a view, Flat only toolbars and icons. "danger" marks destructive actions with the Danger colour. -->
+    <!-- The Files tree sits directly on the workspace surface, with compact rows like a code editor explorer. -->
+    <Style Widget="TreeView" Class="file-tree" Input="#00000000" Border="#00000000" ControlBorder="#00000000" Focus="#00000000" RowHeight="26" Indent="14"/>
     <Style Widget="Button" CornerRadius="7" ControlHeight="30" PaddingX="12" PaddingY="5"/>
     <Style Widget="Button" Class="danger" Text="#FF7A7A"/>
     <Style Widget="Button" Class="header-action" Control="#00000000" ControlHovered="#333333" ControlPressed="#555555" Text="#FFFFFF"/>
