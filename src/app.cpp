@@ -1479,7 +1479,7 @@ void App::reset_session() {
                 ? (episodes == 1 ? std::string("1 run memory") : std::to_string(episodes) + " run memories") + " from earlier work, waiting for your review"
                 : counted(staged.size(), "knowledge record") + " from earlier work, waiting for your review";
             proposal_ = workspace_.validate_proposal(summary, {}, staged);
-            Rlabel_set_text(id("proposal.summary"), proposal_->summary.c_str());
+            Rlabel_set_text(id("proposal.summary"), shortened(proposal_->summary, 140).c_str());  // full text in Review
             Rwidget_set_visibility(id("proposal.bar"), R_VISIBLE);
         }
     }
@@ -1624,7 +1624,7 @@ void App::load_demo() {
         "Demonstration proposal: add a navigation link to the workspace Home note.",
         {{"Home.md", home.content, home.content + "\n## Recent decisions\n\n- [[Session Expiry]] — refresh at the shared authentication boundary\n"}}
     };
-    Rlabel_set_text(id("proposal.summary"), proposal_->summary.c_str());
+    Rlabel_set_text(id("proposal.summary"), shortened(proposal_->summary, 140).c_str());  // full text in Review
     Rwidget_set_visibility(id("proposal.bar"), R_VISIBLE);
     queued_prompt_ = "Run the authentication regression checks.";
     update_queue();
@@ -3365,7 +3365,7 @@ void App::handle_wiki_event(const ClaudeEvent& event) {
             return;
         }
         proposal_ = workspace_.validate_proposal(data.value("summary", "Suggested wiki updates"), edits, graph);
-        Rlabel_set_text(id("proposal.summary"), proposal_->summary.c_str());
+        Rlabel_set_text(id("proposal.summary"), shortened(proposal_->summary, 140).c_str());  // full text in Review
         Rwidget_set_visibility(id("proposal.bar"), R_VISIBLE);
         update_queue();
         set_status(skipped_operations > 0
