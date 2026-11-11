@@ -48,6 +48,8 @@ public:
     void open_code_file(const std::filesystem::path& path, int line = 0);
     void pump();
     void update_reading_column();
+    void set_run_state(const char* state);
+    std::string workspace_summary() const;
     Rid window() const;
     bool has_animation_frames() const;
     bool has_run_timers() const;
@@ -117,6 +119,7 @@ private:
     bool saw_delta_ = false;
     float reading_pane_width_ = 0.0f;
     int transcript_follow_frames_ = 0;
+    std::string status_destination_;
     bool composer_completion_pending_ = false;
     float editor_zoom_ = 1.0f;
     float interface_zoom_ = 1.15f;

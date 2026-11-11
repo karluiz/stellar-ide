@@ -467,7 +467,7 @@
                             <ComboBox Name="mission.repo" Width="250" Tooltip="Repository for the isolated worktree" AccessibleName="Mission repository"/>
                             <Button Name="mission.create" Text="Create and run" Style="Primary" OnClicked="mission.create"/>
                         </HBox>
-                        <Label Name="mission.empty" Text="No missions yet. Describe an isolated task above to create a Git worktree." Class="muted" Wrap="true" Slot.Padding="14,4,14,12"/>
+                        <Label Name="mission.empty" Text="No isolated tasks yet. Use one for risky or exploratory changes: the agent works in a separate Git worktree, and nothing reaches this workspace until you review the diff and apply it." Class="muted" Wrap="true" MaxWidth="640" Slot.Padding="14,10,14,12"/>
                         <ListView Name="mission.list" Height="140" OnActivated="mission.review" Slot.Padding="14,0,14,8" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Git missions" Visibility="Collapsed"/>
                         <HBox Name="mission.hunks.row" Slot.Padding="14,0,14,8" Spacing="8" Visibility="Collapsed">
                             <ComboBox Name="mission.hunks" Slot.Fill="1" Tooltip="Mission hunk to apply" AccessibleName="Mission diff hunk"/>
@@ -497,6 +497,7 @@
                             <HBox Name="checkpoint.files.row" Slot.Padding="14,0,14,10" Spacing="8" Visibility="Collapsed">
                                 <ComboBox Name="checkpoint.files" Slot.Fill="1" OnChanged="checkpoint.file_changed" Tooltip="Changed file to inspect" AccessibleName="Changed file"/>
                                 <Button Name="checkpoint.open" Text="Open file" Style="Flat" OnClicked="checkpoint.open" Tooltip="Open the selected file in Editor"/>
+                                <Button Name="checkpoint.restore.inline" Text="Restore task" Style="Flat" OnClicked="checkpoint.restore" Visibility="Collapsed" Tooltip="Restore files to their state before this task"/>
                             </HBox>
                             <HBox Name="checkpoint.hunks.row" Slot.Padding="14,0,14,10" Spacing="8" Visibility="Collapsed">
                                 <ComboBox Name="checkpoint.hunks" Slot.Fill="1" Tooltip="Diff hunk to restore" AccessibleName="Checkpoint diff hunk"/>
@@ -623,17 +624,21 @@
                                 </VBox>
                             </Border>
                             <Border Name="checkpoint.bar" Class="activity" Padding="14" Visibility="Collapsed" BorderWidth="1" Appear="Fade">
-                                <VBox Spacing="9">
-                                    <Label Name="checkpoint.notice.title" Text="Code changes ready" Class="section"/>
-                                    <Label Name="checkpoint.notice" Wrap="true"/>
-                                    <Button Text="Review results" Style="Flat" OnClicked="checkpoint.review"/>
+                                <VBox Spacing="6">
+                                    <HBox Spacing="8">
+                                        <Label Name="checkpoint.notice.title" Text="Code changes ready" Class="section" Slot.Fill="1" Slot.VAlign="Center"/>
+                                        <Button Text="Review" Style="Flat" OnClicked="checkpoint.review" Tooltip="Open the changes in Review" Slot.VAlign="Center"/>
+                                    </HBox>
+                                    <Label Name="checkpoint.notice" Class="muted" TextSize="12" Wrap="true"/>
                                 </VBox>
                             </Border>
                             <Border Name="proposal.bar" Class="proposal" Padding="14" Visibility="Collapsed" BorderWidth="1" Appear="Fade">
-                                <VBox Spacing="9">
-                                    <Label Text="Knowledge review ready" Class="section proposal-title"/>
-                                    <Label Name="proposal.summary" Wrap="true"/>
-                                    <Button Text="Review changes" Style="Primary" OnClicked="proposal.open"/>
+                                <VBox Spacing="6">
+                                    <HBox Spacing="8">
+                                        <Label Text="Knowledge review ready" Class="section proposal-title" Slot.Fill="1" Slot.VAlign="Center"/>
+                                        <Button Text="Review" Style="Primary" OnClicked="proposal.open" Tooltip="Review the proposed knowledge changes" Slot.VAlign="Center"/>
+                                    </HBox>
+                                    <Label Name="proposal.summary" TextSize="12" Wrap="true"/>
                                 </VBox>
                             </Border>
                         </VBox>
@@ -738,12 +743,12 @@
             </VBox>
         </Splitter>
 
-        <Border Class="statusbar" Padding="14,8" BorderWidth="1">
+        <Border Class="statusbar" Padding="14,2" BorderWidth="1">
             <HBox>
                 <Label Name="status" Text="Opening workspace…" Class="muted" TextSize="11" Slot.Fill="1" Slot.VAlign="Center"/>
-                <Button Name="theme.current" Style="Flat" OnClicked="theme.browser" Width="210" Slot.HAlign="Right" Tooltip="Open the planet theme gallery" AccessibleName="Choose color theme">
+                <Button Name="theme.current" Style="Flat" OnClicked="theme.browser" Width="190" Height="28" Slot.HAlign="Right" Tooltip="Open the planet theme gallery" AccessibleName="Choose color theme">
                     <HBox Spacing="9" Slot.VAlign="Center">
-                        <Custom Name="theme.current.art" Width="26" Height="26" HitTestable="false" AccessibleHidden="true"/>
+                        <Custom Name="theme.current.art" Width="20" Height="20" HitTestable="false" AccessibleHidden="true"/>
                         <Label Name="theme.current.label" Text="Earth Dark" Slot.VAlign="Center"/>
                     </HBox>
                 </Button>

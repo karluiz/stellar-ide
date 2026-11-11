@@ -376,6 +376,8 @@ void checkpoint_tests() {
     raven::write_file(root / "src" / "created.txt", "new file\n");
     raven::write_file(root / "build" / "ignored.txt", "build output\n");
     std::filesystem::remove(root / "src" / "obsolete.txt");
+    raven::write_file(root / "src" / "program", std::string("\x7f" "ELF\x02\x01\x01\0", 8));
+    raven::write_file(root / "src" / "unit.o", "object code\n");
 
     const auto checkpoint = store.finish(id, "complete");
     expect(checkpoint.changes.size() == 3, "checkpoint did not detect added, modified, and deleted files");
@@ -386,6 +388,9 @@ void checkpoint_tests() {
     expect(std::none_of(checkpoint.changes.begin(), checkpoint.changes.end(), [](const auto& change) {
         return change.path.find("build/") == 0;
     }), "build output leaked into a checkpoint");
+    expect(std::none_of(checkpoint.changes.begin(), checkpoint.changes.end(), [](const auto& change) {
+        return change.path == "src/program" || change.path == "src/unit.o";
+    }), "a compiled executable or object file appeared as a checkpoint change");
 
     raven::CheckpointStore loaded(root);
     loaded.load();

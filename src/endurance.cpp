@@ -168,14 +168,14 @@ EnduranceWorkflow endurance_default_workflow() {
         {"research", "agent", "orchestrator", "", "ask", "", "", "workspace",
             "Investigate this task and report the relevant implementation context:\n${{ inputs.task }}", {}, 40, 100, 900, 0},
         {"review", "agent", "code-reviewer", "claude", "review", "", "", "workspace",
-            "Review the proposed approach and identify material risks:\n${{ steps.research.output }}", {"research"}, 310, 100, 900, 0},
+            "Review the proposed approach and identify material risks:\n${{ steps.research.output }}", {"research"}, 290, 100, 900, 0},
         {"approval", "approval", "", "", "", "", "", "workspace",
-            "Approve implementation after reviewing the research and risks.", {"review"}, 580, 100, 900, 0},
+            "Approve implementation after reviewing the research and risks.", {"review"}, 540, 100, 900, 0},
         {"implement", "agent", "orchestrator", "", "build", "", "", "workspace",
             "Implement the approved task:\n${{ inputs.task }}\n\nResearch:\n${{ steps.research.output }}\n\nReview:\n${{ steps.review.output }}",
-            {"approval"}, 265, 337, 900, 0},
+            {"approval"}, 790, 100, 900, 0},
         {"verify", "agent", "code-reviewer", "claude", "review", "", "", "workspace",
-            "Review the implementation and verification evidence:\n${{ steps.implement.output }}", {"implement"}, 535, 337, 900, 0}
+            "Review the implementation and verification evidence:\n${{ steps.implement.output }}", {"implement"}, 1040, 100, 900, 0}
     };
     return workflow;
 }

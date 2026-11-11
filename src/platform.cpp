@@ -197,6 +197,23 @@ unsigned long shortcut_flags(unsigned long flags) {
     return (flags & kFlagCommand) ? ((flags & ~kFlagCommand) | kFlagControl) : flags;
 }
 
+// Keys that edit or navigate rather than type. Their events must never insert text, whatever
+// characters an event source attached to them (synthetic events from automation and accessibility
+// tools sometimes carry a label such as "esc").
+bool is_command_key(unsigned short key_code) {
+    switch (key_code) {
+    case 36: case 76:               // Return, keypad Enter
+    case 48: case 51: case 53:      // Tab, Delete, Escape
+    case 117: case 115: case 119:   // Forward Delete, Home, End
+    case 116: case 121:             // Page Up, Page Down
+    case 123: case 124: case 125: case 126: // arrows
+    case 122: case 120: case 99: case 118: case 96: case 97: case 98: case 100: case 101: case 109: case 103: case 111: // F1-F12
+        return true;
+    default:
+        return false;
+    }
+}
+
 void key_down(id self, SEL selector, id event) {
     const auto forward = [&](id forwarded) {
         reinterpret_cast<void (*)(id, SEL, id)>(original_key_down)(self, selector, forwarded);
@@ -220,6 +237,10 @@ void key_down(id self, SEL selector, id event) {
         }
     }
     const id no_text = empty_string();
+    if (is_command_key(key_code)) {
+        dead_key_state = 0;
+        return forward(rebuilt_key_event(event, kEventTypeKeyDown, shortcut_flags(flags), no_text, send<BOOL>(event, "isARepeat")));
+    }
     if (flags & (kFlagControl | kFlagCommand)) {
         dead_key_state = 0;
         return forward(rebuilt_key_event(event, kEventTypeKeyDown, shortcut_flags(flags), no_text, send<BOOL>(event, "isARepeat")));

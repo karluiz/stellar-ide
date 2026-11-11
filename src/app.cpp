@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <filesystem>
 #include <iomanip>
@@ -610,8 +611,7 @@ bool App::create() {
             });
             open_note(home == notes_.end() ? 0 : static_cast<int>(home - notes_.begin()));
             recover();
-            set_status("Workspace ready · " + std::to_string(repositories_.size()) + " repositories · " +
-                       std::to_string(agents_.size()) + " agents");
+            set_status(workspace_summary());
         }
     } catch (const std::exception& error) {
         std::fprintf(stderr, "Cannot open workspace: %s\n", error.what());
@@ -628,6 +628,27 @@ bool App::create() {
 }
 
 void App::set_status(const std::string& text) { Rlabel_set_text(id("status"), text.c_str()); }
+
+// The header and the Activity card show the same lead state; this is their only writer.
+void App::set_run_state(const char* state) {
+    Rlabel_set_text(id("run.state"), state);
+    static const std::pair<const char*, const char*> lead_states[] = {
+        {"READY", "Ready"}, {"RUNNING", "Running"}, {"COMPLETE", "Complete"}, {"ERROR", "Error"},
+        {"STOPPED", "Stopped"}, {"WIKI REVIEW", "Reviewing knowledge"}, {"WIKI ERROR", "Knowledge review failed"},
+        {"DEMO · ACTIVE", "Running · demo"}
+    };
+    const char* lead = state;
+    for (const auto& [header, label] : lead_states) {
+        if (std::strcmp(header, state) == 0) lead = label;
+    }
+    Rlabel_set_text(id("activity.lead"), lead);
+}
+
+std::string App::workspace_summary() const {
+    const auto repositories = repositories_.size();
+    return "Workspace ready · " + std::to_string(repositories) + (repositories == 1 ? " repository · " : " repositories · ") +
+        counted(agents_.size(), "agent");
+}
 
 void App::play_opening_score() {
     if (opening_sound_ && splash_.active()) opening_audio_.play();
@@ -1285,7 +1306,12 @@ void App::open_thread(const std::string& thread_id) {
     Rlabel_set_text(id("run.title"), shortened(run_title_, 36).c_str());
     Rwidget_set_tooltip(id("run.title"), run_title_.c_str());
     Rlabel_set_text(id("run.subtitle"), ("Orchestrator · " + std::string(harness_name()) + " · resumable session").c_str());
-    Rlabel_set_text(id("run.state"), thread_messages_.empty() ? "READY" : "COMPLETE");
+    set_run_state(thread_messages_.empty() ? "READY" : "COMPLETE");
+    if (!thread_messages_.empty()) {
+        set_current_action("Last run complete · the next prompt resumes this session");
+        // Usage is reported per run and is not stored with the thread.
+        Rlabel_set_text(id("run.usage"), "Run cost · not recorded for earlier runs");
+    }
     refresh_threads();
     set_active_view(id("center.tabs"), 0);
     if (!checkpoint_store_.checkpoints().empty() && checkpoint_store_.checkpoints().front().status == "interrupted") {
@@ -1443,7 +1469,6 @@ void App::reset_graph() {
     Rwidget_set_visibility(id("activity.empty"), R_VISIBLE);
     update_run_usage();
     Rbutton_set_text(id("graph.toggle"), "Open mission control");
-    Rlabel_set_text(id("activity.lead"), "Ready");
     Rlabel_set_text(id("activity.harness"), (std::string(harness_name()) + " · workspace session").c_str());
     auto graph = id("graph");
     Rnode_graph_clear(graph);
@@ -1471,8 +1496,7 @@ void App::reset_graph() {
 }
 
 void App::load_demo() {
-    Rlabel_set_text(id("run.state"), "DEMO · ACTIVE");
-    Rlabel_set_text(id("activity.lead"), "Running");
+    set_run_state("DEMO · ACTIVE");
     Rlabel_set_text(id("run.title"), "Trace the authentication boundary");
     Rlabel_set_text(id("run.subtitle"), "Demonstration data · no Claude process is running");
     add_message("YOU", "Trace token expiry across the API and core repositories, then record the decision in the wiki.", true);
@@ -1715,7 +1739,7 @@ void App::change_harness(int index) {
     reset_graph();
     refresh_model_controls();
     Rlabel_set_text(id("run.subtitle"), (std::string("Orchestrator · ") + harness_name() + " · new session").c_str());
-    Rlabel_set_text(id("run.state"), "READY");
+    set_run_state("READY");
     save_profile();
     set_status(std::string(harness_name()) + " selected · the next prompt starts a new session");
 }
@@ -2008,6 +2032,12 @@ void App::refresh_navigation() {
         else if (more == 3) selected = "worktrees";
     }
     if (knowledge_context) selected = "knowledge";
+    // Files owns the file tree. Opening a file from elsewhere (launch, palette, a link) switches the
+    // center to Editor without touching the left list, which then kept showing Recent chats.
+    if (center == 1 && left != 1) {
+        Rswitcher_set_index(id("left.tabs"), 1);
+        return refresh_navigation();
+    }
 
     const auto content = Rwindow_get_content(window_);
     float selection[4], hovered[4], pressed[4], text[4];
@@ -2035,6 +2065,30 @@ void App::refresh_navigation() {
     Rwidget_set_visibility(id("navigation.search.row"), resources_visible && left != 1 ? R_VISIBLE : R_COLLAPSED);
     const char* placeholders[] = {"Search chats…", "", "Search agents…", "Search notes…"};
     Rtext_input_set_placeholder(id("navigation.search"), placeholders[std::clamp(left, 0, 3)]);
+
+    // A status message belongs to the view that produced it. On a change of destination the strip
+    // returns to that destination's default; actions that set their own status do so afterwards.
+    if (selected != status_destination_) {
+        const bool first = status_destination_.empty();
+        status_destination_ = selected;
+        if (!first && !lead_process_.running() && !wiki_process_.running()) {
+            static const std::pair<const char*, const char*> defaults[] = {
+                {"workflows", "Workflows · build, run, and review multi-agent missions"},
+                {"files", "Files · open a file from the workspace tree"},
+                {"agents", "Agents · edit shared agent definitions"},
+                {"review", "Review · code changes and knowledge proposals"},
+                {"knowledge", "Knowledge · reviewed entities, relations, and memory"},
+                {"worktrees", "Worktrees · isolated Git tasks you apply after review"},
+                {"settings", "Settings · changes apply immediately"},
+                {"canvas", "Tesseract · describe an interface and watch it take shape"}
+            };
+            std::string text = workspace_summary();
+            for (const auto& [name, message] : defaults) {
+                if (selected == name) text = message;
+            }
+            set_status(text);
+        }
+    }
 }
 
 void App::show_context(int index) {
@@ -2141,9 +2195,23 @@ Rid App::add_message(const std::string& role, const std::string& text, bool user
     Rborder_set_padding(card, user ? 14 : 4, user ? 11 : 0, user ? 14 : 4, user ? 11 : 0);
     auto box = Rwidget_add_child(card, Rwidget_create(R_WIDGET_VBOX));
     Rpanel_set_spacing(box, 7);
+    // Consecutive lead messages from the same role share one heading.
+    bool repeated_role = false;
+    if (!user) {
+        const auto transcript = id("transcript");
+        const int count = Rwidget_get_child_count(transcript);
+        const auto previous = count > 0 ? Rwidget_get_child(transcript, count - 1) : R_INVALID_ID;
+        if (Rwidget_is_valid(previous) && Rwidget_get_type(previous) == R_WIDGET_BORDER &&
+            Rwidget_get_user_handle(previous) == nullptr) {
+            const auto previous_box = Rwidget_get_child(previous, 0);
+            const auto previous_heading = Rwidget_is_valid(previous_box) ? Rwidget_get_child(previous_box, 0) : R_INVALID_ID;
+            const char* previous_role = Rwidget_is_valid(previous_heading) ? Rlabel_get_text(previous_heading) : nullptr;
+            repeated_role = previous_role && role == previous_role;
+        }
+    }
     auto heading = Rwidget_add_child(box, Rlabel_create(role.c_str()));
     Rlabel_set_text_size(heading, 10);
-    Rwidget_set_visibility(heading, user ? R_COLLAPSED : R_VISIBLE);
+    Rwidget_set_visibility(heading, user || repeated_role ? R_COLLAPSED : R_VISIBLE);
     auto body = Rwidget_add_child(box, Rlabel_create(text.c_str()));
     Rlabel_set_text_size(body, 14);
     apply_message_style(card, user);
@@ -2654,8 +2722,7 @@ void App::start_run() {
     Rnode_graph_set_flow_visible(id("graph"), R_TRUE);
     Rwidget_set_visibility(id("run.stop"), R_VISIBLE);
     update_queue();
-    Rlabel_set_text(id("run.state"), "RUNNING");
-    Rlabel_set_text(id("activity.lead"), "Running");
+    set_run_state("RUNNING");
     Rwidget_set_enabled(id("harness"), R_FALSE);
     Rwidget_set_enabled(id("run.mode"), R_FALSE);
     Rwidget_set_enabled(id("model.select"), R_FALSE);
@@ -2732,7 +2799,7 @@ void App::start_run() {
         update_queue();
         Rwidget_set_enabled(id("harness"), R_TRUE);
         Rwidget_set_enabled(id("run.mode"), R_TRUE); Rwidget_set_enabled(id("model.select"), R_TRUE); Rwidget_set_enabled(id("effort.select"), R_TRUE);
-        Rlabel_set_text(id("run.state"), "ERROR");
+        set_run_state("ERROR");
         Rnode_graph_set_node_active(id("graph"), lead_node_, R_FALSE);
         last_run_failed_ = true;
         set_current_action("Start failed");
@@ -2766,8 +2833,7 @@ void App::stop_run() {
     Rwidget_set_enabled(id("harness"), R_TRUE);
     Rwidget_set_enabled(id("run.mode"), R_TRUE); Rwidget_set_enabled(id("model.select"), R_TRUE); Rwidget_set_enabled(id("effort.select"), R_TRUE);
     set_current_action("Stopped");
-    Rlabel_set_text(id("run.state"), "STOPPED");
-    Rlabel_set_text(id("activity.lead"), "Stopped");
+    set_run_state("STOPPED");
     for (const auto& [tool, label] : subagent_status_) {
         if (Rwidget_is_valid(label) && std::string(Rlabel_get_text(label)) == "running") Rlabel_set_text(label, "stopped");
     }
@@ -3003,8 +3069,7 @@ void App::handle_lead_event(const ClaudeEvent& event) {
         Rwidget_set_visibility(id("run.stop"), R_COLLAPSED);
         Rwidget_set_visibility(id("run.retry"), event.is_error ? R_VISIBLE : R_COLLAPSED);
         update_queue();
-        Rlabel_set_text(id("run.state"), event.is_error ? "ERROR" : "COMPLETE");
-        Rlabel_set_text(id("activity.lead"), event.is_error ? "Error" : "Complete");
+        set_run_state(event.is_error ? "ERROR" : "COMPLETE");
         for (const auto& [tool, label] : subagent_status_) {
             if (Rwidget_is_valid(label) && std::string(Rlabel_get_text(label)) == "running") {
                 Rlabel_set_text(label, event.is_error ? "failed" : "complete");
@@ -3051,8 +3116,7 @@ void App::start_wiki_curator() {
     } catch (const std::exception& error) {
         set_status(std::string("Run complete · memory staging failed: ") + error.what());
     }
-    Rlabel_set_text(id("run.state"), "WIKI REVIEW");
-    Rlabel_set_text(id("activity.lead"), "Reviewing");
+    set_run_state("WIKI REVIEW");
     wiki_output_.clear();
     auto prompt = std::string(
         "Review this completed lead-agent run and propose durable updates to the workspace wiki. "
@@ -3093,7 +3157,7 @@ void App::start_wiki_curator() {
     if (!wiki_process_.start(options, error)) {
         Rwidget_set_enabled(id("harness"), R_TRUE);
         Rwidget_set_enabled(id("run.mode"), R_TRUE); Rwidget_set_enabled(id("model.select"), R_TRUE); Rwidget_set_enabled(id("effort.select"), R_TRUE);
-        Rlabel_set_text(id("run.state"), "COMPLETE");
+        set_run_state("COMPLETE");
         set_current_action("Knowledge review unavailable");
         update_queue();
         set_status("Run complete · wiki curator could not start: " + error);
@@ -3124,8 +3188,7 @@ void App::handle_wiki_event(const ClaudeEvent& event) {
     Rwidget_set_enabled(id("run.mode"), R_TRUE); Rwidget_set_enabled(id("model.select"), R_TRUE); Rwidget_set_enabled(id("effort.select"), R_TRUE);
     set_current_action(event.is_error ? "Knowledge review failed" : "Knowledge review complete");
     update_queue();
-    Rlabel_set_text(id("run.state"), event.is_error ? "WIKI ERROR" : "COMPLETE");
-    Rlabel_set_text(id("activity.lead"), event.is_error ? "Wiki error" : "Complete");
+    set_run_state(event.is_error ? "WIKI ERROR" : "COMPLETE");
     if (event.is_error) {
         set_status("Run complete · wiki proposal failed: " + event.text);
         return;
@@ -3272,7 +3335,11 @@ void App::refresh_checkpoint_history(const std::string& selected) {
 void App::open_checkpoint(const std::string& checkpoint_id) {
     const auto* checkpoint = checkpoint_store_.find(checkpoint_id);
     selected_checkpoint_id_ = checkpoint ? checkpoint_id : "";
-    Rwidget_set_visibility(id("checkpoint.history.row"), checkpoint_store_.checkpoints().empty() ? R_COLLAPSED : R_VISIBLE);
+    // With a single checkpoint the selector only repeated the title above it; Restore task moves
+    // to the file row in that case.
+    const bool several_checkpoints = checkpoint_store_.checkpoints().size() > 1;
+    Rwidget_set_visibility(id("checkpoint.history.row"), several_checkpoints ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("checkpoint.restore.inline"), !several_checkpoints && checkpoint ? R_VISIBLE : R_COLLAPSED);
     Rwidget_set_visibility(id("checkpoint.files.row"), !checkpoint || checkpoint->changes.empty() ? R_COLLAPSED : R_VISIBLE);
     Rwidget_set_visibility(id("checkpoint.hunks.row"), R_COLLAPSED);
     Rwidget_set_visibility(id("checkpoint.content.tabs"), checkpoint ? R_VISIBLE : R_COLLAPSED);
@@ -3287,6 +3354,7 @@ void App::open_checkpoint(const std::string& checkpoint_id) {
         Rwidget_set_enabled(id("checkpoint.files"), R_FALSE);
         Rwidget_set_enabled(id("checkpoint.open"), R_FALSE);
         Rwidget_set_enabled(id("checkpoint.restore"), R_FALSE);
+        Rwidget_set_enabled(id("checkpoint.restore.inline"), R_FALSE);
         Rwidget_set_enabled(id("checkpoint.restore_hunk"), R_FALSE);
         open_verification(-1);
         set_active_view(id("checkpoint.content.tabs"), 0);
@@ -3321,6 +3389,7 @@ void App::open_checkpoint(const std::string& checkpoint_id) {
     Rwidget_set_enabled(id("checkpoint.files"), !checkpoint->changes.empty());
     Rwidget_set_enabled(id("checkpoint.open"), !checkpoint->changes.empty());
     Rwidget_set_enabled(id("checkpoint.restore"), !checkpoint->changes.empty() && checkpoint->status != "restored");
+    Rwidget_set_enabled(id("checkpoint.restore.inline"), !checkpoint->changes.empty() && checkpoint->status != "restored");
     open_verification(0);
     show_checkpoint_diff(0);
 }
@@ -3660,7 +3729,7 @@ void App::refresh_missions() {
     const auto* mission = mission_store_.find(selected_mission_id_);
     Rlabel_set_text(id("mission.empty"), repositories_.empty()
         ? "No Git repository found. Missions require the workspace root or a direct child Git repository."
-        : mission_rows_.empty() ? "No missions yet. Describe an isolated task above to create a Git worktree."
+        : mission_rows_.empty() ? "No isolated tasks yet. Use one for risky or exploratory changes: the agent works in a separate Git worktree, and nothing reaches this workspace until you review the diff and apply it."
         : "Select a mission to inspect its diff and available actions.");
     Rwidget_set_visibility(id("mission.empty"), mission ? R_COLLAPSED : R_VISIBLE);
     Rwidget_set_visibility(id("mission.list"), mission_rows_.empty() ? R_COLLAPSED : R_VISIBLE);

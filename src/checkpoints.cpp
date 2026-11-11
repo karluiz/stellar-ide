@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -32,6 +33,26 @@ bool ignored_directory(const fs::path& path) {
         name == ".venv" || name == "venv" || name == "__pycache__";
 }
 
+// Executables, object files and archives produced by builds. They are rebuilt rather than reviewed,
+// and a compiled binary otherwise appears in Review as an unreadable "changed file".
+bool compiled_artifact(const fs::path& path) {
+    const auto extension = path.extension().string();
+    static const char* extensions[] = {".o", ".obj", ".a", ".so", ".dylib", ".dll", ".exe", ".lib", ".pyc", ".class", ".wasm"};
+    for (const auto* candidate : extensions) {
+        if (extension == candidate) return true;
+    }
+    std::ifstream input(path, std::ios::binary);
+    unsigned char magic[4] = {};
+    if (!input.read(reinterpret_cast<char*>(magic), sizeof(magic))) return false;
+    const auto is = [&](unsigned char a, unsigned char b, unsigned char c, unsigned char d) {
+        return magic[0] == a && magic[1] == b && magic[2] == c && magic[3] == d;
+    };
+    return is(0x7F, 'E', 'L', 'F') ||                                  // ELF
+        is(0xCF, 0xFA, 0xED, 0xFE) || is(0xCE, 0xFA, 0xED, 0xFE) ||    // Mach-O, little-endian
+        is(0xFE, 0xED, 0xFA, 0xCF) || is(0xFE, 0xED, 0xFA, 0xCE) ||    // Mach-O, big-endian
+        is(0xCA, 0xFE, 0xBA, 0xBE);                                     // universal Mach-O
+}
+
 WorkspaceScan scan_workspace(const fs::path& root) {
     WorkspaceScan result;
     std::error_code error;
@@ -48,7 +69,7 @@ WorkspaceScan scan_workspace(const fs::path& root) {
         const auto& entry = *iterator;
         if (entry.is_directory()) {
             if (ignored_directory(entry.path())) iterator.disable_recursion_pending();
-        } else if (entry.is_regular_file() && !entry.is_symlink()) {
+        } else if (entry.is_regular_file() && !entry.is_symlink() && !compiled_artifact(entry.path())) {
             const auto size = entry.file_size(error);
             if (error) {
                 result.partial = true;
