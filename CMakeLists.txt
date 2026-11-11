@@ -60,8 +60,11 @@ if(UNIX AND NOT APPLE)
     target_link_libraries(raven_ide_core PUBLIC pthread)
 endif()
 
-add_executable(raven-ide src/main.cpp src/app.cpp src/app_endurance.cpp)
+add_executable(raven-ide src/main.cpp src/app.cpp src/app_endurance.cpp src/platform.cpp)
 target_link_libraries(raven-ide PRIVATE raven_ide_core)
+if(APPLE)
+    target_link_libraries(raven-ide PRIVATE "-framework AppKit" "-framework Carbon" "-framework CoreGraphics")
+endif()
 target_compile_definitions(raven-ide PRIVATE
     RAVEN_IDE_UI_DIR="${CMAKE_CURRENT_SOURCE_DIR}/ui"
     RAVEN_IDE_KNOWLEDGE_BIN="${CMAKE_BINARY_DIR}/raven-ide-knowledge"

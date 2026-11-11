@@ -88,7 +88,7 @@
                                 <Image Source="icons/archive.png" Width="17" Height="17" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
                             </Overlay>
                         </HBox>
-                        <ListView Name="threads" Slot.Fill="1" OnActivated="thread.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
+                        <ListView Name="threads" Class="nav-list" Slot.Fill="1" OnActivated="thread.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
                     </VBox>
                     <VBox>
                         <FileBrowser Name="workspace.files" Slot.Fill="1" Slot.Padding="10,8,10,12" Controls="false" Places="false" ShowHidden="false"/>
@@ -98,14 +98,14 @@
                             <Label Text="Agent definitions" Class="section" Slot.Fill="1"/>
                             <Button Text="New" Style="Flat" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)"/>
                         </HBox>
-                        <ListView Name="agents" Slot.Fill="1" OnActivated="agent.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
+                        <ListView Name="agents" Class="nav-list" Slot.Fill="1" OnActivated="agent.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
                     </VBox>
                     <VBox>
                         <HBox Slot.Padding="16,10,12,4">
                             <Label Text="Workspace notes" Class="section" Slot.Fill="1"/>
                             <Button Text="New" Style="Flat" OnClicked="wiki.new" Tooltip="Create a Markdown note (Ctrl+Shift+N)"/>
                         </HBox>
-                        <ListView Name="wiki" Slot.Fill="1" OnActivated="wiki.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
+                        <ListView Name="wiki" Class="nav-list" Slot.Fill="1" OnActivated="wiki.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
                     </VBox>
                 </Switcher>
                 <Spacer Name="navigation.bottom.spacer" Slot.Fill="1"/>
@@ -121,11 +121,11 @@
                 <Switcher Name="center.tabs" Slot.Fill="1">
                     <VBox Class="workspace" Slot.Title="Agent">
                         <ScrollBox Name="transcript.scroll" Slot.Fill="1">
-                            <HBox Slot.Padding="26,30">
+                            <HBox Name="transcript.row" Slot.Padding="26,30">
                                 <VBox Name="transcript" MaxWidth="860" Slot.Fill="1" Spacing="18"/>
                             </HBox>
                         </ScrollBox>
-                        <HBox Slot.Padding="24,0,24,6">
+                        <HBox Name="queue.row" Slot.Padding="24,0,24,6">
                             <Border Name="queue.bar" Class="activity" Padding="10,12" CornerRadius="10" MaxWidth="860" Slot.Fill="1" Visibility="Collapsed" Appear="Fade">
                                 <HBox Spacing="10">
                                     <VBox Slot.Fill="1" Spacing="4" Slot.VAlign="Center">
@@ -137,7 +137,7 @@
                                 </HBox>
                             </Border>
                         </HBox>
-                        <HBox Slot.Padding="24,6,24,22">
+                        <HBox Name="composer.row" Slot.Padding="24,6,24,22">
                             <Border Name="composer.shell" Class="composer" Padding="14" MaxWidth="860" Slot.Fill="1">
                                 <VBox Spacing="10">
                                     <HBox Name="composer.image.bar" Spacing="12" Visibility="Collapsed" Appear="Fade">
@@ -148,7 +148,7 @@
                                         </VBox>
                                         <Button Text="Remove" Style="Flat" OnClicked="composer.image.remove" Tooltip="Remove the pasted image" Slot.VAlign="Center"/>
                                     </HBox>
-                                    <TextEditor Name="composer" Class="composer-input" Height="88" Wrap="true" Completion="true" AutoPairs="false" Placeholder="Describe a task · / skills · @ files · paste an image…"/>
+                                    <TextEditor Name="composer" Class="composer-input" Height="88" Wrap="true" Completion="true" AutoPairs="false" Placeholder="Describe a task · / skills · @ files · paste an image…" AccessibleName="Message to the lead agent"/>
                                     <HBox Name="context.bar" Spacing="8" Visibility="Collapsed" Appear="Fade">
                                         <Image Source="icons/files.png" Width="15" Height="15" TintText="true" AccessibleHidden="true" Slot.VAlign="Center"/>
                                         <ComboBox Name="context.files" Width="290" Tooltip="Attachment token estimate" AccessibleName="Attached files"/>

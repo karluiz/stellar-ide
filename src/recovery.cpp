@@ -20,6 +20,7 @@ void RecoveryStore::load() {
     if (!std::filesystem::is_regular_file(path_, error)) return;
     const auto data = nlohmann::json::parse(read_file(path_));
     draft_ = data.value("draft", "");
+    if (draft_.find_first_not_of(" \t\r\n") == std::string::npos) draft_.clear();
     for (const auto& item : data.at("editors")) {
         const auto kind = item.at("kind").get<std::string>();
         if (kind != "code" && kind != "agent" && kind != "note") continue;
@@ -39,7 +40,8 @@ void RecoveryStore::save() const {
 }
 
 void RecoveryStore::set_draft(const std::string& text) {
-    draft_ = text;
+    // A whitespace-only draft restores as an apparently empty composer with no placeholder.
+    draft_ = text.find_first_not_of(" \t\r\n") == std::string::npos ? std::string() : text;
     save();
 }
 

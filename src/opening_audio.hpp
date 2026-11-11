@@ -30,6 +30,7 @@ private:
     SDL_AudioSpec spec_{};
     Uint8* audio_data_ = nullptr;
     Uint32 audio_length_ = 0;
+    Uint32 sample_count_ = 0;
     Uint32 position_ = 0;
     float gain_ = 0.0f;
     std::atomic<float> target_gain_{0.0f};

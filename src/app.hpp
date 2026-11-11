@@ -47,6 +47,7 @@ public:
     void start_endurance_with_task(const std::string& task);
     void open_code_file(const std::filesystem::path& path, int line = 0);
     void pump();
+    void update_reading_column();
     Rid window() const;
     bool has_animation_frames() const;
     bool has_run_timers() const;
@@ -114,6 +115,8 @@ private:
     int activity_count_ = 0;
     int activity_failed_ = 0;
     bool saw_delta_ = false;
+    float reading_pane_width_ = 0.0f;
+    int transcript_follow_frames_ = 0;
     bool composer_completion_pending_ = false;
     float editor_zoom_ = 1.0f;
     float interface_zoom_ = 1.15f;

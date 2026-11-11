@@ -1,7 +1,10 @@
 #include "app.hpp"
+#include "platform.hpp"
 
 #include <Raven.h>
 
+#include <atomic>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -9,6 +12,7 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include <thread>
 
 namespace {
 
@@ -28,6 +32,26 @@ void capture(Rid window, const char* path) {
     for (int i = 0; i < width * height; ++i) std::fwrite(pixels + i * 4, 1, 3, file);
     std::fclose(file);
     Rpixels_free(pixels);
+}
+
+std::atomic<bool> quit_requested{false};
+
+// SIGINT and SIGTERM are blocked process-wide and received by one thread, which asks the main loop
+// to quit. A default-action kill would skip the App destructor, leaving agent process groups
+// running in the workspace and pending saves unwritten. Child processes restore the default mask.
+void handle_termination_signals() {
+    sigset_t signals;
+    sigemptyset(&signals);
+    sigaddset(&signals, SIGINT);
+    sigaddset(&signals, SIGTERM);
+    pthread_sigmask(SIG_BLOCK, &signals, nullptr);
+    std::thread([signals] {
+        int received = 0;
+        while (sigwait(&signals, &received) == 0) {
+            if (quit_requested.exchange(true)) std::_Exit(128 + received); // second signal: stop now
+            Rwake_up();
+        }
+    }).detach();
 }
 
 } // namespace
@@ -109,7 +133,10 @@ int main(int argc, char** argv) {
         return 2;
     }
 
+    raven::platform::extend_search_path();
+    handle_termination_signals();
     Rerror_set_callback(on_error);
+    raven::platform::prepare_windowing();
     RInitDesc desc{};
     desc.backend = R_BACKEND_VULKAN;
     desc.app_name = "Stellar";
@@ -157,6 +184,7 @@ int main(int argc, char** argv) {
         if (!app.create()) {
             result = 1;
         } else {
+            raven::platform::fit_main_window_to_display();
             if (harness) app.select_harness(*harness);
             if (mode) app.select_run_mode(*mode);
             if (watch) app.select_watch_checks(true);
@@ -181,6 +209,7 @@ int main(int argc, char** argv) {
                 if (const char* path = std::getenv("RAVEN_IDE_CAPTURE")) capture(app.window(), path);
             } else {
                 while (Rwait_frame(app.has_animation_frames() ? 1.0 / 30.0 : app.has_run_timers() ? 0.25 : -1.0)) {
+                    if (quit_requested.load()) Rquit(0);
                 }
             }
         }

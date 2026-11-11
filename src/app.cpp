@@ -25,8 +25,28 @@ std::string lowercase(std::string value) {
     return value;
 }
 
+// Shortens to at most `length` characters, counting UTF-8 code points so a multi-byte character is
+// never split (a split sequence is invalid UTF-8 and cannot be saved as JSON), and preferring a word
+// boundary so titles do not end mid-word.
 std::string shortened(const std::string& value, size_t length) {
-    return value.size() <= length ? value : value.substr(0, length - 1) + "…";
+    const auto continuation = [](char byte) { return (static_cast<unsigned char>(byte) & 0xC0) == 0x80; };
+    size_t characters = 0;
+    for (const char byte : value) characters += continuation(byte) ? 0 : 1;
+    if (characters <= length || length == 0) return value;
+    size_t cut = 0;
+    for (size_t seen = 0; cut < value.size(); ++cut) {
+        if (continuation(value[cut])) continue;
+        if (seen++ == length - 1) break;
+    }
+    const auto space = value.rfind(' ', cut);
+    if (space != std::string::npos && space >= cut * 2 / 3) cut = space;
+    while (cut > 0 && (value[cut - 1] == ' ' || value[cut - 1] == ',' || value[cut - 1] == ';' || value[cut - 1] == ':')) --cut;
+    return value.substr(0, cut) + "…";
+}
+
+// "1 file", "3 files": status and review copy never shows a parenthesised plural.
+std::string counted(size_t count, const char* noun) {
+    return std::to_string(count) + " " + noun + (count == 1 ? "" : "s");
 }
 
 int theme_family(int index) {
@@ -1146,7 +1166,8 @@ void App::refresh_threads() {
         if (!query.empty() && lowercase(thread.title).find(query) == std::string::npos) continue;
         if (thread.id == current_thread_id_) selected = static_cast<int>(thread_rows_.size());
         thread_rows_.push_back(thread.id);
-        Rlist_view_add_item(id("threads"), thread.title.c_str());
+        // The sidebar is narrow and the list clips without an ellipsis, so rows carry a short title.
+        Rlist_view_add_item(id("threads"), shortened(thread.title, 26).c_str());
     }
     if (selected < 0 && show_archived_ && !thread_rows_.empty()) selected = 0;
     Rlist_view_set_selected(id("threads"), selected);
@@ -1258,6 +1279,8 @@ void App::open_thread(const std::string& thread_id) {
     Rcombo_box_set_selected(id("settings.harness"), static_cast<int>(harness_));
     Rwidget_clear_children(id("transcript"));
     for (const auto& message : thread_messages_) add_message(message.role, message.text, message.user);
+    // Message heights are only final after the next layout, so scroll to the end again then.
+    transcript_follow_frames_ = 3;
     update_context_summary();
     Rlabel_set_text(id("run.title"), shortened(run_title_, 36).c_str());
     Rwidget_set_tooltip(id("run.title"), run_title_.c_str());
@@ -1387,8 +1410,8 @@ void App::recover() {
         }
         ++recovered;
     }
-    if (recovered > 0) set_status("Recovered " + std::to_string(recovered) + " editor backup(s) and the current draft");
-    if (conflicts > 0) set_status("Recovery preserved aside · " + std::to_string(conflicts) + " file(s) changed on disk");
+    if (recovered > 0) set_status("Recovered " + counted(static_cast<size_t>(recovered), "editor backup") + " and the current draft");
+    if (conflicts > 0) set_status("Recovery preserved aside · " + counted(static_cast<size_t>(conflicts), "file") + " changed on disk");
 }
 
 void App::schedule_recovery_save() {
@@ -2053,15 +2076,24 @@ void App::set_sidebar_visibility(bool left, bool visible) {
             if (left_sidebar_visible_) left_sidebar_share_ = left_width / total;
             center_workspace_share_ = center_width / total;
             if (right_sidebar_visible_) right_sidebar_share_ = right_width / total;
+            // The center absorbs the room the folded pane leaves, so the remaining sidebar keeps
+            // its width instead of growing proportionally.
+            center_workspace_share_ += left ? left_sidebar_share_ : right_sidebar_share_;
+            Rslot_set_fill(id("center.workspace"), center_workspace_share_);
+            const bool other_visible = left ? right_sidebar_visible_ : left_sidebar_visible_;
+            if (other_visible) Rslot_set_fill(id(left ? "right.sidebar" : "left.sidebar"), left ? right_sidebar_share_ : left_sidebar_share_);
         }
     } else {
-        const float total = center_workspace_share_ + target_share +
-            (left_sidebar_visible_ ? left_sidebar_share_ : 0.0f) +
-            (right_sidebar_visible_ ? right_sidebar_share_ : 0.0f);
-        Rslot_set_fill(id("center.workspace"), center_workspace_share_ / total);
-        if (left_sidebar_visible_) Rslot_set_fill(id("left.sidebar"), left_sidebar_share_ / total);
-        if (right_sidebar_visible_) Rslot_set_fill(id("right.sidebar"), right_sidebar_share_ / total);
-        Rslot_set_fill(target, target_share / total);
+        // Shares are fractions of the full width. A pane that opens takes its room from the center
+        // only: normalizing all three shrank the other sidebar below its minimum and clipped its
+        // labels. The center always keeps at least 30% of the window.
+        const bool other_visible = left ? right_sidebar_visible_ : left_sidebar_visible_;
+        const float other_share = other_visible ? (left ? right_sidebar_share_ : left_sidebar_share_) : 0.0f;
+        const float share = std::clamp(target_share, 0.0f, std::max(0.0f, 1.0f - other_share - 0.30f));
+        center_workspace_share_ = 1.0f - other_share - share;
+        Rslot_set_fill(id("center.workspace"), center_workspace_share_);
+        if (other_visible) Rslot_set_fill(id(left ? "right.sidebar" : "left.sidebar"), other_share);
+        Rslot_set_fill(target, share);
     }
 
     current = visible;
@@ -2577,7 +2609,7 @@ void App::start_run() {
     run_elapsed_seconds_ = 0.0;
     displayed_elapsed_seconds_ = -1;
     if (session_id_.empty() || tesseract) {
-        run_title_ = shortened(prompt.substr(0, prompt.find('\n')), 72);
+        run_title_ = shortened(prompt.substr(0, prompt.find('\n')), 48);
         Rlabel_set_text(id("run.title"), shortened(run_title_, 36).c_str());
         Rwidget_set_tooltip(id("run.title"), run_title_.c_str());
     }
@@ -3142,6 +3174,34 @@ void App::pump() {
     for (const auto& event : wiki_events) handle_wiki_event(event);
     pump_endurance();
     maybe_start_queued();
+    update_reading_column();
+}
+
+// Centers the transcript, queue bar and composer in the 860px reading column. A filling slot in a
+// box panel ignores MaxWidth and cannot center what a maximum leaves over, so wide windows stretched
+// prose and the composer across the whole center pane. The side padding is recomputed whenever the
+// pane's width changes.
+void App::update_reading_column() {
+    float x = 0.0f, y = 0.0f, width = 0.0f, height = 0.0f;
+    Rwidget_get_rect(id("transcript.scroll"), &x, &y, &width, &height);
+    if (width > 0.0f && width != reading_pane_width_) {
+        reading_pane_width_ = width;
+        const float column = 860.0f;
+        const float transcript_side = std::max(26.0f, (width - column) / 2.0f);
+        const float tool_side = std::max(24.0f, (width - column) / 2.0f);
+        Rslot_set_padding(id("transcript.row"), transcript_side, 30.0f, transcript_side, 30.0f);
+        Rslot_set_padding(id("queue.row"), tool_side, 0.0f, tool_side, 6.0f);
+        Rslot_set_padding(id("composer.row"), tool_side, 6.0f, tool_side, 22.0f);
+        // Re-wrapping changes every message height. Keep following the newest entry while a reply
+        // streams or a restore is still settling; otherwise leave the reader's position alone.
+        if (transcript_follow_frames_ > 0 || lead_process_.running()) transcript_follow_frames_ = 3;
+    }
+    // The opening screen covers the workspace; settle the scroll position once it is visible.
+    if (transcript_follow_frames_ > 0 && width > 0.0f && !splash_.active()) {
+        --transcript_follow_frames_;
+        Rscroll_box_scroll_to_end(id("transcript.scroll"));
+        Rwindow_request_redraw(window_);
+    }
 }
 
 void App::finish_checkpoint(const std::string& status) {
@@ -3163,12 +3223,12 @@ void App::finish_checkpoint(const std::string& status) {
             return check.status == VerificationStatus::Failed;
         });
         if (status == "complete" && failed > 0) {
-            notify_event("Stellar · Verification failed", std::to_string(failed) + " check(s) failed · " + checkpoint.title, true, "verification", "verification", checkpoint.id);
+            notify_event("Stellar · Verification failed", counted(static_cast<size_t>(failed), "check") + " failed · " + checkpoint.title, true, "verification", "verification", checkpoint.id);
         }
         if (!checkpoint.changes.empty()) {
-            set_status("Checkpoint ready · " + std::to_string(checkpoint.changes.size()) + " changed file(s)");
+            set_status("Checkpoint ready · " + counted(checkpoint.changes.size(), "changed file"));
         } else if (!checkpoint.checks.empty()) {
-            set_status("Verification ready · " + std::to_string(checkpoint.checks.size()) + " check(s)");
+            set_status("Verification ready · " + counted(checkpoint.checks.size(), "check"));
         }
     } catch (const std::exception& error) {
         set_status(std::string("Checkpoint could not be finalized: ") + error.what());
@@ -3200,8 +3260,8 @@ void App::refresh_checkpoint_history(const std::string& selected) {
         });
         Rlabel_set_text(id("checkpoint.notice.title"), failed > 0 ? "Verification failed"
             : latest.changes.empty() ? "Verification ready" : "Code changes ready");
-        auto notice = std::to_string(latest.changes.size()) + " file(s)";
-        if (!latest.checks.empty()) notice += " · " + std::to_string(latest.checks.size()) + " check(s)";
+        auto notice = counted(latest.changes.size(), "file");
+        if (!latest.checks.empty()) notice += " · " + counted(latest.checks.size(), "check");
         notice += " · " + latest.title;
         Rlabel_set_text(id("checkpoint.notice"), notice.c_str());
         Rwidget_set_visibility(id("checkpoint.bar"), R_VISIBLE);
@@ -3234,7 +3294,7 @@ void App::open_checkpoint(const std::string& checkpoint_id) {
     }
 
     Rlabel_set_text(id("checkpoint.title"), checkpoint->title.c_str());
-    auto summary = std::to_string(checkpoint->changes.size()) + " changed file(s) · " + checkpoint->status;
+    auto summary = counted(checkpoint->changes.size(), "changed file") + " · " + checkpoint->status;
     if (checkpoint->partial) summary += " · partial snapshot";
     const auto passed = std::count_if(checkpoint->checks.begin(), checkpoint->checks.end(), [](const auto& check) {
         return check.status == VerificationStatus::Passed;
@@ -3444,8 +3504,8 @@ void App::restore_checkpoint() {
     const auto* checkpoint = checkpoint_store_.find(selected_checkpoint_id_);
     if (!checkpoint || !can_discard_code() || !flush_autosave()) return;
     const auto checkpoint_id = checkpoint->id;
-    const auto message = "Restore " + std::to_string(checkpoint->changes.size()) +
-        " file(s) to their state before this task? Files changed afterward will be left untouched and the restore will be cancelled.";
+    const auto message = "Restore " + counted(checkpoint->changes.size(), "file") +
+        " to the state before this task? Files changed afterward will be left untouched and the restore will be cancelled.";
     if (Rmessage_box(window_, "Restore task checkpoint", message.c_str(), R_MESSAGE_YES_NO) != R_MESSAGE_RESULT_YES) return;
     try {
         const auto affected_editor = !current_code_path_.empty() && std::any_of(checkpoint->changes.begin(), checkpoint->changes.end(), [&](const auto& change) {

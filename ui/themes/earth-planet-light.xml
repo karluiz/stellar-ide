@@ -7,8 +7,16 @@
         Separator="#AAC7B9" Header="#DFEEE6" HeaderHovered="#B1D5C4" TabActive="#C3E0D0"
         Popup="#F5FBF8" PopupBorder="#6D9984" Focus="#176B55"
         Success="#2E7350" Warning="#85601F" Danger="#A44343" Link="#176B78" Code="#DDEAE3"/>
-    <Metrics FontSize="13" ControlHeight="34" RowHeight="36" SplitterSize="3" PaddingX="11" PaddingY="7" Spacing="8"/>
+    <Metrics ScrollbarSize="10" FontSize="13" ControlHeight="34" RowHeight="36" SplitterSize="3" PaddingX="11" PaddingY="7" Spacing="8"/>
     <Syntax Comment="#4C6B5E" String="#2E7350" Number="#85601F" Keyword="#176B55" Type="#176B78" Function="#3E6757" Heading="#176B55" Strong="#15352B" Link="#176B78"/>
+    <!-- Scrollbars stay quiet until hovered: no track, a muted thumb, and the accent only under the pointer. -->
+    <Style Widget="ScrollBox" Track="#00000000" Handle="#6D9984" HandleHovered="#4D856D"/>
+    <Style Widget="ListView" Track="#00000000" Handle="#6D9984" HandleHovered="#4D856D"/>
+    <Style Widget="TreeView" Track="#00000000" Handle="#6D9984" HandleHovered="#4D856D"/>
+    <Style Widget="TextEditor" Track="#00000000" Handle="#6D9984" HandleHovered="#4D856D"/>
+    <Style Widget="FileBrowser" Track="#00000000" Handle="#6D9984" HandleHovered="#4D856D"/>
+    <!-- Navigation lists sit directly on the sidebar: only rows carry a fill, so an empty list stays dark. -->
+    <Style Widget="ListView" Class="nav-list" Input="#00000000"/>
     <Style Widget="Button" CornerRadius="8"/>
     <Style Widget="Button" Class="header-action" Control="#00000000" ControlHovered="#C8E2D5" ControlPressed="#B1D5C4" Text="#15352B"/>
     <Style Widget="Button" Class="send-button" Control="#C8E2D5" ControlHovered="#B1D5C4" ControlPressed="#94C4AE" Text="#15352B" CornerRadius="17"/>

@@ -542,6 +542,9 @@ void recovery_tests() {
     expect(loaded.draft() == "unfinished prompt" && loaded.editors().size() == 1 &&
            loaded.editors()[0].content == "recovered edit" && loaded.editors()[0].saved_content == "saved version",
            "recovery data did not survive reload");
+    loaded.set_draft(" \r\n\t ");
+    raven::RecoveryStore blank(root);
+    expect(blank.draft().empty(), "a whitespace-only draft was restored into the composer");
     loaded.clear_editor("code", root / "src" / "main.cpp");
     loaded.clear_draft();
     raven::RecoveryStore cleared(root);

@@ -16,6 +16,8 @@
 #include <sstream>
 #include <thread>
 
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -392,6 +394,24 @@ std::string claude_agents_json(const std::vector<AgentDefinition>& agents) {
     return definitions.dump();
 }
 
+namespace {
+
+// True when `name` resolves to an executable on PATH, mirroring what execvp will search.
+bool executable_on_path(const std::string& name) {
+    if (name.find('/') != std::string::npos) return access(name.c_str(), X_OK) == 0;
+    const char* path = std::getenv("PATH");
+    std::stringstream directories(path ? path : "/usr/bin:/bin");
+    std::string directory;
+    while (std::getline(directories, directory, ':')) {
+        const auto candidate = (directory.empty() ? std::string(".") : directory) + "/" + name;
+        struct stat info {};
+        if (stat(candidate.c_str(), &info) == 0 && S_ISREG(info.st_mode) && access(candidate.c_str(), X_OK) == 0) return true;
+    }
+    return false;
+}
+
+} // namespace
+
 struct ClaudeProcess::Impl {
     mutable std::mutex mutex;
     std::deque<ClaudeEvent> events;
@@ -442,6 +462,15 @@ bool ClaudeProcess::start(const RunOptions& options, std::string& error) {
         }
     }
 
+    // Fail before forking with a message the user can act on. A missing CLI otherwise surfaces
+    // only as "exited with status 127".
+    const char* executable = options.harness == Harness::KimiCode ? "kimi" : "claude";
+    if (!executable_on_path(executable)) {
+        error = std::string(options.harness == Harness::KimiCode ? "Kimi Code" : "Claude Code") + " was not found: `" +
+            executable + "` is not on PATH. Install the CLI, or start Stellar from a shell where it is available.";
+        return false;
+    }
+
     const bool acp = options.harness == Harness::KimiCode && !options.wiki_schema;
     int input_pipe[2];
     if (acp && pipe(input_pipe) != 0) {
@@ -479,17 +508,28 @@ bool ClaudeProcess::start(const RunOptions& options, std::string& error) {
         };
         if (!options.model.empty()) arguments.insert(arguments.end(), {"--model", options.model});
         if (!options.effort.empty()) arguments.insert(arguments.end(), {"--effort", options.effort});
+        // Every --allowedTools value is collected and passed once at the end.
+        std::vector<std::string> allowed_tools;
         if (options.read_only) {
             arguments.insert(arguments.end(), {"--tools", options.wiki_schema ? "" : "Read,Glob,Grep"});
         } else {
             arguments.insert(arguments.end(), {"--permission-mode", "acceptEdits"});
+            // acceptEdits only covers file edits. Nothing can answer a permission prompt in a
+            // headless run, so without this every build and test command is denied and a Build
+            // run can never verify its own change. Kimi runs already approve tool calls.
+            allowed_tools.push_back("Bash");
         }
         if (!agent_definitions.empty()) arguments.insert(arguments.end(), {"--agents", agent_definitions});
         if (!options.agent.empty()) arguments.insert(arguments.end(), {"--agent", options.agent});
         if (!options.session_id.empty()) arguments.insert(arguments.end(), {"--resume", options.session_id});
-        if (options.wiki_schema) arguments.insert(arguments.end(), {"--allowedTools", "StructuredOutput", "--json-schema", wiki_schema()});
-        if (!options.knowledge_binary.empty()) {
-            arguments.insert(arguments.end(), {"--allowedTools", "Bash(" + options.knowledge_binary.string() + " *)"});
+        if (options.wiki_schema) {
+            allowed_tools.push_back("StructuredOutput");
+            arguments.insert(arguments.end(), {"--json-schema", wiki_schema()});
+        }
+        if (!options.knowledge_binary.empty()) allowed_tools.push_back("Bash(" + options.knowledge_binary.string() + " *)");
+        if (!allowed_tools.empty()) {
+            arguments.push_back("--allowedTools");
+            arguments.insert(arguments.end(), allowed_tools.begin(), allowed_tools.end());
         }
     }
     if (options.harness == Harness::ClaudeCode) arguments.insert(arguments.end(), {"--", options.prompt});
@@ -515,11 +555,27 @@ bool ClaudeProcess::start(const RunOptions& options, std::string& error) {
         return false;
     }
     if (pid == 0) {
+        // Own process group: Stop and shutdown signal the whole group, so commands the agent
+        // started (builds, test runners, dev servers) do not outlive the run, and Ctrl+C in the
+        // launching terminal is delivered to Stellar rather than straight to the harness.
+        setpgid(0, 0);
+        // Stellar blocks SIGINT/SIGTERM for its own shutdown handling; the mask is inherited, and
+        // a harness that kept it could not be stopped.
+        sigset_t none;
+        sigemptyset(&none);
+        sigprocmask(SIG_SETMASK, &none, nullptr);
         if (chdir(options.working_directory.c_str()) != 0) _exit(126);
         if (acp) {
             dup2(input_pipe[0], STDIN_FILENO);
             close(input_pipe[0]);
             close(input_pipe[1]);
+        } else {
+            // A headless run must never wait on the terminal Stellar was started from.
+            const int null_input = open("/dev/null", O_RDONLY);
+            if (null_input >= 0) {
+                dup2(null_input, STDIN_FILENO);
+                close(null_input);
+            }
         }
         dup2(output_pipe[1], STDOUT_FILENO);
         dup2(output_pipe[1], STDERR_FILENO);
@@ -532,6 +588,8 @@ bool ClaudeProcess::start(const RunOptions& options, std::string& error) {
         _exit(127);
     }
 
+    // Also set from the parent so the group exists before stop() can run.
+    setpgid(pid, pid);
     if (acp) close(input_pipe[0]);
     close(output_pipe[1]);
     impl_->pid = pid;
@@ -775,7 +833,9 @@ bool ClaudeProcess::run_kimi_acp(int output_fd, int input_fd, const RunOptions& 
 }
 
 void ClaudeProcess::stop() {
-    if (impl_->pid > 0 && impl_->running.exchange(false)) kill(impl_->pid, SIGTERM);
+    if (impl_->pid > 0 && impl_->running.exchange(false)) {
+        if (kill(-impl_->pid, SIGTERM) != 0) kill(impl_->pid, SIGTERM);
+    }
     if (impl_->worker.joinable()) impl_->worker.join();
     impl_->pid = -1;
 }

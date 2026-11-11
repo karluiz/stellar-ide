@@ -17,7 +17,7 @@ Participation is governed by the [Code of Conduct](CODE_OF_CONDUCT.md). Read it 
 
 ## Local development
 
-The current project is a static GitHub Pages site. It has no package installation or build step.
+The public landing page is a static GitHub Pages site. It has no package installation or build step.
 
 Requirements:
 
@@ -40,6 +40,30 @@ python -m http.server 8000
 ```
 
 Open `http://localhost:8000` in a browser. Edit the files and refresh to see the result.
+
+### Building the IDE
+
+The native application lives in `src/`, `ui/`, and `tests/` and builds with CMake. The Raven engine is a Git submodule.
+
+```bash
+git submodule update --init --recursive
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+./build/raven-ide --workspace /path/to/a/workspace
+```
+
+Requirements: CMake 3.20+, a C++20 compiler, SDL2, `glslangValidator`, and a Vulkan driver.
+
+On macOS, install them with Homebrew. MoltenVK and the Vulkan loader provide the driver:
+
+```bash
+brew install cmake sdl2 glslang molten-vk vulkan-loader
+```
+
+Run the application against a scratch workspace rather than this repository: it creates `.stellar/`, `.agents/`, `endurance/`, and `wiki/` content in the workspace it opens.
+
+macOS-specific window and keyboard handling lives in `src/platform.cpp`. Changes to the header bar, shortcuts, scaling, child processes, or paths need a check on every platform you cannot test locally; say so in the pull request.
 
 ## Project layout
 
