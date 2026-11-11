@@ -999,7 +999,7 @@ void App::compact_context() {
     transcript_text_ = "CONTEXT COMPACTED LOCALLY: original task and recent messages retained.\n";
     for (const auto& message : retained) transcript_text_ += "\n\n" + message.role + ":\n" + message.text;
     session_id_.clear();
-    set_status("Context compacted · full thread preserved; next run uses the task and " + std::to_string(retained.size()) + " messages");
+    set_status("Context compacted · full thread preserved; next run uses the task and " + counted(retained.size(), "message"));
 }
 
 void App::seed_recall() {
@@ -2986,7 +2986,7 @@ void App::stop_run() {
         if (Rwidget_is_valid(label) && std::string(Rlabel_get_text(label)) == "running") Rlabel_set_text(label, "stopped");
     }
     if (Rwidget_is_valid(activity_expander_)) {
-        Rexpander_set_title(activity_expander_, ("Work stopped · " + std::to_string(activity_count_) + " steps").c_str());
+        Rexpander_set_title(activity_expander_, ("Work stopped · " + counted(static_cast<size_t>(activity_count_), "step")).c_str());
     }
     update_graph_summary();
     set_status("Run stopped · follow-ups can resume the session");

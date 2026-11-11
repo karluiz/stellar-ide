@@ -260,7 +260,7 @@ bool App::validate_endurance_yaml(bool apply) {
                 throw std::runtime_error("Agent not found for step " + step.id + ": " + step.agent);
             }
         }
-        Rlabel_set_text(id("endurance.yaml.status"), ("Valid workflow · " + std::to_string(candidate.steps.size()) + " steps · no cycles").c_str());
+        Rlabel_set_text(id("endurance.yaml.status"), ("Valid workflow · " + std::to_string(candidate.steps.size()) + (candidate.steps.size() == 1 ? " step" : " steps") + " · no cycles").c_str());
         if (apply) {
             const auto selected = endurance_step_index_ >= 0 && endurance_step_index_ < static_cast<int>(candidate.steps.size())
                 ? candidate.steps[endurance_step_index_].id : std::string();
