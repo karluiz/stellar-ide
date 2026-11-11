@@ -15,16 +15,6 @@
 namespace fs = std::filesystem;
 
 namespace raven {
-namespace {
-
-constexpr std::uintmax_t max_file_size = 2 * 1024 * 1024;
-constexpr std::uintmax_t max_snapshot_size = 128 * 1024 * 1024;
-constexpr size_t max_snapshot_files = 12'000;
-
-struct WorkspaceScan {
-    std::map<std::string, fs::path> files;
-    bool partial = false;
-};
 
 bool ignored_directory(const fs::path& path) {
     const auto name = path.filename().string();
@@ -52,6 +42,17 @@ bool compiled_artifact(const fs::path& path) {
         is(0xFE, 0xED, 0xFA, 0xCF) || is(0xFE, 0xED, 0xFA, 0xCE) ||    // Mach-O, big-endian
         is(0xCA, 0xFE, 0xBA, 0xBE);                                     // universal Mach-O
 }
+
+namespace {
+
+constexpr std::uintmax_t max_file_size = 2 * 1024 * 1024;
+constexpr std::uintmax_t max_snapshot_size = 128 * 1024 * 1024;
+constexpr size_t max_snapshot_files = 12'000;
+
+struct WorkspaceScan {
+    std::map<std::string, fs::path> files;
+    bool partial = false;
+};
 
 WorkspaceScan scan_workspace(const fs::path& root) {
     WorkspaceScan result;

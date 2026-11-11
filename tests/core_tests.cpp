@@ -283,6 +283,8 @@ void composer_tests() {
     raven::write_file(root / "docs" / "with space.md", "# Test\n");
     raven::write_file(root / "build" / "ignored.cpp", "ignored\n");
     raven::write_file(root / ".stellar" / "threads.json", "sentinel\n");
+    raven::write_file(root / "src" / "main", std::string("\xCF\xFA\xED\xFE\x07\0\0\x01", 8));
+    raven::write_file(root / "target" / "debug.txt", "cargo output\n");
 
     raven::ComposerIndex index;
     index.set_workspace(root);
@@ -296,6 +298,8 @@ void composer_tests() {
     expect(files.size() == 1 && files[0].text == "main.cpp" && files[0].detail == "src",
            "nested workspace file completion failed");
     expect(!index.has_file("build/ignored.cpp"), "build output leaked into file completion");
+    expect(!index.has_file("src/main") && !index.has_file("target/debug.txt"),
+           "a compiled binary or build directory leaked into file completion");
     const auto mentions = index.mentions("Read @src/main.cpp and @\"docs/with space.md\"");
     expect(mentions.size() == 2 && mentions[0].filename() == "main.cpp" && mentions[1].filename() == "with space.md",
            "workspace resource mentions were not extracted");

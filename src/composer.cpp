@@ -1,5 +1,7 @@
 #include "composer.hpp"
 
+#include "checkpoints.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -110,9 +112,9 @@ void ComposerIndex::refresh() {
         }
         const auto& entry = *iterator;
         if (entry.is_directory()) {
-            const auto name = entry.path().filename();
-            if (name == ".git" || name == ".stellar" || name == "build" || name == "node_modules") iterator.disable_recursion_pending();
-        } else if (entry.is_regular_file() && !entry.is_symlink()) {
+            // Same exclusions as checkpoints, so mentions never offer build output or binaries.
+            if (ignored_directory(entry.path())) iterator.disable_recursion_pending();
+        } else if (entry.is_regular_file() && !entry.is_symlink() && !compiled_artifact(entry.path())) {
             auto relative = std::filesystem::relative(entry.path(), root_, error).generic_string();
             if (!error && file_set_.insert(relative).second) files_.push_back(std::move(relative));
         }

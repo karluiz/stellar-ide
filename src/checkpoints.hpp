@@ -10,6 +10,11 @@
 
 namespace raven {
 
+// Directories every workspace scan skips: VCS metadata, Stellar state, build output, dependencies.
+bool ignored_directory(const std::filesystem::path& path);
+// Executables, object files and libraries produced by builds.
+bool compiled_artifact(const std::filesystem::path& path);
+
 enum class CheckpointChangeKind {
     Added,
     Modified,
