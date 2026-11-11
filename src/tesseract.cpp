@@ -596,9 +596,14 @@ nlohmann::json* TesseractCanvas::raw_node(const TesseractNode& node) {
 }
 
 bool TesseractCanvas::save_selected() {
+    const auto* selected = find(selected_id_);
+    if (!selected || !raw_node(*selected)) return false;
+    return commit_document();
+}
+
+// Writes the in-memory document as one undoable step.
+bool TesseractCanvas::commit_document() {
     try {
-        const auto* selected = find(selected_id_);
-        if (!selected || !raw_node(*selected)) return false;
         const auto updated = document_.dump(2) + "\n";
         if (updated != saved_document_) {
             undo_stack_.push_back(saved_document_);
@@ -637,6 +642,23 @@ bool TesseractCanvas::consume_text_edit_request() {
 }
 
 void TesseractCanvas::set_editing(const std::string& id) { editing_id_ = id; }
+
+bool TesseractCanvas::delete_selected() {
+    const auto* selected = find(selected_id_);
+    if (!selected || selected->path.empty()) return false;
+    auto* parent = &document_;
+    for (std::size_t i = 0; i + 1 < selected->path.size(); ++i) {
+        if (!parent->contains("children") || !(*parent)["children"].is_array()) return false;
+        parent = &(*parent)["children"][selected->path[i]];
+    }
+    if (!parent->contains("children") || !(*parent)["children"].is_array()) return false;
+    auto& children = (*parent)["children"];
+    const auto index = selected->path.back();
+    if (index >= children.size()) return false;
+    children.erase(children.begin() + static_cast<std::ptrdiff_t>(index));
+    selected_id_.clear();
+    return commit_document();
+}
 
 TesseractCanvas::TesseractColor TesseractCanvas::text_color(const TesseractNode& node) const {
     const auto color = parse_color(node.fill.empty() ? "$ink" : node.fill, variables_, node.opacity);
@@ -1090,6 +1112,11 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
         if ((event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)) && (event->key == R_KEY_Z || event->key == R_KEY_Y)) {
             const bool redo_requested = event->key == R_KEY_Y || (event->modifiers & R_MOD_SHIFT);
             if (redo_requested ? redo() : undo()) Rwidget_invalidate(widget);
+            return R_TRUE;
+        }
+        // Delete or Backspace removes the selected element (undoable with Cmd/Ctrl+Z).
+        if ((event->key == R_KEY_DELETE || event->key == R_KEY_BACKSPACE) && !(event->modifiers & (R_MOD_CTRL | R_MOD_SUPER | R_MOD_ALT))) {
+            if (delete_selected()) Rwidget_invalidate(widget);
             return R_TRUE;
         }
         if (event->key == R_KEY_SPACE) space_down_ = true;

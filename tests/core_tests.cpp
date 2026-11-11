@@ -925,6 +925,14 @@ void tesseract_tests() {
         expect(undone["children"][0]["children"][0]["content"] != "Welcome, Commander", "undo did not restore the previous text");
         expect(canvas.redo() && raven::read_file(file) == edited, "redo did not reapply the edit");
     }
+    {
+        const auto before = raven::read_file(file);
+        const auto selected = canvas.selected_id();
+        expect(!selected.empty() && canvas.delete_selected(), "the selected element could not be deleted");
+        expect(canvas.find(selected) == nullptr && canvas.selected_id().empty(), "a deleted element stayed in the document");
+        expect(canvas.undo() && raven::read_file(file) == before && canvas.find(selected) != nullptr,
+               "undo did not restore a deleted element");
+    }
 
     canvas.select("login");
     click = REvent{};

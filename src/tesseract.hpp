@@ -101,6 +101,8 @@ public:
     bool undo();
     bool redo();
     bool can_undo() const { return !undo_stack_.empty(); }
+    // Removes the selected element from the document as one undoable step.
+    bool delete_selected();
 
 private:
     enum class DragMode { None, Pan, Move, Resize };
@@ -142,6 +144,7 @@ private:
     std::vector<std::string> undo_stack_;
     std::vector<std::string> redo_stack_;
     bool restore(std::vector<std::string>& from, std::vector<std::string>& to);
+    bool commit_document();
 
     void load();
     void layout();
