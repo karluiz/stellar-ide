@@ -182,14 +182,46 @@ bool translate(unsigned short key_code, unsigned long flags, std::vector<UniChar
     return translated;
 }
 
-id rebuilt_key_event(id event, unsigned long type, unsigned long flags, id text, bool repeat) {
+id rebuilt_key_event(id event, unsigned long type, unsigned long flags, id text, bool repeat, int key_code = -1) {
     using Factory = id (*)(id, SEL, unsigned long, CGPoint, unsigned long, double, long, id, id, id, BOOL, unsigned short);
     return reinterpret_cast<Factory>(objc_msgSend)(reinterpret_cast<id>(objc_getClass("NSEvent")),
         sel_registerName("keyEventWithType:location:modifierFlags:timestamp:windowNumber:context:characters:charactersIgnoringModifiers:isARepeat:keyCode:"),
         type, send<CGPoint>(event, "locationInWindow"), flags, send<double>(event, "timestamp"),
         send<long>(event, "windowNumber"), static_cast<id>(nullptr), text,
         reinterpret_cast<id (*)(id, SEL)>(original_characters_ignoring_modifiers)(event, sel_registerName("charactersIgnoringModifiers")),
-        repeat ? YES : NO, send<unsigned short>(event, "keyCode"));
+        repeat ? YES : NO, key_code >= 0 ? static_cast<unsigned short>(key_code) : send<unsigned short>(event, "keyCode"));
+}
+
+// macOS text navigation, translated into the PC conventions Raven's editors implement:
+//   Cmd+Left/Right -> Home/End          Cmd+Up/Down -> Ctrl+Home/End
+//   Option+Left/Right -> Ctrl+Left/Right (by word)    Option+Delete -> Ctrl+Backspace
+// Shift is kept so the same combinations extend the selection.
+constexpr unsigned short kKeyCodeLeft = 123, kKeyCodeRight = 124, kKeyCodeDown = 125, kKeyCodeUp = 126;
+constexpr unsigned short kKeyCodeHome = 115, kKeyCodeEnd = 119, kKeyCodeDelete = 51;
+
+bool translate_navigation(unsigned short key_code, unsigned long flags, int& mapped_key, unsigned long& mapped_flags) {
+    const bool command = flags & kFlagCommand;
+    const bool option = flags & kFlagOption;
+    if (flags & kFlagControl) return false;
+    const unsigned long shift = flags & kFlagShift;
+    if (command && !option) {
+        if (key_code == kKeyCodeLeft || key_code == kKeyCodeRight) {
+            mapped_key = key_code == kKeyCodeLeft ? kKeyCodeHome : kKeyCodeEnd;
+            mapped_flags = shift;
+            return true;
+        }
+        if (key_code == kKeyCodeUp || key_code == kKeyCodeDown) {
+            mapped_key = key_code == kKeyCodeUp ? kKeyCodeHome : kKeyCodeEnd;
+            mapped_flags = shift | kFlagControl;
+            return true;
+        }
+    }
+    if (option && !command && (key_code == kKeyCodeLeft || key_code == kKeyCodeRight || key_code == kKeyCodeDelete)) {
+        mapped_key = key_code;
+        mapped_flags = shift | kFlagControl;
+        return true;
+    }
+    return false;
 }
 
 // Cmd acts as Ctrl for shortcuts. Control keeps working as well.
@@ -221,6 +253,13 @@ void key_down(id self, SEL selector, id event) {
     if (!original_characters || !original_characters_ignoring_modifiers) return forward(event);
     const auto flags = send<unsigned long>(event, "modifierFlags");
     const auto key_code = send<unsigned short>(event, "keyCode");
+    int mapped_key = 0;
+    unsigned long mapped_flags = 0;
+    if (translate_navigation(key_code, flags, mapped_key, mapped_flags)) {
+        dead_key_state = 0;
+        return forward(rebuilt_key_event(event, kEventTypeKeyDown, mapped_flags, empty_string(),
+            send<BOOL>(event, "isARepeat"), mapped_key));
+    }
     if ((flags & kFlagCommand) && !(flags & (kFlagControl | kFlagOption))) {
         // A borderless window has no menu bar entries, so the standard application commands are
         // handled here instead of being forwarded as shortcuts.
@@ -276,6 +315,14 @@ void key_down(id self, SEL selector, id event) {
 
 void key_up(id self, SEL selector, id event) {
     const auto flags = send<unsigned long>(event, "modifierFlags");
+    int mapped_key = 0;
+    unsigned long mapped_flags = 0;
+    if (original_characters_ignoring_modifiers &&
+        translate_navigation(send<unsigned short>(event, "keyCode"), flags, mapped_key, mapped_flags)) {
+        reinterpret_cast<void (*)(id, SEL, id)>(original_key_up)(self, selector,
+            rebuilt_key_event(event, kEventTypeKeyUp, mapped_flags, empty_string(), false, mapped_key));
+        return;
+    }
     const id forwarded = (flags & kFlagCommand) && original_characters_ignoring_modifiers
         ? rebuilt_key_event(event, kEventTypeKeyUp, shortcut_flags(flags), empty_string(), false) : event;
     reinterpret_cast<void (*)(id, SEL, id)>(original_key_up)(self, selector, forwarded);
