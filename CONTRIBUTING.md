@@ -61,6 +61,8 @@ On macOS, install them with Homebrew. MoltenVK and the Vulkan loader provide the
 brew install cmake sdl2 glslang molten-vk vulkan-loader
 ```
 
+Claude Code runs started by Stellar load only project and local settings, so your personal `~/.claude/CLAUDE.md`, plugins, and MCP servers do not affect them. If your Claude Code authentication is configured in `~/.claude/settings.json` (for example `apiKeyHelper`), start Stellar with `STELLAR_CLAUDE_USER_SETTINGS=1`.
+
 Run the application against a scratch workspace rather than this repository: it creates `.stellar/`, `.agents/`, `endurance/`, and `wiki/` content in the workspace it opens.
 
 macOS-specific window and keyboard handling lives in `src/platform.cpp`. Changes to the header bar, shortcuts, scaling, child processes, or paths need a check on every platform you cannot test locally; say so in the pull request.

@@ -505,11 +505,13 @@ bool ClaudeProcess::start(const RunOptions& options, std::string& error) {
         arguments = {
             "claude", "-p", "--output-format", "stream-json", "--verbose",
             "--include-partial-messages", "--forward-subagent-text", "--prompt-suggestions", "false",
-            "--permission-prompts", "none",
-            // Project and local settings only: a run follows the workspace, not the personal
-            // CLAUDE.md, plugins and MCP servers of whoever launched Stellar.
-            "--setting-sources", "project,local"
+            "--permission-prompts", "none"
         };
+        // Project and local settings only: a run follows the workspace, not the personal CLAUDE.md,
+        // plugins and MCP servers of whoever launched Stellar. Users whose authentication lives in
+        // ~/.claude/settings.json (apiKeyHelper, env) opt back in with STELLAR_CLAUDE_USER_SETTINGS=1.
+        const char* user_settings = std::getenv("STELLAR_CLAUDE_USER_SETTINGS");
+        if (!user_settings || std::string(user_settings) != "1") arguments.insert(arguments.end(), {"--setting-sources", "project,local"});
         if (!options.model.empty()) arguments.insert(arguments.end(), {"--model", options.model});
         if (!options.effort.empty()) arguments.insert(arguments.end(), {"--effort", options.effort});
         // Every --allowedTools value is collected and passed once at the end.
