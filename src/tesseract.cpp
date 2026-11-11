@@ -730,9 +730,9 @@ void TesseractCanvas::fit() {
         max_x = std::max(max_x, root.bounds.x + root.bounds.width);
         max_y = std::max(max_y, root.bounds.y + root.bounds.height);
     }
-    // Frame the design in the free area: below the title and hints (top 76px) and above the
+    // Frame the design in the free area: below the title and frame count (top 60px) and above the
     // floating prompt box (bottom 156px), with a margin on the sides.
-    const float top = 76.0f;
+    const float top = 60.0f;
     const float bottom = 156.0f;
     const float available_width = std::max(100.0f, width_ - 100.0f);
     const float available_height = std::max(100.0f, height_ - top - bottom);
@@ -1050,13 +1050,6 @@ void TesseractCanvas::paint(Rid widget, RPainter* painter, float width, float he
         Rdraw_text(painter, Rfont_get_default(), 14.0f, 16.0f, 18.0f, "Tesseract", text.r, text.g, text.b, 1.0f);
         const auto summary = std::to_string(roots_.size()) + (roots_.size() == 1 ? " frame" : " frames");
         Rdraw_text(painter, Rfont_get_default(), 11.0f, 16.0f, 40.0f, summary.c_str(), muted.r, muted.g, muted.b, 1.0f);
-        Rdraw_text(painter, Rfont_get_default(), 10.0f, 16.0f, 58.0f, 
-#ifdef __APPLE__
-            "Double-click goes inside · ⌘-click selects the deepest · Drag edges to resize · ⌘D duplicates · ⌘Z undo"
-#else
-            "Double-click goes inside · Ctrl+click selects the deepest · Drag edges to resize · Ctrl+D duplicates · Ctrl+Z undo"
-#endif
-, muted.r, muted.g, muted.b, 1.0f);
     }
     if (!error_.empty()) {
         const float error_y = height - 146.0f;
