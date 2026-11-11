@@ -195,6 +195,7 @@ id rebuilt_key_event(id event, unsigned long type, unsigned long flags, id text,
 // macOS text navigation, translated into the PC conventions Raven's editors implement:
 //   Cmd+Left/Right -> Home/End          Cmd+Up/Down -> Ctrl+Home/End
 //   Option+Left/Right -> Ctrl+Left/Right (by word)    Option+Delete -> Ctrl+Backspace
+//   Cmd+Delete -> delete to the start of the line (handled in key_down)
 // Shift is kept so the same combinations extend the selection.
 constexpr unsigned short kKeyCodeLeft = 123, kKeyCodeRight = 124, kKeyCodeDown = 125, kKeyCodeUp = 126;
 constexpr unsigned short kKeyCodeHome = 115, kKeyCodeEnd = 119, kKeyCodeDelete = 51;
@@ -253,6 +254,12 @@ void key_down(id self, SEL selector, id event) {
     if (!original_characters || !original_characters_ignoring_modifiers) return forward(event);
     const auto flags = send<unsigned long>(event, "modifierFlags");
     const auto key_code = send<unsigned short>(event, "keyCode");
+    // Cmd+Delete deletes to the start of the line: select to Home, then delete the selection.
+    if (key_code == kKeyCodeDelete && (flags & kFlagCommand) && !(flags & (kFlagControl | kFlagOption))) {
+        dead_key_state = 0;
+        forward(rebuilt_key_event(event, kEventTypeKeyDown, kFlagShift, empty_string(), false, kKeyCodeHome));
+        return forward(rebuilt_key_event(event, kEventTypeKeyDown, 0, empty_string(), send<BOOL>(event, "isARepeat")));
+    }
     int mapped_key = 0;
     unsigned long mapped_flags = 0;
     if (translate_navigation(key_code, flags, mapped_key, mapped_flags)) {
