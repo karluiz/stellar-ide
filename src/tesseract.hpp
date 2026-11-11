@@ -91,6 +91,11 @@ public:
     void clear_selection();
     bool consume_text_edit_request();
     bool update_selected_text(const std::string& text);
+    // Undo and redo the user's canvas edits (text, move, resize). Agent rewrites of the document
+    // clear the history so an undo never silently reverts the agent's work.
+    bool undo();
+    bool redo();
+    bool can_undo() const { return !undo_stack_.empty(); }
 
 private:
     enum class DragMode { None, Pan, Move, Resize };
@@ -127,6 +132,10 @@ private:
     float start_width_ = 0.0f;
     float start_height_ = 0.0f;
     std::chrono::steady_clock::time_point next_poll_{};
+    std::string saved_document_;
+    std::vector<std::string> undo_stack_;
+    std::vector<std::string> redo_stack_;
+    bool restore(std::vector<std::string>& from, std::vector<std::string>& to);
 
     void load();
     void layout();

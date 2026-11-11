@@ -918,6 +918,13 @@ void tesseract_tests() {
     expect(document["children"][0]["children"][0]["content"] == "Welcome, Commander" &&
            document["children"][0]["children"][0]["fill"] == "$ink",
            "inline text edit damaged unrelated node properties");
+    {
+        const auto edited = raven::read_file(file);
+        expect(canvas.can_undo() && canvas.undo(), "a canvas edit could not be undone");
+        auto undone = nlohmann::json::parse(raven::read_file(file));
+        expect(undone["children"][0]["children"][0]["content"] != "Welcome, Commander", "undo did not restore the previous text");
+        expect(canvas.redo() && raven::read_file(file) == edited, "redo did not reapply the edit");
+    }
 
     canvas.select("login");
     click = REvent{};

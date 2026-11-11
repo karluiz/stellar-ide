@@ -466,6 +466,7 @@ void TesseractCanvas::load() {
         roots_ = std::move(roots);
         variables_ = std::move(variables);
         document_ = document;
+        saved_document_ = document_.dump(2) + "\n";
         if (changed_emptiness) fitted_ = false;
         error_.clear();
         modified_ = modified;
@@ -496,8 +497,30 @@ bool TesseractCanvas::reload_if_changed() {
     const auto modified = std::filesystem::last_write_time(file_, error);
     if (error || (has_modified_ && modified == modified_)) return false;
     load();
+    // Someone else (usually the agent) rewrote the document.
+    undo_stack_.clear();
+    redo_stack_.clear();
     return true;
 }
+
+bool TesseractCanvas::restore(std::vector<std::string>& from, std::vector<std::string>& to) {
+    if (from.empty()) return false;
+    try {
+        const auto previous = saved_document_;
+        write_file(file_, from.back());
+        from.pop_back();
+        to.push_back(previous);
+        load();
+        return error_.empty();
+    } catch (const std::exception& restore_error) {
+        error_ = restore_error.what();
+        return false;
+    }
+}
+
+bool TesseractCanvas::undo() { return restore(undo_stack_, redo_stack_); }
+
+bool TesseractCanvas::redo() { return restore(redo_stack_, undo_stack_); }
 
 void TesseractCanvas::layout() {
     std::vector<TesseractRect> placed;
@@ -576,7 +599,13 @@ bool TesseractCanvas::save_selected() {
     try {
         const auto* selected = find(selected_id_);
         if (!selected || !raw_node(*selected)) return false;
-        write_file(file_, document_.dump(2) + "\n");
+        const auto updated = document_.dump(2) + "\n";
+        if (updated != saved_document_) {
+            undo_stack_.push_back(saved_document_);
+            if (undo_stack_.size() > 100) undo_stack_.erase(undo_stack_.begin());
+            redo_stack_.clear();
+        }
+        write_file(file_, updated);
         load();
         return error_.empty();
     } catch (const std::exception& save_error) {
@@ -1041,6 +1070,12 @@ int TesseractCanvas::event(Rid widget, const REvent* event) {
         }
         return tracking_ ? R_TRUE : R_FALSE;
     case R_EVENT_KEY_DOWN:
+        // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y (Cmd on macOS) undo and redo canvas edits.
+        if ((event->modifiers & (R_MOD_CTRL | R_MOD_SUPER)) && (event->key == R_KEY_Z || event->key == R_KEY_Y)) {
+            const bool redo_requested = event->key == R_KEY_Y || (event->modifiers & R_MOD_SHIFT);
+            if (redo_requested ? redo() : undo()) Rwidget_invalidate(widget);
+            return R_TRUE;
+        }
         if (event->key == R_KEY_SPACE) space_down_ = true;
         else if (event->key == R_KEY_0) fit();
         else if (event->key == R_KEY_EQUAL || event->key == R_KEY_KP_ADD) zoom_by(1.15f);
