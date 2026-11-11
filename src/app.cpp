@@ -2340,6 +2340,25 @@ Rid App::add_message(const std::string& role, const std::string& text, bool user
     Rlabel_set_markdown(body, R_TRUE);
     Rlabel_set_link_callback(body, wiki_link, this);
     Rlabel_set_wrap(body, R_TRUE);
+    // Transcript labels cannot be selected, so lead answers carry a small Copy action that puts the
+    // whole message (as Markdown, code blocks included) on the clipboard.
+    if (!user && role == "ORCHESTRATOR") {
+        auto copy = Rwidget_add_child(box, Rbutton_create("Copy"));
+        Rbutton_set_style(copy, R_BUTTON_FLAT);
+        Rwidget_set_metric(copy, R_METRIC_FONT_SIZE, 11.0f);
+        Rwidget_set_tooltip(copy, "Copy this answer");
+        Rwidget_set_accessible_name(copy, "Copy answer");
+        Rslot_set_halign(copy, R_HALIGN_LEFT);
+        Rwidget_set_user_handle(copy, reinterpret_cast<void*>(static_cast<std::uintptr_t>(body)));
+        Rbutton_set_clicked_callback(copy, [](Rid button, void* user_data) {
+            auto& app = *static_cast<App*>(user_data);
+            const auto label = static_cast<Rid>(reinterpret_cast<std::uintptr_t>(Rwidget_get_user_handle(button)));
+            const char* text = Rwidget_is_valid(label) ? Rlabel_get_text(label) : nullptr;
+            if (!text || !*text) return;
+            Rclipboard_set_text(text);
+            app.set_status("Answer copied to the clipboard");
+        }, this);
+    }
     Rwidget_set_transition(card, R_TRANSITION_FADE, 0.0f);
     Rwidget_add_child(id("transcript"), card);
     Rscroll_box_scroll_to_end(id("transcript.scroll"));
