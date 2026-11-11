@@ -533,7 +533,11 @@ bool App::create() {
         }
         return R_FALSE;
     }, this);
+    Rwidget_set_color(id("threads"), R_COLOR_INPUT, 0.0f, 0.0f, 0.0f, 0.0f);
+    Rwidget_set_color(id("composer"), R_COLOR_FOCUS, 0.0f, 0.0f, 0.0f, 0.0f);
+    Rwidget_set_color(id("composer"), R_COLOR_ROW_HOVERED, 0.0f, 0.0f, 0.0f, 0.0f);
     Rwidget_set_color(id("tesseract.composer"), R_COLOR_FOCUS, 0.0f, 0.0f, 0.0f, 0.0f);
+    Rwidget_set_color(id("tesseract.composer"), R_COLOR_ROW_HOVERED, 0.0f, 0.0f, 0.0f, 0.0f);
     Rwidget_set_event_callback(id("tesseract.composer"), [](Rid, const REvent* event, void* user) -> int {
         auto& app = *static_cast<App*>(user);
         if (event->type == R_EVENT_KEY_DOWN && (event->key == R_KEY_ENTER || event->key == R_KEY_KP_ENTER) &&
@@ -825,7 +829,12 @@ bool App::composer_token_complete() const {
     return false;
 }
 
+float composer_editor_height(Rid editor) {
+    return std::clamp(28.0f + 20.0f * static_cast<float>(Rtext_editor_get_line_count(editor)), 48.0f, 88.0f);
+}
+
 void App::composer_changed() {
+    Rwidget_set_size(id("composer"), -1.0f, composer_editor_height(id("composer")));
     update_context_summary();
     schedule_recovery_save();
     if (composer_token_complete()) {
@@ -887,10 +896,7 @@ void App::refresh_image_attachment(bool tesseract) {
     } else {
         Rimage_set_texture(id((prefix + ".preview").c_str()), R_INVALID_ID);
     }
-    if (tesseract) {
-        Rslot_set_position(id("tesseract.composer.shell"), 0, attachment ? -258.0f : -182.0f);
-        Rslot_set_size(id("tesseract.composer.shell"), 0, attachment ? 236.0f : 160.0f);
-    }
+    if (tesseract) refresh_tesseract_chrome();
 }
 
 bool App::paste_image(bool tesseract) {
@@ -1200,13 +1206,14 @@ void App::pump_palette() {
 }
 
 void App::refresh_lists() {
-    const auto query = lowercase(Rtext_input_get_text(id("navigation.search")));
+    const auto agent_query = lowercase(Rtext_input_get_text(id("agent.search")));
+    const auto note_query = lowercase(Rtext_input_get_text(id("notes.search")));
     agent_rows_.clear();
     note_rows_.clear();
     Rlist_view_clear_items(id("agents"));
     for (int i = 0; i < static_cast<int>(agents_.size()); ++i) {
         const auto& agent = agents_[i];
-        if (!query.empty() && lowercase(agent.name + " " + agent.description).find(query) == std::string::npos) continue;
+        if (!agent_query.empty() && lowercase(agent.name + " " + agent.description).find(agent_query) == std::string::npos) continue;
         agent_rows_.push_back(i);
         Rlist_view_add_item(id("agents"), agent.name.c_str());
     }
@@ -1214,7 +1221,7 @@ void App::refresh_lists() {
     Rlist_view_clear_items(id("wiki"));
     for (int i = 0; i < static_cast<int>(notes_.size()); ++i) {
         const auto& note = notes_[i];
-        if (!query.empty() && lowercase(note.title + " " + note.content).find(query) == std::string::npos) continue;
+        if (!note_query.empty() && lowercase(note.title + " " + note.content).find(note_query) == std::string::npos) continue;
         note_rows_.push_back(i);
         Rlist_view_add_item(id("wiki"), note.title.c_str());
     }
@@ -1252,6 +1259,11 @@ void App::refresh_threads() {
     if (selected < 0 && show_archived_ && !thread_rows_.empty()) selected = 0;
     Rlist_view_set_selected(id("threads"), selected);
     Rwidget_set_enabled(id("threads.archive"), !thread_rows_.empty());
+    const bool empty = thread_rows_.empty();
+    const auto empty_text = !query.empty() ? "No matching chats" : show_archived_ ? "No archived chats" : "No chats yet";
+    Rlabel_set_text(id("threads.empty"), empty_text);
+    Rwidget_set_visibility(id("threads.empty"), empty ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("threads"), empty ? R_COLLAPSED : R_VISIBLE);
 }
 
 void App::toggle_archived_threads() {
@@ -1362,7 +1374,6 @@ void App::new_thread() {
     reset_session();
     show_archived_ = false;
     refresh_threads();
-    set_active_view(id("left.tabs"), 0);
     set_active_view(id("center.tabs"), 0);
     Rwidget_focus(id("composer"));
     set_status("New chat · previous conversations are saved in Recent chats");
@@ -2146,29 +2157,21 @@ void App::refresh_navigation() {
     if (!Ris_running() || !Rwindow_is_valid(window_) || !Rwidget_is_valid(id("nav.chat"))) return;
     const int center = active_view(id("center.tabs"));
     const int more = active_view(id("more.tabs"));
-    const int left = active_view(id("left.tabs"));
     const int context = active_view(id("right.tabs"));
-    const bool knowledge_context = right_sidebar_visible_ && left == 3 && (context == 1 || context == 2);
+    const bool knowledge_context = right_sidebar_visible_ && (context == 1 || context == 2);
     std::string selected = "chat";
     if (center == 5) selected = "canvas";
     else if (center == 2) selected = "workflows";
     else if (center == 4) selected = "review";
-    else if (center == 1 || left == 1) selected = "files";
-    else if (left == 3) selected = "knowledge";
-    else if (left == 2) selected = "agents";
+    else if (center == 1) selected = "files";
     if (center == 3) {
         if (more == 0) selected = "agents";
         else if (more == 1) selected = "settings";
         else if (more == 2) selected = "knowledge";
         else if (more == 3) selected = "worktrees";
     }
-    if (knowledge_context) selected = "knowledge";
-    // Files owns the file tree. Opening a file from elsewhere (launch, palette, a link) switches the
-    // center to Editor without touching the left list, which then kept showing Recent chats.
-    if (center == 1 && left != 1) {
-        Rswitcher_set_index(id("left.tabs"), 1);
-        return refresh_navigation();
-    }
+    const bool resource_has_priority = center == 1 || (center == 3 && (more == 0 || more == 1));
+    if (knowledge_context && !resource_has_priority) selected = "knowledge";
 
     const auto content = Rwindow_get_content(window_);
     float selection[4], hovered[4], pressed[4], text[4];
@@ -2190,25 +2193,18 @@ void App::refresh_navigation() {
         Rwidget_set_metric(button, R_METRIC_CORNER_RADIUS, 8.0f);
         Rwidget_set_metric(button, R_METRIC_PADDING_X, 12.0f);
     }
-    const bool resources_visible = center == 0 || center == 1 || (center == 3 && more == 0) || knowledge_context;
-    Rwidget_set_visibility(id("left.tabs"), resources_visible ? R_VISIBLE : R_COLLAPSED);
-    Rwidget_set_visibility(id("navigation.bottom.spacer"), resources_visible ? R_COLLAPSED : R_VISIBLE);
-    const bool list_visible = resources_visible && left != 1;
-    Rwidget_set_visibility(id("navigation.search.row"), list_visible ? R_VISIBLE : R_COLLAPSED);
-    Rwidget_set_visibility(id("navigation.list.header"), list_visible ? R_VISIBLE : R_COLLAPSED);
-    const bool chats = left == 0;
-    Rwidget_set_visibility(id("threads.view"), chats ? R_VISIBLE : R_COLLAPSED);
-    Rwidget_set_visibility(id("threads.archive.slot"), chats ? R_VISIBLE : R_COLLAPSED);
-    Rwidget_set_visibility(id("agents.new"), left == 2 ? R_VISIBLE : R_COLLAPSED);
-    Rwidget_set_visibility(id("notes.new"), left == 3 ? R_VISIBLE : R_COLLAPSED);
-    if (left == 2) Rlabel_set_text(id("threads.section"), "Agent definitions");
-    else if (left == 3) Rlabel_set_text(id("threads.section"), "Workspace notes");
-    else Rlabel_set_text(id("threads.section"), show_archived_ ? "Archived chats" : "Recent chats");
-    const char* placeholders[] = {"Search chats…", "", "Search agents…", "Search notes…"};
-    Rtext_input_set_placeholder(id("navigation.search"), placeholders[std::clamp(left, 0, 3)]);
+    const bool chats_visible = center == 0;
+    Rwidget_set_visibility(id("left.tabs"), chats_visible ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("navigation.bottom.spacer"), chats_visible ? R_COLLAPSED : R_VISIBLE);
+    Rwidget_set_visibility(id("navigation.search.row"), chats_visible ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("navigation.list.header"), chats_visible ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("threads.view"), chats_visible ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("threads.archive.slot"), chats_visible ? R_VISIBLE : R_COLLAPSED);
+    Rwidget_set_visibility(id("agents.new"), R_COLLAPSED);
+    Rwidget_set_visibility(id("notes.new"), R_COLLAPSED);
+    Rlabel_set_text(id("threads.section"), show_archived_ ? "Archived chats" : "Recent chats");
+    Rtext_input_set_placeholder(id("navigation.search"), "Search chats…");
 
-    // A status message belongs to the view that produced it. On a change of destination the strip
-    // returns to that destination's default; actions that set their own status do so afterwards.
     if (selected != status_destination_) {
         const bool first = status_destination_.empty();
         status_destination_ = selected;
@@ -2257,31 +2253,15 @@ void App::set_sidebar_visibility(bool left, bool visible) {
     const auto expected = visible ? R_VISIBLE : R_COLLAPSED;
     if (current == visible && Rwidget_get_visibility(target) == expected) return;
 
-    const auto measure_width = [](Rid pane) {
-        float x, y, width, height;
-        Rwidget_get_rect(pane, &x, &y, &width, &height);
-        return width;
-    };
     if (!visible) {
-        const float left_width = left_sidebar_visible_ ? measure_width(id("left.sidebar")) : 0.0f;
-        const float center_width = measure_width(id("center.workspace"));
-        const float right_width = right_sidebar_visible_ ? measure_width(id("right.sidebar")) : 0.0f;
-        const float total = left_width + center_width + right_width;
-        if (total > 0.0f) {
-            if (left_sidebar_visible_) left_sidebar_share_ = left_width / total;
-            center_workspace_share_ = center_width / total;
-            if (right_sidebar_visible_) right_sidebar_share_ = right_width / total;
-            // The center absorbs the room the folded pane leaves, so the remaining sidebar keeps
-            // its width instead of growing proportionally.
-            center_workspace_share_ += left ? left_sidebar_share_ : right_sidebar_share_;
-            Rslot_set_fill(id("center.workspace"), center_workspace_share_);
-            const bool other_visible = left ? right_sidebar_visible_ : left_sidebar_visible_;
-            if (other_visible) Rslot_set_fill(id(left ? "right.sidebar" : "left.sidebar"), left ? right_sidebar_share_ : left_sidebar_share_);
-        }
+        if (left_sidebar_visible_) left_sidebar_share_ = Rslot_get_fill(id("left.sidebar"));
+        center_workspace_share_ = Rslot_get_fill(id("center.workspace"));
+        if (right_sidebar_visible_) right_sidebar_share_ = Rslot_get_fill(id("right.sidebar"));
+        center_workspace_share_ += target_share;
+        Rslot_set_fill(id("center.workspace"), center_workspace_share_);
+        const bool other_visible = left ? right_sidebar_visible_ : left_sidebar_visible_;
+        if (other_visible) Rslot_set_fill(id(left ? "right.sidebar" : "left.sidebar"), left ? right_sidebar_share_ : left_sidebar_share_);
     } else {
-        // Shares are fractions of the full width. A pane that opens takes its room from the center
-        // only: normalizing all three shrank the other sidebar below its minimum and clipped its
-        // labels. The center always keeps at least 30% of the window.
         const bool other_visible = left ? right_sidebar_visible_ : left_sidebar_visible_;
         const float other_share = other_visible ? (left ? right_sidebar_share_ : left_sidebar_share_) : 0.0f;
         const float share = std::clamp(target_share, 0.0f, std::max(0.0f, 1.0f - other_share - 0.30f));
@@ -4444,7 +4424,6 @@ void App::open_memory() {
     dismiss_splash();
     refresh_knowledge();
     set_sidebar_visibility(false, false);
-    set_active_view(id("left.tabs"), 3);
     set_active_view(id("more.tabs"), 2);
     set_active_view(id("center.tabs"), 3);
     Rwidget_focus(id("memory.canvas"));
@@ -4539,7 +4518,11 @@ void App::refresh_tesseract_chrome() {
         Rwidget_set_tooltip(id("tesseract.activity.action"), action.c_str());
         Rwidget_set_tooltip(id("tesseract.activity.prompt"), prompt.c_str());
     }
-    const float composer_height = 160.0f + (activity ? 60.0f : 0.0f) + (selected ? 26.0f : 0.0f) + (queued ? 38.0f : 0.0f);
+    const auto composer = id("tesseract.composer");
+    const float editor_height = composer_editor_height(composer);
+    Rwidget_set_size(composer, -1.0f, editor_height);
+    const float composer_height = 120.0f + editor_height - 48.0f + (activity ? 60.0f : 0.0f) +
+        (selected ? 26.0f : 0.0f) + (queued ? 38.0f : 0.0f) + (tesseract_image_ ? 76.0f : 0.0f);
     Rslot_set_size(id("tesseract.composer.shell"), 0.0f, composer_height);
     Rslot_set_position(id("tesseract.composer.shell"), 0.0f, -composer_height - 22.0f);
     Rwidget_set_visibility(id("tesseract.selection.bar"), selected ? R_VISIBLE : R_COLLAPSED);
@@ -4927,8 +4910,7 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "wiki.open") {
         const auto row = Rlist_view_get_selected(sender);
         if (row >= 0 && row < static_cast<int>(app.note_rows_.size())) {
-            app.set_active_view(app.id("left.tabs"), 3);
-            app.open_note(app.note_rows_[row]);
+                app.open_note(app.note_rows_[row]);
             app.show_context(1);
         }
     }
@@ -4992,20 +4974,17 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "recall.pin") app.toggle_recall_pin();
     else if (name == "recall.erase") app.erase_recall();
     else if (name == "nav.chat") {
-        app.set_active_view(app.id("left.tabs"), 0);
         app.set_active_view(app.id("center.tabs"), 0);
         Rwidget_focus(app.id("composer"));
     }
     else if (name == "nav.canvas") app.open_tesseract();
     else if (name == "nav.workflows") app.open_endurance();
     else if (name == "nav.files") {
-        app.set_active_view(app.id("left.tabs"), 1);
         app.set_active_view(app.id("center.tabs"), 1);
         Rwidget_focus(app.id("workspace.files"));
     }
     else if (name == "nav.agents") {
         app.set_sidebar_visibility(false, false);
-        app.set_active_view(app.id("left.tabs"), 2);
         app.set_active_view(app.id("more.tabs"), 0);
         app.set_active_view(app.id("center.tabs"), 3);
         Rwidget_focus(app.id("agent.editor"));
@@ -5015,7 +4994,6 @@ void App::action(Rid sender, const char* action_name, void* user) {
         app.set_active_view(app.id("center.tabs"), 4);
     }
     else if (name == "nav.knowledge") {
-        app.set_active_view(app.id("left.tabs"), 3);
         app.refresh_knowledge();
         app.show_context(2);
     }
@@ -5035,7 +5013,6 @@ void App::action(Rid sender, const char* action_name, void* user) {
     else if (name == "navigation.search") app.refresh_lists();
     else if (name == "knowledge.search") app.refresh_knowledge();
     else if (name == "knowledge.open_tab") {
-        app.set_active_view(app.id("left.tabs"), 3);
         app.refresh_knowledge();
         app.show_context(2);
     }

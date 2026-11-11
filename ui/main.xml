@@ -91,16 +91,8 @@
                 </HBox>
                 <Switcher Name="left.tabs" Slot.Fill="1">
                     <VBox>
+                        <Label Name="threads.empty" Text="No chats yet" Class="muted" TextSize="12" Slot.Padding="16,10,16,0" Visibility="Collapsed"/>
                         <ListView Name="threads" Class="nav-list" Slot.Fill="1" OnActivated="thread.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
-                    </VBox>
-                    <VBox>
-                        <FileBrowser Name="workspace.files" Slot.Fill="1" Slot.Padding="10,8,10,12" Controls="false" Places="false" ShowHidden="false"/>
-                    </VBox>
-                    <VBox>
-                        <ListView Name="agents" Class="nav-list" Slot.Fill="1" OnActivated="agent.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
-                    </VBox>
-                    <VBox>
-                        <ListView Name="wiki" Class="nav-list" Slot.Fill="1" OnActivated="wiki.open" Slot.Padding="10,4,10,12" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
                     </VBox>
                 </Switcher>
                 <Spacer Name="navigation.bottom.spacer" Slot.Fill="1"/>
@@ -143,7 +135,7 @@
                                         </VBox>
                                         <Button Text="Remove" Style="Flat" OnClicked="composer.image.remove" Tooltip="Remove the pasted image" Slot.VAlign="Center"/>
                                     </HBox>
-                                    <TextEditor Name="composer" Class="composer-input" Height="88" Wrap="true" Completion="true" AutoPairs="false" Placeholder="Describe a task · / skills · @ files · paste an image…" AccessibleName="Message to the lead agent"/>
+                                    <TextEditor Name="composer" Class="composer-input" Height="48" Wrap="true" Completion="true" AutoPairs="false" Placeholder="Describe a task · / skills · @ files · paste an image…" AccessibleName="Message to the lead agent"/>
                                     <HBox Name="context.bar" Spacing="8" Visibility="Collapsed" Appear="Fade">
                                         <Image Source="icons/files.png" Width="15" Height="15" TintText="true" AccessibleHidden="true" Slot.VAlign="Center"/>
                                         <ComboBox Name="context.files" Width="290" Tooltip="Attachment token estimate" AccessibleName="Attached files"/>
@@ -181,7 +173,13 @@
                                 <Button Name="code.save" Text="Save file" Style="Primary" OnClicked="code.save" Enabled="false" Slot.VAlign="Center"/>
                             </HBox>
                         </Border>
-                        <TextEditor Name="code.editor" Slot.Fill="1" Slot.Padding="14,0,14,14" LineNumbers="true" Wrap="true" Placeholder="Open a source file from the workspace explorer"/>
+                        <HBox Slot.Fill="1">
+                            <VBox Width="260" Slot.Padding="10,8,10,12">
+                                <Label Text="Workspace files" Class="section" Slot.Padding="6,0,6,4"/>
+                                <FileBrowser Name="workspace.files" Slot.Fill="1" Controls="false" Places="false" ShowHidden="false"/>
+                            </VBox>
+                            <TextEditor Name="code.editor" Slot.Fill="1" Slot.Padding="14,0,14,14" LineNumbers="true" Wrap="true" Placeholder="Open a source file from the workspace explorer"/>
+                        </HBox>
                     </VBox>
                     <VBox Class="workspace" Slot.Title="Endurance">
                         <Border Class="tool-header" Padding="18,14" BorderWidth="1" CornerRadius="10" Slot.Padding="14,12,14,10">
@@ -309,7 +307,17 @@
                                 </HBox>
                             </HBox>
                         </Border>
-                        <TextEditor Name="agent.editor" Slot.Fill="1" Slot.Padding="14,0,14,14" Markdown="true" LineNumbers="true" Wrap="true" Placeholder="Select or create an agent definition"/>
+                        <HBox Slot.Fill="1">
+                            <VBox Width="240" Slot.Padding="10,10,10,12" Spacing="6">
+                                <HBox Slot.Padding="6,0,6,4">
+                                    <Label Text="Agent definitions" Class="section" Slot.Fill="1" Slot.VAlign="Center"/>
+                                    <Button Text="New" Style="Flat" OnClicked="agent.new" Tooltip="Create a Markdown agent (Ctrl+Alt+A)"/>
+                                </HBox>
+                                <TextInput Name="agent.search" Placeholder="Search agents…" OnChanged="navigation.search" Tooltip="Filter agent definitions"/>
+                                <ListView Name="agents" Class="nav-list" Slot.Fill="1" OnActivated="agent.open" Metric.BorderWidth="0" Metric.CornerRadius="10"/>
+                            </VBox>
+                            <TextEditor Name="agent.editor" Slot.Fill="1" Slot.Padding="14,0,14,14" Markdown="true" LineNumbers="true" Wrap="true" Placeholder="Select or create an agent definition"/>
+                        </HBox>
                     </VBox>
                     <VBox Class="workspace" Slot.Title="Settings">
                         <ScrollBox Slot.Fill="1">
@@ -541,7 +549,7 @@
                                 <Button Text="+" Style="Flat" OnClicked="tesseract.zoom.in" Tooltip="Zoom in" AccessibleName="Zoom in"/>
                                 <Button Text="Fit" Style="Flat" OnClicked="tesseract.fit" Tooltip="Frame every interface (0)"/>
                             </HBox>
-                            <Border Name="tesseract.composer.shell" Class="composer" Padding="14" MaxWidth="860" Slot.Anchors="0.08,1,0.92,1" Slot.Position="0,-182" Slot.Size="0,160">
+                            <Border Name="tesseract.composer.shell" Class="composer" Padding="14" MaxWidth="860" Slot.Anchors="0.08,1,0.92,1" Slot.Position="0,-142" Slot.Size="0,120">
                                 <VBox Spacing="10">
                                     <HBox Name="tesseract.activity.bar" Spacing="8" Visibility="Collapsed" Appear="Fade">
                                         <VBox Slot.Fill="1" Spacing="3">
@@ -572,7 +580,7 @@
                                         </VBox>
                                         <Button Text="Remove" Style="Flat" OnClicked="tesseract.image.remove" Tooltip="Remove the pasted image" Slot.VAlign="Center"/>
                                     </HBox>
-                                    <TextEditor Name="tesseract.composer" Class="composer-input" Height="88" Wrap="true" AutoPairs="false" Placeholder="Describe an interface · paste a reference image…" AccessibleName="Tesseract prompt"/>
+                                    <TextEditor Name="tesseract.composer" Class="composer-input" Height="48" Wrap="true" AutoPairs="false" Placeholder="Describe an interface · paste a reference image…" AccessibleName="Tesseract prompt"/>
                                     <HBox Spacing="8">
                                         <Overlay Width="36" Height="34">
                                             <Button Name="tesseract.setup" Text="" Width="36" Height="34" Style="Flat" OnClicked="run.setup.toggle" Tooltip="Run setup · model, effort, harness, and mode (Ctrl+Shift+E)" AccessibleName="Run setup"/>
@@ -640,6 +648,11 @@
                         </VBox>
                     </ScrollBox>
                     <VBox Slot.Title="Wiki">
+                        <HBox Slot.Padding="12,10,12,0" Spacing="8">
+                            <TextInput Name="notes.search" Placeholder="Search notes…" OnChanged="navigation.search" Tooltip="Filter workspace notes" Slot.Fill="1"/>
+                            <Button Text="New" Style="Flat" OnClicked="wiki.new" Tooltip="Create a Markdown note (Ctrl+Shift+N)" Slot.VAlign="Center"/>
+                        </HBox>
+                        <ListView Name="wiki" Class="nav-list" Height="130" OnActivated="wiki.open" Slot.Padding="10,6,10,8" Metric.BorderWidth="0" Metric.CornerRadius="10" AccessibleName="Workspace notes"/>
                         <Border Class="section-header wiki-chrome" Padding="16,12" BorderWidth="1">
                             <HBox>
                                 <VBox Slot.Fill="1">
@@ -783,16 +796,16 @@
                 <Button Text="Done" Style="Flat" OnClicked="run.setup.close" Slot.VAlign="Center"/>
             </HBox>
             <HBox Spacing="12">
+                <Label Text="Harness" Class="muted" MinWidth="70" Slot.VAlign="Center"/>
+                <ComboBox Name="harness" Items="Claude Code|Kimi Code" Selected="0" Width="240" OnChanged="harness.changed" Tooltip="Harness for new lead sessions"/>
+            </HBox>
+            <HBox Spacing="12">
                 <Label Text="Model" Class="muted" MinWidth="70" Slot.VAlign="Center"/>
                 <ComboBox Name="model.select" Items="Default model|Sonnet|Opus|Haiku" Selected="0" Width="240" OnChanged="model.changed" Tooltip="Model for the next lead run" AccessibleName="Model"/>
             </HBox>
             <HBox Spacing="12">
                 <Label Text="Effort" Class="muted" MinWidth="70" Slot.VAlign="Center"/>
                 <ComboBox Name="effort.select" Items="Default effort|Low|Medium|High|XHigh|Max" Selected="0" Width="240" OnChanged="effort.changed" Tooltip="Reasoning effort for the next lead run" AccessibleName="Reasoning effort"/>
-            </HBox>
-            <HBox Spacing="12">
-                <Label Text="Harness" Class="muted" MinWidth="70" Slot.VAlign="Center"/>
-                <ComboBox Name="harness" Items="Claude Code|Kimi Code" Selected="0" Width="240" OnChanged="harness.changed" Tooltip="Harness for new lead sessions"/>
             </HBox>
             <HBox Spacing="12">
                 <Label Text="Mode" Class="muted" MinWidth="70" Slot.VAlign="Center"/>
