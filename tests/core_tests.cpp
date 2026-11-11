@@ -1,4 +1,5 @@
 #include "file_tree.hpp"
+#include "shortcut_text.hpp"
 #include "checkpoints.hpp"
 #include "claude.hpp"
 #include "composer.hpp"
@@ -1071,6 +1072,18 @@ void file_tree_tests() {
     std::filesystem::remove_all(root);
 }
 
+void shortcut_text_tests() {
+    using raven::native_shortcut_text;
+    expect(native_shortcut_text("Start a new conversation (Ctrl+N)", false) == "Start a new conversation (Ctrl+N)",
+           "shortcut text changed outside macOS");
+    expect(native_shortcut_text("Start a new conversation (Ctrl+N)", true) == "Start a new conversation (⌘N)",
+           "Ctrl did not become Command on macOS");
+    expect(native_shortcut_text("Ctrl+Shift+P", true) == "⇧⌘P", "macOS shortcut symbols are not in Apple order");
+    expect(native_shortcut_text("Ctrl+Alt+A and Ctrl+Enter", true) == "⌥⌘A and ⌘↩", "several shortcuts in one text");
+    expect(native_shortcut_text("Ctrl+,", true) == "⌘,", "punctuation key was lost");
+    expect(native_shortcut_text("Add Ctrl, Alt, or Super", true) == "Add Ctrl, Alt, or Super", "prose without a key changed");
+}
+
 int main() {
     try {
         workspace_tests();
@@ -1094,6 +1107,7 @@ int main() {
         parser_tests();
         image_attachment_tests();
         file_tree_tests();
+        shortcut_text_tests();
         std::cout << "All core tests passed\n";
         return 0;
     } catch (const std::exception& error) {

@@ -46,6 +46,7 @@ add_library(raven_ide_core
     src/profile.cpp
     src/recall.cpp
     src/recovery.cpp
+    src/shortcut_text.cpp
     src/splash.cpp
     src/theme_gallery.cpp
     src/tesseract.cpp

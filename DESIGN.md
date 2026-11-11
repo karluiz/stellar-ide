@@ -368,6 +368,12 @@ The navigation sidebar stays between 240 and 310px and the right panel between 3
 ### Wormhole
 The sixth world, after Gargantua: the neutral one. Graphite surfaces, one blue accent (#4C9AFF dark, #0A6CDB light), and no tinted chrome, in Dark, Light and Glass like every world. Its art in the gallery is the wormhole itself, rendered by the planet shader as a glass sphere that lenses the galaxy on its far side: the bend grows toward the rim, a thin Einstein ring wraps the edge, and the image swirls slowly around the darker throat. Wormhole Light keeps the lens darker than its surroundings so it still reads as glass.
 
+### Platform conventions
+The window follows its host. On macOS the close, minimize and zoom buttons are the round coloured buttons on the left of the header, and shortcuts are written with Apple's symbols in Apple's order (⇧⌘P, ⌘↩, ⌥⌘A), since Cmd acts as Ctrl. On Windows and Linux minimize, maximize and close sit on the right and shortcuts read Ctrl+Shift+P. Layout and code write shortcuts the portable way; `native_shortcut_text` converts every tooltip and shortcut label at startup and whenever a shortcut is shown.
+
+### Copy answer
+Lead answers end with the copy glyph in a 26px flat button whose icon lines up with the text above, at 62% opacity until hovered. After a copy it shows a check for 1.5 seconds and its tooltip reads Copied.
+
 ### Header
 The unified header is 44px. Its icon buttons are 30×28px with 16px icons and its text actions 28px, so it stays a thin strip above the work.
 

@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include "app_icon.hpp"
 #include "platform.hpp"
+#include "shortcut_text.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -397,6 +398,8 @@ App::~App() {
     if (Rtexture_is_valid(composer_texture_)) Rtexture_destroy(composer_texture_);
     if (Rtexture_is_valid(tesseract_texture_)) Rtexture_destroy(tesseract_texture_);
     if (Rtexture_is_valid(folder_icon_)) Rtexture_destroy(folder_icon_);
+    if (Rtexture_is_valid(copy_icon_)) Rtexture_destroy(copy_icon_);
+    if (Rtexture_is_valid(copied_icon_)) Rtexture_destroy(copied_icon_);
     if (Rtexture_is_valid(file_icon_)) Rtexture_destroy(file_icon_);
 }
 
@@ -440,6 +443,12 @@ bool App::create() {
     window_ = Rwindow_create_from_xml_file(main_ui);
     if (window_ == R_INVALID_ID) return false;
     theme_gallery_.load_palettes(std::filesystem::path(main_ui).parent_path() / "themes");
+    apply_platform_conventions();
+    {
+        const auto icons = std::filesystem::path(main_ui).parent_path() / "icons";
+        copy_icon_ = Rtexture_create_from_file((icons / "copy.png").string().c_str());
+        copied_icon_ = Rtexture_create_from_file((icons / "check.png").string().c_str());
+    }
     const auto ui_directory = std::filesystem::path(main_ui).parent_path();
     splash_.load(ui_directory);
     opening_audio_.load(ui_directory / "audio" / "do-not-go-gentle.wav");
@@ -2063,7 +2072,7 @@ void App::refresh_shortcut_editor() {
     if (selected < 0 || selected >= static_cast<int>(shortcut_definitions().size())) return;
     const auto& definition = shortcut_definitions()[selected];
     const auto custom = profile_store_.data.shortcuts.find(definition.action);
-    Rlabel_set_text(id("shortcut.current"), (custom == profile_store_.data.shortcuts.end() ? definition.combination : custom->second).c_str());
+    Rlabel_set_text(id("shortcut.current"), native_shortcut_text(custom == profile_store_.data.shortcuts.end() ? definition.combination : custom->second).c_str());
     Rbutton_set_text(id("shortcut.rebind"), "Rebind");
     capturing_shortcut_ = false;
 }
@@ -2094,7 +2103,7 @@ void App::reset_shortcut() {
     }
     save_profile();
     refresh_shortcut_editor();
-    set_status("Shortcut restored · " + std::string(definition.combination));
+    set_status("Shortcut restored · " + native_shortcut_text(definition.combination));
 }
 
 bool App::capture_shortcut(const REvent* event) {
@@ -2109,14 +2118,18 @@ bool App::capture_shortcut(const REvent* event) {
     Ruint modifiers;
     if (combination.empty() || !parse_shortcut(combination, key, modifiers)) return true;
     if (!(modifiers & (R_MOD_CTRL | R_MOD_ALT | R_MOD_SUPER))) {
+#ifdef __APPLE__
+        Rlabel_set_text(id("shortcut.current"), "Add ⌘ or ⌥");
+#else
         Rlabel_set_text(id("shortcut.current"), "Add Ctrl, Alt, or Super");
+#endif
         return true;
     }
     const bool plain_ctrl = modifiers == R_MOD_CTRL;
     const bool editor_conflict = plain_ctrl && (key == R_KEY_A || key == R_KEY_C || key == R_KEY_V || key == R_KEY_X ||
         key == R_KEY_Z || key == R_KEY_Y || key == R_KEY_F || key == R_KEY_W || key == R_KEY_Q || key == R_KEY_EQUAL || key == R_KEY_MINUS);
     if (editor_conflict) {
-        Rlabel_set_text(id("shortcut.current"), (combination + " is reserved by the editor").c_str());
+        Rlabel_set_text(id("shortcut.current"), (native_shortcut_text(combination) + " is reserved by the editor").c_str());
         return true;
     }
     const auto selected = Rcombo_box_get_selected(id("shortcut.action"));
@@ -2127,7 +2140,7 @@ bool App::capture_shortcut(const REvent* event) {
         const auto custom = profile_store_.data.shortcuts.find(other.action);
         const auto active = custom == profile_store_.data.shortcuts.end() ? other.combination : custom->second;
         if (active == combination) {
-            Rlabel_set_text(id("shortcut.current"), (combination + " is already assigned").c_str());
+            Rlabel_set_text(id("shortcut.current"), (native_shortcut_text(combination) + " is already assigned").c_str());
             return true;
         }
     }
@@ -2354,13 +2367,27 @@ Rid App::add_message(const std::string& role, const std::string& text, bool user
     Rlabel_set_wrap(body, R_TRUE);
     // Transcript labels cannot be selected, so lead answers carry a small Copy action that puts the
     // whole message (as Markdown, code blocks included) on the clipboard.
+    // It is the familiar copy glyph in a 26px flat button, quiet until hovered, whose glyph lines up
+    // with the text above; after a copy it shows a check for a moment.
     if (!user && role == "ORCHESTRATOR") {
-        auto copy = Rwidget_add_child(box, Rbutton_create("Copy"));
+        auto copy = Rwidget_add_child(box, Rwidget_create(R_WIDGET_BUTTON));
         Rbutton_set_style(copy, R_BUTTON_FLAT);
-        Rwidget_set_metric(copy, R_METRIC_FONT_SIZE, 11.0f);
+        Rwidget_set_size(copy, 26.0f, 26.0f);
+        Rwidget_set_metric(copy, R_METRIC_PADDING_X, 0.0f);
+        Rwidget_set_metric(copy, R_METRIC_PADDING_Y, 0.0f);
         Rwidget_set_tooltip(copy, "Copy this answer");
         Rwidget_set_accessible_name(copy, "Copy answer");
         Rslot_set_halign(copy, R_HALIGN_LEFT);
+        Rslot_set_padding(copy, -6, 0, 0, 0);
+        auto glyph = Rwidget_add_child(copy, Rwidget_create(R_WIDGET_IMAGE));
+        Rwidget_set_size(glyph, 15.0f, 15.0f);
+        Rwidget_set_hit_testable(glyph, R_FALSE);
+        Rwidget_set_accessible_hidden(glyph, R_TRUE);
+        Rimage_set_tint_text(glyph, R_TRUE);
+        Rwidget_set_opacity(glyph, 0.62f);
+        Rslot_set_halign(glyph, R_HALIGN_CENTER);
+        Rslot_set_valign(glyph, R_VALIGN_CENTER);
+        if (Rtexture_is_valid(copy_icon_)) Rimage_set_texture(glyph, copy_icon_);
         Rwidget_set_user_handle(copy, reinterpret_cast<void*>(static_cast<std::uintptr_t>(body)));
         Rbutton_set_clicked_callback(copy, [](Rid button, void* user_data) {
             auto& app = *static_cast<App*>(user_data);
@@ -2369,6 +2396,11 @@ Rid App::add_message(const std::string& role, const std::string& text, bool user
             if (!text || !*text) return;
             Rclipboard_set_text(text);
             app.set_status("Answer copied to the clipboard");
+            if (Rwidget_is_valid(app.copied_image_) && Rtexture_is_valid(app.copy_icon_)) Rimage_set_texture(app.copied_image_, app.copy_icon_);
+            app.copied_image_ = Rwidget_get_child(button, 0);
+            if (Rtexture_is_valid(app.copied_icon_)) Rimage_set_texture(app.copied_image_, app.copied_icon_);
+            Rwidget_set_tooltip(button, "Copied");
+            app.copied_until_ = std::chrono::steady_clock::now() + std::chrono::milliseconds(1500);
         }, this);
     }
     Rwidget_set_transition(card, R_TRANSITION_FADE, 0.0f);
@@ -3443,6 +3475,11 @@ void App::pump() {
     sync_accessibility();
     pump_file_tree();
     clamp_side_panes();
+    if (Rwidget_is_valid(copied_image_) && std::chrono::steady_clock::now() >= copied_until_) {
+        if (Rtexture_is_valid(copy_icon_)) Rimage_set_texture(copied_image_, copy_icon_);
+        Rwidget_set_tooltip(Rwidget_get_parent(copied_image_), "Copy this answer");
+        copied_image_ = R_INVALID_ID;
+    }
     // The Review → Knowledge tab follows the pending proposal. A cheap key detects changes.
     const auto proposal_key = proposal_ ? proposal_->summary + "#" + std::to_string(proposal_->edits.size()) + "#" +
         std::to_string(proposal_->graph.size()) : std::string();
@@ -3565,6 +3602,37 @@ void App::sync_accessibility() {
     }
     const bool covered = splash_.active() || Rwidget_get_visibility(id("theme.gallery")) == R_VISIBLE;
     Rwidget_set_accessible_hidden(id("app.shell"), covered);
+}
+
+// Window chrome and shortcut notation follow the host: macOS puts the close, minimize and zoom
+// buttons on the left as round colored buttons and writes shortcuts with symbols (⇧⌘P), while
+// Windows and Linux keep minimize, maximize and close on the right and write Ctrl+Shift+P.
+void App::apply_platform_conventions() {
+#ifdef __APPLE__
+    Rheader_bar_set_button_side(id("app.header"), R_HALIGN_LEFT);
+    Rwidget_set_visibility(id("shortcut.platform.note"), R_COLLAPSED);
+    Rlabel_set_text(id("shortcut.rebind.hint"), "Select an action, then Rebind. ⌘ or ⌥ is required.");
+#else
+    Rheader_bar_set_button_side(id("app.header"), R_HALIGN_RIGHT);
+#endif
+    // Tooltips and shortcut labels in the layout are written the portable way.
+    std::vector<Rid> pending{Rwindow_get_content(window_)};
+    while (!pending.empty()) {
+        const auto widget = pending.back();
+        pending.pop_back();
+        if (!Rwidget_is_valid(widget)) continue;
+        if (const char* tooltip = Rwidget_get_tooltip(widget); tooltip && *tooltip) {
+            const auto native = native_shortcut_text(tooltip);
+            if (native != tooltip) Rwidget_set_tooltip(widget, native.c_str());
+        }
+        if (Rwidget_get_type(widget) == R_WIDGET_LABEL) {
+            if (const char* text = Rlabel_get_text(widget); text && *text) {
+                const auto native = native_shortcut_text(text);
+                if (native != text) Rlabel_set_text(widget, native.c_str());
+            }
+        }
+        for (int i = 0; i < Rwidget_get_child_count(widget); ++i) pending.push_back(Rwidget_get_child(widget, i));
+    }
 }
 
 // Raven's splitter ignores MaxWidth while dragging and grows every pane with the window, so the

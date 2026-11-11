@@ -65,6 +65,7 @@ public:
     void update_file_tree_icons();
     void pump_file_tree();
     void clamp_side_panes();
+    void apply_platform_conventions();
     static void file_tree_selected(Rid tree, Rid item, void* user);
     std::string workspace_summary() const;
     Rid window() const;
@@ -149,6 +150,10 @@ private:
     std::vector<FileTreeNode> file_tree_nodes_;
     std::set<std::filesystem::path> file_tree_expanded_;
     Rid folder_icon_ = R_INVALID_ID;
+    Rid copy_icon_ = R_INVALID_ID;
+    Rid copied_icon_ = R_INVALID_ID;
+    Rid copied_image_ = R_INVALID_ID;
+    std::chrono::steady_clock::time_point copied_until_{};
     Rid file_icon_ = R_INVALID_ID;
     bool file_tree_building_ = false;
     std::string accessibility_key_;

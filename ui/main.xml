@@ -22,7 +22,7 @@
     <Shortcut Keys="Ctrl+," Action="settings.toggle"/>
     <Overlay>
     <VBox Name="app.shell">
-        <HeaderBar Title="" Height="44" Buttons="All">
+        <HeaderBar Name="app.header" Title="" Height="44" Buttons="All">
             <Overlay Width="30" Height="28">
                 <Button Name="sidebar.left" Text="" Width="30" Height="28" Style="Flat" Class="header-action" OnClicked="sidebar.left" Tooltip="Show or fold navigation (Ctrl+B)" AccessibleName="Navigation" AccessibleDescription="Show or fold workspace navigation"/>
                 <Image Source="icons/files.png" Width="16" Height="16" TintText="true" HitTestable="false" AccessibleHidden="true" Slot.HAlign="Center" Slot.VAlign="Center"/>
@@ -412,7 +412,7 @@
                                 <Border Class="section-header" Padding="20,18" BorderWidth="0" CornerRadius="10">
                                     <VBox Spacing="12">
                                         <Label Text="CUSTOM SHORTCUTS" Class="section" Font="monospace"/>
-                                        <Label Text="Select an action, then Rebind. Ctrl, Alt, or Super is required." Class="muted" TextSize="11" Wrap="true"/>
+                                        <Label Name="shortcut.rebind.hint" Text="Select an action, then Rebind. Ctrl, Alt, or Super is required." Class="muted" TextSize="11" Wrap="true"/>
                                         <ComboBox Name="shortcut.action" Width="330" Items="Send to lead|Save active editor|New chat|Create agent|Create wiki note|Review knowledge|Review code|Accept proposal|Wiki preview|Command palette|Open workspace file|Search workspace content|Focus composer|Recall saved prompts|Open run setup|Open Knowledge|Open Memory Universe|Open theme gallery|Show or fold Files|Show or fold Panels|Open Settings" Selected="0" OnChanged="shortcut.changed" AccessibleName="Shortcut action"/>
                                         <HBox Spacing="10">
                                             <Label Name="shortcut.current" Text="Ctrl+Enter" Class="data" Font="monospace" Slot.Fill="1" Slot.VAlign="Center"/>
@@ -425,7 +425,7 @@
                                 <Border Class="section-header" Padding="20,18" BorderWidth="0" CornerRadius="10">
                                     <VBox Spacing="12">
                                         <Label Text="DEFAULT KEYBOARD REFERENCE" Class="section" Font="monospace" Slot.Padding="0,0,0,4"/>
-                                        <Label Text="On macOS, Cmd works wherever Ctrl is shown." Class="muted" TextSize="11" Wrap="true" Slot.Padding="0,0,0,6"/>
+                                        <Label Name="shortcut.platform.note" Text="On macOS, Cmd works wherever Ctrl is shown." Class="muted" TextSize="11" Wrap="true" Slot.Padding="0,0,0,6"/>
                                         <HBox><Label Text="Ctrl+," Class="data" Font="monospace" MinWidth="132"/><Label Text="Open or close Settings" Slot.Fill="1"/></HBox>
                                         <HBox><Label Text="Esc" Class="data" Font="monospace" MinWidth="132"/><Label Text="Return from Settings" Slot.Fill="1"/></HBox>
                                         <HBox><Label Text="Ctrl+Enter" Class="data" Font="monospace" MinWidth="132"/><Label Text="Send to lead" Slot.Fill="1"/></HBox>
