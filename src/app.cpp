@@ -677,7 +677,7 @@ void App::set_run_state(const char* state) {
     Rlabel_set_text(id("run.state"), state);
     static const std::pair<const char*, const char*> lead_states[] = {
         {"READY", "Ready"}, {"RUNNING", "Running"}, {"COMPLETE", "Complete"}, {"ERROR", "Error"},
-        {"STOPPED", "Stopped"}, {"WIKI REVIEW", "Reviewing knowledge"}, {"WIKI ERROR", "Knowledge review failed"},
+        {"STOPPED", "Stopped"}, {"KNOWLEDGE REVIEW", "Reviewing knowledge"}, {"KNOWLEDGE ERROR", "Knowledge review failed"},
         {"DEMO · ACTIVE", "Running · demo"}
     };
     const char* lead = state;
@@ -2814,6 +2814,9 @@ void App::start_run() {
         displayed_prompt += "\n\nImage attached · " + attachment->path.filename().string() + " · " +
             std::to_string(attachment->width) + " × " + std::to_string(attachment->height);
     }
+    // The READY introduction belongs to an empty chat; it is not part of the conversation, and a
+    // restored chat never shows it, so it goes when the first prompt is sent.
+    if (thread_messages_.empty()) Rwidget_clear_children(id("transcript"));
     add_message("YOU", displayed_prompt, true);
     Rwindow_close_popups(window_);
     transcript_text_ += "\n\nUSER:\n" + prompt;
@@ -3236,7 +3239,7 @@ void App::start_wiki_curator() {
     } catch (const std::exception& error) {
         set_status(std::string("Run complete · memory staging failed: ") + error.what());
     }
-    set_run_state("WIKI REVIEW");
+    set_run_state("KNOWLEDGE REVIEW");
     wiki_output_.clear();
     auto prompt = std::string(
         "Review this completed lead-agent run and propose durable updates to the workspace wiki. "
@@ -3316,7 +3319,7 @@ void App::handle_wiki_event(const ClaudeEvent& event) {
     Rwidget_set_enabled(id("run.mode"), R_TRUE); Rwidget_set_enabled(id("model.select"), R_TRUE); Rwidget_set_enabled(id("effort.select"), R_TRUE);
     set_current_action(event.is_error ? "Knowledge review failed" : "Knowledge review complete");
     update_queue();
-    set_run_state(event.is_error ? "WIKI ERROR" : "COMPLETE");
+    set_run_state(event.is_error ? "KNOWLEDGE ERROR" : "COMPLETE");
     if (event.is_error) {
         set_status("Run complete · knowledge review failed: " + event.text);
         return;
