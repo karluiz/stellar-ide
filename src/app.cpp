@@ -3368,6 +3368,13 @@ void App::pump() {
     for (const auto& event : wiki_events) handle_wiki_event(event);
     pump_endurance();
     maybe_start_queued();
+    // A harness process reports its last event before it exits, so the chat row can still read
+    // "running" when the final state is set. Refresh once more when the processes have stopped.
+    const bool busy = lead_process_.running() || wiki_process_.running();
+    if (busy != threads_busy_) {
+        threads_busy_ = busy;
+        refresh_threads();
+    }
     update_reading_column();
     sync_accessibility();
     sync_file_browser_path();

@@ -126,6 +126,7 @@ private:
     int transcript_follow_frames_ = 0;
     std::string status_destination_;
     std::string rendered_proposal_key_;
+    bool threads_busy_ = false;
     bool composer_completion_pending_ = false;
     float editor_zoom_ = 1.0f;
     float interface_zoom_ = 1.15f;
