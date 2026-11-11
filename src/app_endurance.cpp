@@ -328,8 +328,9 @@ void App::rebuild_endurance_graph() {
     }
     const int builds = static_cast<int>(std::count_if(workflow->steps.begin(), workflow->steps.end(), [](const auto& step) { return step.mode == "build"; }));
     const int agents = static_cast<int>(std::count_if(workflow->steps.begin(), workflow->steps.end(), [](const auto& step) { return step.type == "agent"; }));
-    Rlabel_set_text(id("endurance.summary"), (std::to_string(workflow->steps.size()) + " steps · " + std::to_string(agents) +
-        " agent steps · " + std::to_string(builds) + " write steps").c_str());
+    const auto plural = [](size_t count, const char* noun) { return std::to_string(count) + " " + noun + (count == 1 ? "" : "s"); };
+    Rlabel_set_text(id("endurance.summary"), (plural(workflow->steps.size(), "step") + " · " + plural(static_cast<size_t>(agents), "agent step") +
+        " · " + plural(static_cast<size_t>(builds), "write step")).c_str());
     fit_endurance_graph();
     refresh_endurance_node_states();
     endurance_loading_ = false;
