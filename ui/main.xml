@@ -585,7 +585,7 @@
                                 <Button Text="+" Style="Flat" OnClicked="tesseract.zoom.in" Tooltip="Zoom in" AccessibleName="Zoom in"/>
                                 <Button Text="Fit" Style="Flat" OnClicked="tesseract.fit" Tooltip="Frame every interface (0)"/>
                             </HBox>
-                            <Border Name="tesseract.composer.shell" Class="composer" Padding="14" MaxWidth="860" Slot.Anchors="0.08,1,0.92,1" Slot.Position="0,-142" Slot.Size="0,120">
+                            <Border Name="tesseract.composer.shell" Class="composer" Padding="14" Slot.Anchors="1,1" Slot.Alignment="1,0" Slot.Position="-16,-136" Slot.Size="380,120">
                                 <VBox Spacing="10">
                                     <HBox Name="tesseract.activity.bar" Spacing="8" Visibility="Collapsed" Appear="Fade">
                                         <VBox Slot.Fill="1" Spacing="3">

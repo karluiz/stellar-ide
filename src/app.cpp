@@ -3514,8 +3514,9 @@ void App::fit_tesseract_composer() {
     const float target = std::ceil(height + 28.0f + 2.0f);  // 14px padding on each side, 1px border
     if (std::abs(tesseract_composer_height_ - target) < 1.0f) return;
     tesseract_composer_height_ = target;
-    Rslot_set_size(shell, 0.0f, target);
-    Rslot_set_position(shell, 0.0f, -target - 22.0f);
+    // A floating panel in the bottom-right corner that grows upward as the prompt grows.
+    Rslot_set_size(shell, 380.0f, target);
+    Rslot_set_position(shell, -16.0f, -target - 16.0f);
     Rwindow_request_redraw(window_);
 }
 

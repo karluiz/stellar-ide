@@ -730,15 +730,16 @@ void TesseractCanvas::fit() {
         max_x = std::max(max_x, root.bounds.x + root.bounds.width);
         max_y = std::max(max_y, root.bounds.y + root.bounds.height);
     }
-    // Frame the design in the free area: below the title and frame count (top 60px) and above the
-    // floating prompt box (bottom 156px), with a margin on the sides.
+    // Frame the design in the free area: below the title and frame count (top 60px), above the
+    // bottom margin, and left of the floating prompt panel in the bottom-right corner (412px).
     const float top = 60.0f;
-    const float bottom = 156.0f;
-    const float available_width = std::max(100.0f, width_ - 100.0f);
+    const float bottom = 40.0f;
+    const float right = width_ > 900.0f ? 412.0f : 0.0f;
+    const float available_width = std::max(100.0f, width_ - right - 100.0f);
     const float available_height = std::max(100.0f, height_ - top - bottom);
     zoom_ = std::clamp(std::min(available_width / std::max(1.0f, max_x - min_x),
                                 available_height / std::max(1.0f, max_y - min_y)), 0.15f, 1.6f);
-    pan_x_ = width_ * 0.5f - (min_x + max_x) * 0.5f * zoom_;
+    pan_x_ = (width_ - right) * 0.5f - (min_x + max_x) * 0.5f * zoom_;
     pan_y_ = top + std::max(100.0f, height_ - top - bottom) * 0.5f - (min_y + max_y) * 0.5f * zoom_;
 }
 
