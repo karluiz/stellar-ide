@@ -1820,7 +1820,7 @@ void App::change_harness(int index) {
     if (lead_process_.running() || wiki_process_.running() || proposal_) {
         Rcombo_box_set_selected(id("harness"), static_cast<int>(harness_));
         Rcombo_box_set_selected(id("settings.harness"), static_cast<int>(harness_));
-        set_status("Finish the run and review the pending wiki proposal before switching harness");
+        set_status("Finish the run and review the pending knowledge proposal before switching harness");
         return;
     }
     harness_ = selected;
@@ -3192,7 +3192,7 @@ void App::handle_lead_event(const ClaudeEvent& event) {
             add_message("RUN ERROR", event.text);
             set_status(std::string(harness_name()) + " run failed · " + event.detail);
         } else if (run_mode_ == RunMode::Build) {
-            set_status("Run complete · preparing a wiki review");
+            set_status("Run complete · preparing a knowledge review");
             start_wiki_curator();
         } else {
             Rwidget_set_enabled(id("harness"), R_TRUE);
@@ -3213,7 +3213,7 @@ void App::start_wiki_curator() {
     if (transcript_text_.empty()) {
         Rwidget_set_enabled(id("harness"), R_TRUE);
         Rwidget_set_enabled(id("run.mode"), R_TRUE); Rwidget_set_enabled(id("model.select"), R_TRUE); Rwidget_set_enabled(id("effort.select"), R_TRUE);
-        set_status("Run complete · no transcript for wiki review");
+        set_status("Run complete · no transcript for knowledge review");
         return;
     }
     set_current_action("Reviewing knowledge");
@@ -3305,7 +3305,7 @@ void App::handle_wiki_event(const ClaudeEvent& event) {
     update_queue();
     set_run_state(event.is_error ? "WIKI ERROR" : "COMPLETE");
     if (event.is_error) {
-        set_status("Run complete · wiki proposal failed: " + event.text);
+        set_status("Run complete · knowledge review failed: " + event.text);
         return;
     }
     try {
@@ -3357,7 +3357,7 @@ void App::handle_wiki_event(const ClaudeEvent& event) {
             : "Knowledge review ready · review it from Activity whenever you like");
         notify_event("Stellar · Knowledge review ready", proposal_->summary, false, "knowledge", "proposal");
     } catch (const std::exception& error) {
-        set_status(std::string("Run complete · invalid wiki proposal: ") + error.what());
+        set_status(std::string("Run complete · invalid knowledge proposal: ") + error.what());
     }
 }
 
@@ -4655,7 +4655,7 @@ void App::accept_proposal() {
             show_context(1);
         }
         set_active_view(id("center.tabs"), 0);
-        set_status("Wiki proposal accepted and written");
+        set_status("Knowledge proposal accepted and written");
     } catch (const std::exception& error) {
         set_status(error.what());
         Rmessage_box(window_, "Wiki update not applied", error.what(), R_MESSAGE_OK);
@@ -4672,7 +4672,7 @@ void App::discard_proposal() {
     Rlabel_set_text(id("proposal.files"), "");
     Rtext_editor_set_text(id("proposal.diff"), "");
     set_active_view(id("center.tabs"), 0);
-    set_status("Wiki proposal discarded · files were not changed");
+    set_status("Knowledge proposal discarded · files were not changed");
 }
 
 void App::zoom_editors(float amount) {
