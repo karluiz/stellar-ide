@@ -4321,9 +4321,11 @@ void App::refresh_knowledge() {
     Rwidget_set_enabled(id("knowledge.forget"), R_FALSE);
     Rlist_view_clear_items(id("knowledge.results"));
     for (const auto& record : knowledge_records_) {
+        // The inspector column is narrow and list rows clip without an ellipsis: name first, then
+        // the type, shortened to fit. Full details appear when the record is selected.
         const auto text = record.kind == GraphOpKind::UpsertEntity
-            ? record.entity_type + "  " + record.name
-            : record.source_id + "  -" + record.entity_type + "->  " + record.target_id;
+            ? shortened(record.name, 26) + " · " + record.entity_type
+            : shortened(record.source_id + " → " + record.target_id, 26) + " · " + record.entity_type;
         Rlist_view_add_item(id("knowledge.results"), text.c_str());
     }
     const auto stats = workspace_.knowledge().stats();
