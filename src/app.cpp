@@ -1032,8 +1032,11 @@ void App::refresh_recall() {
         if (prompt->id == selected_id) selection = static_cast<int>(i);
         auto preview = prompt->text;
         std::replace(preview.begin(), preview.end(), '\n', ' ');
-        const auto uses = std::to_string(prompt->uses) + (prompt->uses == 1 ? " use" : " uses");
-        const auto label = (prompt->pinned ? std::string("PINNED · ") : std::string()) + uses + " · " + shortened(preview, 100);
+        // The prompt leads; pin state and reuse count follow, and a single use is not worth a label.
+        std::string meta;
+        if (prompt->pinned) meta = "pinned";
+        if (prompt->uses > 1) meta += (meta.empty() ? "" : " · ") + std::to_string(prompt->uses) + " uses";
+        const auto label = shortened(preview, 100) + (meta.empty() ? "" : "  ·  " + meta);
         Rlist_view_add_item(id("recall.results"), label.c_str());
     }
     Rlist_view_set_selected(id("recall.results"), selection);
