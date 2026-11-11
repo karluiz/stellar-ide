@@ -77,6 +77,12 @@ std::string relative_age(std::int64_t timestamp) {
         : seconds < 86400 ? std::to_string(seconds / 3600) + "h" : std::to_string(seconds / 86400) + "d";
 }
 
+// Agents Stellar ships and relies on; they can be edited but not deleted.
+bool builtin_agent(const std::filesystem::path& path) {
+    const auto filename = path.filename();
+    return filename == "orchestrator.md" || filename == "code-reviewer.md" || filename == "wiki-curator.md";
+}
+
 std::string counted(size_t count, const char* noun) {
     return std::to_string(count) + " " + noun + (count == 1 ? "" : "s");
 }
@@ -4195,7 +4201,9 @@ void App::open_agent(int index) {
     const auto row = std::find(agent_rows_.begin(), agent_rows_.end(), index);
     Rlist_view_set_selected(id("agents"), row == agent_rows_.end() ? -1 : static_cast<int>(row - agent_rows_.begin()));
     const auto filename = agent.path.filename();
-    Rwidget_set_enabled(id("agent.delete"), filename != "orchestrator.md" && filename != "wiki-curator.md");
+    Rwidget_set_enabled(id("agent.delete"), !builtin_agent(filename));
+    Rwidget_set_tooltip(id("agent.delete"), builtin_agent(filename)
+        ? "Built-in agents can be edited but not deleted" : "Permanently delete this custom agent");
     current_agent_modified_ = false;
     agent_autosave_pending_ = false;
     loading_agent_ = false;
@@ -4262,7 +4270,7 @@ void App::delete_agent() {
     }
     const auto agent = agents_[current_agent_];
     const auto filename = agent.path.filename();
-    if (filename == "orchestrator.md" || filename == "wiki-curator.md") {
+    if (builtin_agent(filename)) {
         set_status("Built-in agents cannot be deleted");
         return;
     }
