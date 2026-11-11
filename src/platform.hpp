@@ -28,4 +28,9 @@ PinchGesture take_pinch();
 // two-finger swipe means "move the view", not "turn a wheel". False outside macOS.
 bool precise_scrolling();
 
+// Runs accessibility presses (VoiceOver, automation) queued by the macOS layer. Call from the frame
+// callback, outside any AppKit callout, so a press that opens a modal dialog cannot unbalance
+// AppKit's autorelease pools. No-op outside macOS.
+void run_deferred_accessibility_actions();
+
 } // namespace raven::platform

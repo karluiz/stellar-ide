@@ -3400,6 +3400,7 @@ void App::handle_wiki_event(const ClaudeEvent& event) {
 }
 
 void App::pump() {
+    platform::run_deferred_accessibility_actions();
     auto lead_events = lead_process_.drain();
     for (const auto& event : lead_events) handle_lead_event(event);
     auto wiki_events = wiki_process_.drain();

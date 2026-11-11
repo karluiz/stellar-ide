@@ -347,6 +347,24 @@ void key_up(id self, SEL selector, id event) {
 // Trackpad gestures. Raven's Cocoa view has no pinch handler and reports trackpad swipes as wheel
 // turns, so canvases zoomed in large jumps on a two-finger swipe and ignored pinches.
 // ---------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+// Accessibility presses. AppKit runs an accessibility action (VoiceOver, Switch Control, automation)
+// inside its own autorelease pool. A button that opens a modal dialog (Delete agent, Open workspace,
+// restore confirmations) runs a nested event loop there, and when the dialog closes AppKit aborts
+// with "Invalid autorelease pool". The press is deferred to the next run-loop turn instead.
+// ---------------------------------------------------------------------------------------------
+// Raven drains one global autorelease pool at the end of every event pump, so a modal's nested pump
+// must not start inside any AppKit callout (accessibility action, timer) that pushed its own pool.
+// Presses are queued and run from the application's frame callback, outside every callout.
+IMP original_accessibility_press = nullptr;
+std::vector<id> pending_accessibility_presses;
+
+BOOL accessibility_press(id self, SEL) {
+    pending_accessibility_presses.push_back(send<id>(self, "retain"));
+    Rwake_up();
+    return YES;
+}
+
 IMP original_scroll_wheel = nullptr;
 bool last_scroll_precise = false;
 PinchGesture pending_pinch;
@@ -386,6 +404,9 @@ void prepare_windowing() {
         original_scroll_wheel = replace(view, "scrollWheel:", reinterpret_cast<IMP>(scroll_wheel));
         class_addMethod(view, sel_registerName("magnifyWithEvent:"), reinterpret_cast<IMP>(magnify_with_event), "v@:@");
     }
+    if (const Class element = objc_getClass("RavenAccessibilityElement")) {
+        original_accessibility_press = replace(element, "accessibilityPerformPress", reinterpret_cast<IMP>(accessibility_press));
+    }
 }
 
 PinchGesture take_pinch() {
@@ -395,6 +416,16 @@ PinchGesture take_pinch() {
 }
 
 bool precise_scrolling() { return last_scroll_precise; }
+
+void run_deferred_accessibility_actions() {
+    if (pending_accessibility_presses.empty() || !original_accessibility_press) return;
+    auto presses = std::move(pending_accessibility_presses);
+    pending_accessibility_presses.clear();
+    for (const id element : presses) {
+        reinterpret_cast<BOOL (*)(id, SEL)>(original_accessibility_press)(element, sel_registerName("accessibilityPerformPress"));
+        send<void>(element, "release");
+    }
+}
 
 void fit_main_window_to_display() {
     const id application = send<id>(reinterpret_cast<id>(objc_getClass("NSApplication")), "sharedApplication");
@@ -438,6 +469,7 @@ void prepare_windowing() {}
 void fit_main_window_to_display() {}
 PinchGesture take_pinch() { return {}; }
 bool precise_scrolling() { return false; }
+void run_deferred_accessibility_actions() {}
 
 } // namespace raven::platform
 
