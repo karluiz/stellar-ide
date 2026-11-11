@@ -51,6 +51,7 @@ public:
     void set_run_state(const char* state);
     void apply_agent_title(const std::string& proposed);
     void sync_accessibility();
+    void render_proposal();
     void sync_file_browser_path();
     std::string workspace_summary() const;
     Rid window() const;
@@ -124,6 +125,7 @@ private:
     float reading_pane_width_ = 0.0f;
     int transcript_follow_frames_ = 0;
     std::string status_destination_;
+    std::string rendered_proposal_key_;
     bool composer_completion_pending_ = false;
     float editor_zoom_ = 1.0f;
     float interface_zoom_ = 1.15f;

@@ -3371,6 +3371,16 @@ void App::pump() {
     update_reading_column();
     sync_accessibility();
     sync_file_browser_path();
+    // The Review → Knowledge tab follows the pending proposal. A cheap key detects changes.
+    const auto proposal_key = proposal_ ? proposal_->summary + "#" + std::to_string(proposal_->edits.size()) + "#" +
+        std::to_string(proposal_->graph.size()) : std::string();
+    if (proposal_key != rendered_proposal_key_) {
+        rendered_proposal_key_ = proposal_key;
+        render_proposal();
+    }
+    // Accept and Discard only exist while there is a proposal to act on.
+    const auto proposal_actions = proposal_ ? R_VISIBLE : R_COLLAPSED;
+    if (Rwidget_get_visibility(id("proposal.actions")) != proposal_actions) Rwidget_set_visibility(id("proposal.actions"), proposal_actions);
 }
 
 // Raven exposes every child of a Switcher and everything under an overlay to screen readers. Only
@@ -4619,6 +4629,20 @@ void App::open_proposal() {
         return;
     }
     set_sidebar_visibility(false, false);
+    render_proposal();
+    set_active_view(id("review.tabs"), 1);
+    set_active_view(id("center.tabs"), 4);
+}
+
+// Fills Review → Knowledge from the pending proposal. Called whenever the proposal changes, so the
+// tab is current however it is reached, not only through the Review button in Activity.
+void App::render_proposal() {
+    if (!proposal_) {
+        Rlabel_set_text(id("proposal.title"), "No pending proposal");
+        Rlabel_set_text(id("proposal.files"), "");
+        Rtext_editor_set_text(id("proposal.diff"), "");
+        return;
+    }
     Rlabel_set_text(id("proposal.title"), proposal_->summary.c_str());
     std::string files;
     std::string differences;
@@ -4634,8 +4658,6 @@ void App::open_proposal() {
     }
     Rlabel_set_text(id("proposal.files"), files.c_str());
     Rtext_editor_set_text(id("proposal.diff"), differences.c_str());
-    set_active_view(id("review.tabs"), 1);
-    set_active_view(id("center.tabs"), 4);
 }
 
 void App::accept_proposal() {
