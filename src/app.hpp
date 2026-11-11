@@ -52,6 +52,7 @@ public:
     void apply_agent_title(const std::string& proposed);
     void sync_accessibility();
     void render_proposal();
+    void save_pending_wiki_edits();
     void sync_file_browser_path();
     std::string workspace_summary() const;
     Rid window() const;

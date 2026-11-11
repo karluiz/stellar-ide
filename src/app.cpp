@@ -1471,7 +1471,29 @@ void App::reset_session() {
     reset_graph();
     if (!proposal_) {
         const auto staged = workspace_.knowledge().staged();
-        if (!staged.empty()) {
+        // Unreviewed wiki edits saved by an earlier session come back with the staged graph writes.
+        std::vector<std::pair<std::string, std::string>> saved_edits;
+        std::string saved_summary;
+        try {
+            const auto path = workspace_.root() / ".stellar" / "pending-wiki-edits.json";
+            if (std::filesystem::exists(path)) {
+                const auto data = nlohmann::json::parse(read_file(path));
+                saved_summary = data.value("summary", "");
+                for (const auto& edit : data.at("edits")) saved_edits.emplace_back(edit.at("path"), edit.at("content"));
+            }
+        } catch (const std::exception&) {
+            saved_edits.clear();
+        }
+        if (!saved_edits.empty()) {
+            try {
+                proposal_ = workspace_.validate_proposal(saved_summary.empty() ? "Suggested wiki updates" : saved_summary, saved_edits, staged);
+                Rlabel_set_text(id("proposal.summary"), shortened(proposal_->summary, 140).c_str());
+                Rwidget_set_visibility(id("proposal.bar"), R_VISIBLE);
+            } catch (const std::exception&) {
+                proposal_.reset();
+            }
+        }
+        if (!proposal_ && !staged.empty()) {
             const auto episodes = static_cast<size_t>(std::count_if(staged.begin(), staged.end(), [](const auto& operation) {
                 return operation.entity_type == "episode";
             }));
@@ -3400,6 +3422,7 @@ void App::pump() {
     if (proposal_key != rendered_proposal_key_) {
         rendered_proposal_key_ = proposal_key;
         render_proposal();
+        save_pending_wiki_edits();
     }
     // Accept and Discard only exist while there is a proposal to act on.
     const auto proposal_actions = proposal_ ? R_VISIBLE : R_COLLAPSED;
@@ -4668,6 +4691,24 @@ void App::open_proposal() {
     render_proposal();
     set_active_view(id("review.tabs"), 1);
     set_active_view(id("center.tabs"), 4);
+}
+
+// Graph writes are staged on disk, but a proposal's Markdown edits only lived in memory and were
+// lost when Stellar closed. They are saved alongside the staged writes and restored on startup.
+void App::save_pending_wiki_edits() {
+    const auto path = workspace_.root() / ".stellar" / "pending-wiki-edits.json";
+    try {
+        if (!proposal_ || proposal_->edits.empty()) {
+            std::error_code error;
+            std::filesystem::remove(path, error);
+            return;
+        }
+        nlohmann::json edits = nlohmann::json::array();
+        for (const auto& edit : proposal_->edits) edits.push_back({{"path", edit.path}, {"content", edit.after}});
+        write_file(path, nlohmann::json({{"summary", proposal_->summary}, {"edits", edits}}).dump(2) + "\n");
+    } catch (const std::exception& error) {
+        set_status(std::string("Pending wiki edits could not be saved: ") + error.what());
+    }
 }
 
 // Fills Review → Knowledge from the pending proposal. Called whenever the proposal changes, so the
