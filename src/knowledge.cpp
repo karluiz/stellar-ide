@@ -251,7 +251,15 @@ std::vector<GraphOperation> KnowledgeGraph::staged() const {
     if (!fs::exists(staging_path_)) return result;
     std::ifstream input(staging_path_);
     std::string line;
-    while (std::getline(input, line)) if (!line.empty()) result.push_back(from_json(line));
+    while (std::getline(input, line)) {
+        if (line.empty()) continue;
+        // Staging is append-only, so re-staging a record (an episode renamed after its run) adds a
+        // second line with the same id. The latest version replaces the earlier one in place.
+        auto operation = from_json(line);
+        const auto existing = std::find_if(result.begin(), result.end(), [&](const auto& item) { return item.id == operation.id; });
+        if (existing != result.end()) *existing = std::move(operation);
+        else result.push_back(std::move(operation));
+    }
     return result;
 }
 

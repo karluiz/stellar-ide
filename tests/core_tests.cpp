@@ -201,8 +201,11 @@ void memory_tests() {
 
     workspace.stage_run_episode("session-1", "Fix authentication timeout", "Kimi Code",
         "USER:\nFix authentication timeout\n\nASSISTANT:\nUpdated token refresh logic.", "completed");
+    workspace.stage_run_episode("session-1", "Authentication timeout fix", "Kimi Code",
+        "USER:\nFix authentication timeout\n\nASSISTANT:\nUpdated token refresh logic.", "completed");
     const auto staged = workspace.knowledge().staged();
     expect(staged.size() == 1 && staged[0].entity_type == "episode", "completed run did not stage an episode");
+    expect(staged[0].name == "Authentication timeout fix", "a re-staged episode did not replace the earlier version");
     expect(staged[0].properties.at("memory") == "episodic" && staged[0].properties.at("session_id") == "session-1",
            "episode metadata is incomplete");
     workspace.knowledge().apply(staged, workspace.knowledge().revision());
