@@ -678,14 +678,9 @@ bool App::create() {
 
     Rwindow_set_title(window_, ("Stellar — " + workspace_.name()).c_str());
     Rwindow_show(window_);
-    // The opening plays on a workspace's first launch; afterwards Stellar opens straight to work.
-    if (opening_seen_) {
-        Rwidget_set_visibility(id("splash.container"), R_COLLAPSED);
-        Rwidget_focus(id("composer"));
-    } else {
-        splash_.begin();
-        Rwidget_focus(id("splash.skip"));
-    }
+    // The opening plays on every launch until it is dismissed.
+    splash_.begin();
+    Rwidget_focus(id("splash.skip"));
     return true;
 }
 
@@ -723,10 +718,6 @@ void App::dismiss_splash() {
     Rwidget_set_opacity(id("splash.container"), 1.0f);
     Rwidget_set_visibility(id("splash.container"), R_COLLAPSED);
     Rwidget_focus(id("composer"));
-    if (!opening_seen_) {
-        opening_seen_ = true;
-        save_profile();
-    }
 }
 
 void App::toggle_splash_sound() {
@@ -1991,7 +1982,6 @@ void App::load_profile() {
     vector_recall_ = profile.vector_recall;
     watch_checks_ = profile.watch_checks;
     opening_sound_ = profile.opening_sound;
-    opening_seen_ = profile.opening_seen;
 }
 
 void App::apply_profile() {
@@ -2038,7 +2028,6 @@ void App::save_profile() {
     profile.vector_recall = vector_recall_;
     profile.watch_checks = watch_checks_;
     profile.opening_sound = opening_sound_;
-    profile.opening_seen = opening_seen_;
     try {
         profile_store_.save();
     } catch (const std::exception& error) {

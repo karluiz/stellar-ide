@@ -110,7 +110,6 @@ private:
     SplashScreen splash_;
     OpeningAudio opening_audio_;
     bool opening_sound_ = true;
-    bool opening_seen_ = false;
     bool demo_;
     Rid window_ = R_INVALID_ID;
     Rid current_message_ = R_INVALID_ID;

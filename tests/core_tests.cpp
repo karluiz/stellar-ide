@@ -769,7 +769,6 @@ void profile_tests() {
     store.data.vector_recall = false;
     store.data.watch_checks = true;
     store.data.opening_sound = false;
-    store.data.opening_seen = true;
     store.data.shortcuts["memory.open"] = "Ctrl+Alt+M";
     store.save();
     raven::WorkspaceProfileStore reloaded(root);
@@ -777,7 +776,7 @@ void profile_tests() {
            "appearance profile did not survive reload");
     expect(reloaded.data.harness == 1 && reloaded.data.run_mode == 2 && !reloaded.data.left_sidebar &&
            reloaded.data.right_sidebar && !reloaded.data.vector_recall && reloaded.data.watch_checks &&
-           !reloaded.data.opening_sound && reloaded.data.opening_seen, "workspace behavior profile did not survive reload");
+           !reloaded.data.opening_sound, "workspace behavior profile did not survive reload");
     expect(reloaded.data.shortcuts.at("memory.open") == "Ctrl+Alt+M", "shortcut profile did not survive reload");
     expect(reloaded.data.claude_model == "opus" && reloaded.data.claude_effort == "xhigh" &&
            reloaded.data.kimi_model == "kimi-code/kimi-for-coding" && reloaded.data.kimi_effort == "high",
